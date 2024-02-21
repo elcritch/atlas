@@ -150,7 +150,7 @@ suite "versions":
     assert lastPathComponent("meh/longer/here/") == "here"
     assert lastPathComponent("meh/longer/here") == "here"
 
-  test "parsing nimble":
+  test "parsing requiers tokens":
     let tokens = tokenizeRequires("jester@#head >= 1.5 & <= 1.8").toSeq()
     check tokens == @["jester", "@", "#head", ">=", "1.5", "&", "<=", "1.8"]
 
@@ -162,7 +162,7 @@ suite "versions":
     author        = "Status Research & Development GmbH"
     description   = "HTTP request/response helpers & parsing procedures"
     license       = "Apache License 2.0"
-    skipDirs      = @["tests", "Nim"]
+    #skipDirs      = @["tests", "Nim"]
 
     ### Dependencies
     requires "nim >= 1.6.0",
@@ -193,15 +193,13 @@ suite "versions":
 
     """
 
-    echo "example: ", example
-
     let (cfile, path) = createTempFile("testExample", suffix=".nimble")
     cfile.write(example)
     cfile.close()
 
     let res = extractRequiresInfo(path)
-    echo res
+    check res.hasErrors == false
 
     let plugins = extractRequiresInfo(path)
-    echo plugins
+    check plugins.hasErrors == false
 
