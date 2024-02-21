@@ -6,10 +6,9 @@ license = "MIT"
 srcDir = "src"
 skipDirs = @["doc"]
 bin = @["atlas"]
+installFiles  = @["build.nims"]
 
 # Dependencies
-
 requires "nim >= 2.0.0"
 
-task docs, "build Atlas's docs":
-  exec "nim rst2html --putenv:atlasversion=$1 doc/atlas.md" % version
+include "build.nims"
