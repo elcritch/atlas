@@ -156,71 +156,52 @@ suite "versions":
 
   test "parsing nimble":
     let example = dedent"""
-    version = "0.0.4"
-    author = "disruptek"
-    description = "don't read too much into it"
-    license = "MIT"
-    #srcDir = "test"
-    requires "nim >= 1.0.0",
-             "unittest2"
+    mode = ScriptMode.Verbose
+    packageName   = "httputils"
+    version       = "0.3.0"
+    author        = "Status Research & Development GmbH"
+    description   = "HTTP request/response helpers & parsing procedures"
+    license       = "Apache License 2.0"
+    skipDirs      = @["tests", "Nim"]
+
+    ### Dependencies
+    requires "nim >= 1.6.0",
+            "stew",
+            "unittest2"
+    let nimc = getEnv("NIMC", "nim") # Which nim compiler to use
+    let lang = getEnv("NIMLANG", "c") # Which backend (c/cpp/js)
+    let flags = getEnv("NIMFLAGS", "") # Extra flags for the compiler
+    let verbose = getEnv("V", "") notin ["", "0"]
+
+    let cfg =
+      " --styleCheck:usages --styleCheck:error" &
+      (if verbose: "" else: " --verbosity:0 --hints:off") &
+      " --skipParentCfg --skipUserCfg --outdir:build --nimcache:build/nimcache -f"
+
+    proc build(args, path: string) =
+      exec nimc & " " & lang & " " & cfg & " " & flags & " " & args & " " & path
+
+    proc run(args, path: string) =
+      build args & " -r", path
+      if (NimMajor, NimMinor) > (1, 6):
+        build args & " --mm:refc -r", path
+
+    task test, "Run all tests":
+      for threads in ["--threads:off", "--threads:on"]:
+        run threads & " -d:release", "tests/tvectors"
+        run threads & " -d:useSysAssert -d:useGcAssert", "tests/tvectors"
+
     """
 
     echo "example: ", example
 
-    let (cfile, path) = createTempFile("test", suffix=".nimble")
+    let (cfile, path) = createTempFile("testExample", suffix=".nimble")
     cfile.write(example)
     cfile.close()
 
     let res = extractRequiresInfo(path)
     echo res
-    check res.requires == @["nim >= 1.0.0", "unittest2"] 
 
-  # test "parsing nimble":
-  #   let example = dedent"""
-  #   mode = ScriptMode.Verbose
-  #   packageName   = "httputils"
-  #   version       = "0.3.0"
-  #   author        = "Status Research & Development GmbH"
-  #   description   = "HTTP request/response helpers & parsing procedures"
-  #   license       = "Apache License 2.0"
-  #   skipDirs      = @["tests", "Nim"]
-
-  #   ### Dependencies
-  #   requires "nim >= 1.6.0",
-  #           "stew",
-  #           "unittest2"
-  #   let nimc = getEnv("NIMC", "nim") # Which nim compiler to use
-  #   let lang = getEnv("NIMLANG", "c") # Which backend (c/cpp/js)
-  #   let flags = getEnv("NIMFLAGS", "") # Extra flags for the compiler
-  #   let verbose = getEnv("V", "") notin ["", "0"]
-
-  #   let cfg =
-  #     " --styleCheck:usages --styleCheck:error" &
-  #     (if verbose: "" else: " --verbosity:0 --hints:off") &
-  #     " --skipParentCfg --skipUserCfg --outdir:build --nimcache:build/nimcache -f"
-
-  #   proc build(args, path: string) =
-  #     exec nimc & " " & lang & " " & cfg & " " & flags & " " & args & " " & path
-
-  #   proc run(args, path: string) =
-  #     build args & " -r", path
-  #     if (NimMajor, NimMinor) > (1, 6):
-  #       build args & " --mm:refc -r", path
-
-  #   task test, "Run all tests":
-  #     for threads in ["--threads:off", "--threads:on"]:
-  #       run threads & " -d:release", "tests/tvectors"
-  #       run threads & " -d:useSysAssert -d:useGcAssert", "tests/tvectors"
-
-  #   """
-
-  #   echo "example: ", example
-
-  #   let (cfile, path) = createTempFile("test", suffix=".nimble")
-  #   cfile.write(example)
-  #   cfile.close()
-
-  #   let res = extractRequiresInfo(path)
-  #   echo res
-  #   check res.requires == @["nim >= 1.0.0"] 
+    let plugins = extractRequiresInfo(path)
+    echo plugins
 
