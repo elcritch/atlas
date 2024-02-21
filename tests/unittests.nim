@@ -1,8 +1,9 @@
 
 
-import std/[unittest, os, strutils]
+import std/[unittest, os, strutils, sequtils]
 
 import context, osutils, versions
+import parse_requires
 
 when false:
   from nameresolver import resolvePackage
@@ -148,3 +149,16 @@ suite "versions":
     assert lastPathComponent("a/b") == "b"
     assert lastPathComponent("meh/longer/here/") == "here"
     assert lastPathComponent("meh/longer/here") == "here"
+
+  test "parsing nimble":
+    let tokens = tokenizeRequires("jester@#head >= 1.5 & <= 1.8").toSeq()
+    check tokens == @["jester", "@", "#head", ">=", "1.5", "&", "<=", "1.8"]
+
+  test "parsing nimble":
+    let example = dedent"""
+    version = "0.0.4"
+    author = "disruptek"
+    description = "don't read too much into it"
+    license = "MIT"
+    requires "nim >= 1.0.0"
+    """
