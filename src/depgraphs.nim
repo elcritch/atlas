@@ -72,8 +72,9 @@ proc createGraph*(c: var AtlasContext; s: PkgUrl): DepGraph =
 
 proc toJson*(d: DepGraph): JsonNode =
   result = newJObject()
-  result["nodes"] = toJson(d.nodes)
-  result["reqs"] = toJson(d.reqs)
+  let jopts = ToJsonOptions(enumMode: joptEnumSymbol)
+  result["nodes"] = toJson(d.nodes, jopts)
+  result["reqs"] = toJson(d.reqs, jopts)
 
 proc createGraphFromWorkspace*(c: var AtlasContext): DepGraph =
   result = DepGraph(nodes: @[], reqs: defaultReqs())
