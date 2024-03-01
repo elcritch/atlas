@@ -24,23 +24,23 @@ template setupDepsAndGraph(url: string) =
 suite "test pkgurls":
 
   test "basic url":
-    setupDepsAndGraph("https://github.com/elcritch/apatheia.git")
-    check $u == "https://github.com/elcritch/apatheia.git"
-    check u.projectName == "apatheia"
+    setupDepsAndGraph("https://github.com/example/proj.git")
+    check $u == "https://github.com/example/proj.git"
+    check u.projectName == "proj"
 
   test "basic url no git":
-    setupDepsAndGraph("https://github.com/elcritch/apatheia")
-    check $u == "https://github.com/elcritch/apatheia"
-    check u.projectName == "apatheia"
+    setupDepsAndGraph("https://github.com/example/proj")
+    check $u == "https://github.com/example/proj"
+    check u.projectName == "proj"
 
   test "basic url prefix":
-    setupDepsAndGraph("https://github.com/elcritch/nim-apatheia")
-    check $u == "https://github.com/elcritch/nim-apatheia"
-    check u.projectName == "nim-apatheia"
+    setupDepsAndGraph("https://github.com/example/nim-proj")
+    check $u == "https://github.com/example/nim-proj"
+    check u.projectName == "nim-proj"
 
 suite "nimble stuff":
   setup:
-    setupDepsAndGraph("https://github.com/elcritch/apatheia")
+    setupDepsAndGraph("https://github.com/example/nim-proj")
     osutils.filesContext.currDir = "/workspace/"
     osutils.filesContext.walkDirs["/workspace/fakeDeps/apatheia/*.nimble"] = @["/workspace/fakeDeps/apatheia.nimble"]
 
