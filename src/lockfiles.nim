@@ -84,7 +84,7 @@ proc fromPrefixedPath*(c: var AtlasContext, path: string): string =
 
 proc genLockEntry(c: var AtlasContext; lf: var LockFile; w: Dependency) =
   lf.items[w.pkg.projectName] = LockFileEntry(
-    dir: c.prefixedPath(w.ondisk), url: w.pkg.url, commit: getCurrentCommit(), version: "")
+    dir: c.prefixedPath(w.ondisk), url: w.pkg.url, commit: c.getCurrentCommit().get(), version: "")
 
 when false:
   proc genLockEntriesForDir(c: var AtlasContext; lf: var LockFile; dir: string) =
@@ -139,7 +139,7 @@ proc genLockEntry(c: var AtlasContext;
     error c, getCurrentDir(), "error finding nimble file"
     return
   let info = extractRequiresInfo(nimbleFile.get())
-  let commit = getCurrentCommit()
+  let commit = c.getCurrentCommit().get()
   infoNow c, w.pkg.projectName, "calculating nimble checksum"
   let chk = c.nimbleChecksum(w.pkg.projectName, w.ondisk)
   lf.packages[w.pkg.projectName] = NimbleLockFileEntry(
@@ -279,7 +279,7 @@ proc listChanged*(c: var AtlasContext; lockFilePath: string) =
                        " found: " & url &
                        " lockfile has: " & v.url
 
-      let commit = gitops.getCurrentCommit()
+      let commit = c.getCurrentCommit().get()
       if commit != v.commit:
         #let info = parseNimble(c, pkg.nimble)
         warn c, dir, "commit differs;" &

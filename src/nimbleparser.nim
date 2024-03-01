@@ -118,6 +118,7 @@ proc findNimbleFile*(c: var Reporter, dir: string): Option[string] =
   echo "FIND_NIMBLE:DIR: ", dir / "*.nimble"
 
   for file in walkFiles(dir / "*.nimble"):
+    echo "FIND_NIMBLE:WALK: ", file
     nimbleFile = file
     found.inc
   
@@ -125,6 +126,7 @@ proc findNimbleFile*(c: var Reporter, dir: string): Option[string] =
     error c, dir, "ambiguous .nimble files; found: " & $found & " options"
     result = string.none()
   elif found == 0:
+    raise newException(Exception, "NO NIMBLE")
     error c, dir, "no nimble file found at"
     result = string.none()
   else:
@@ -141,7 +143,7 @@ proc findNimbleFile*(c: var Reporter, pkg: PkgUrl, dir: string): Option[string] 
   assert dir != ""
   if fileExists(dir / nimbleFile):
     debug c, pkg.projectName, "findNimbleFile: found: " & nimbleFile
-    some(nimbleFile.absolutePath())
+    some((dir / nimbleFile).absolutePath())
   else:
     findNimbleFile(c, dir)
 

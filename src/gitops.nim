@@ -6,7 +6,7 @@
 #    distribution, for details about the copyright.
 #
 
-import std/[osproc, sequtils, strutils]
+import std/[osproc, sequtils, strutils, options]
 import reporters, osutils, versions
 
 type
@@ -83,6 +83,7 @@ proc clone*(c: var Reporter; url, dest: string; retries = 5; fullClones=false): 
     else: ""
 
   let cmd = $GitClone & " " & extraArgs & " " & quoteShell(url) & " " & dest
+  debug c, url, "cloning using command: " & cmd
   for i in 1..retries:
     if execShellCmd(cmd) == 0:
       return true
@@ -129,12 +130,14 @@ proc listFiles*(c: var Reporter): seq[string] =
     result = @[]
 
 proc checkoutGitCommit*(c: var Reporter; p, commit: string) =
+  debug(c, p, "checking out commit " & commit)
   let (currentCommit, statusA) = exec(c, GitCurrentCommit, [])
-  if statusA == 0 and currentCommit.strip() == commit: return
+  if statusA == 0 and currentCommit.strip() == commit:
+    return
 
-  let (_, statusB) = exec(c, GitCheckout, [commit])
+  let (outp, statusB) = exec(c, GitCheckout, [commit])
   if statusB != 0:
-    error(c, p, "could not checkout commit " & commit)
+    error(c, p, "could not checkout commit " & commit & " error: " & $outp)
   else:
     info(c, p, "updated package to " & commit)
 
@@ -207,6 +210,7 @@ proc incrementTag*(c: var Reporter; displayName, lastTag: string; field: Natural
   lastTag[0..<startPos] & $(patchNumber + 1) & lastTag[endPos..^1]
 
 proc incrementLastTag*(c: var Reporter; displayName: string; field: Natural): string =
+  trace(c, displayName, "incrementLastTag " & $field)
   let (ltr, status) = exec(c, GitLastTaggedRef, [])
   if status == 0:
     let
@@ -233,8 +237,11 @@ when false:
     elif isShortCommitHash(w.commit): shortToCommit(c, w.commit)
     else: w.commit
 
-proc getCurrentCommit*(): string =
-  result = execProcess("git log -1 --pretty=format:%H").strip()
+proc getCurrentCommit*(c: var Reporter): Option[string] =
+  let (currentCommit, status) = exec(c, GitCurrentCommit, [])
+  if status == 0:
+    return some currentCommit.strip()
+    
 
 proc isOutdated*(c: var Reporter; displayName: string): bool =
   ## determine if the given git repo `f` is updateable
@@ -294,6 +301,7 @@ proc getRemoteUrl*(x: string): string =
 
 proc updateDir*(c: var Reporter; file, filter: string) =
   withDir c, file:
+    info c, file, "updating git dir"
     let (remote, _) = osproc.execCmdEx("git remote -v")
     if filter.len == 0 or filter in remote:
       let diff = checkGitDiffStatus(c)
