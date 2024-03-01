@@ -144,27 +144,6 @@ iterator releases(c: var AtlasContext; m: TraversalMode; versions: seq[Dependenc
   else:
     yield (FromHead, Commit(h: "", v: Version"#head"))
 
-proc findNimbleFile(c: var AtlasContext, g: DepGraph; dep: var Dependency): Option[string] =
-  var nimbleFile = dep.pkg.projectName & ".nimble"
-  debug c, dep.pkg.projectName, "findNimbleFile: searching: " & dep.pkg.projectName &
-                                                " path: " & dep.ondisk
-  if not fileExists(nimbleFile):
-    result = some(nimbleFile.absolutePath())
-  else:
-    var found = 0
-    for file in walkFiles("*.nimble"):
-      nimbleFile = file
-      found.inc
-    
-    if found > 1:
-      error c, dep.pkg.projectName, "ambiguous .nimble files; found: " & $found & " options"
-      result = string.none()
-    elif found == 0:
-      error c, dep.pkg.projectName, "no .nimble file found"
-      result = string.none()
-    else:
-      result = some(nimbleFile.absolutePath())
-
 
 proc enrichVersionsViaExplicitHash(versions: var seq[DependencyVersion]; x: VersionInterval) =
   let commit = extractSpecificCommit(x)
@@ -175,7 +154,7 @@ proc enrichVersionsViaExplicitHash(versions: var seq[DependencyVersion]; x: Vers
       commit: commit, req: EmptyReqs, v: NoVar)
 
 proc collectNimbleVersions*(c: var AtlasContext; nc: NimbleContext; g: var DepGraph; idx: int): seq[string] =
-  let outerNimbleFile = c.findNimbleFile(g, g.nodes[idx])
+  let outerNimbleFile = c.findNimbleFile(g.nodes[idx].pkg)
   result = @[]
   if outerNimbleFile.isSome:
     let (outp, status) = exec(c, GitLog, [outerNimbleFile.get()])
@@ -187,7 +166,7 @@ proc collectNimbleVersions*(c: var AtlasContext; nc: NimbleContext; g: var DepGr
 
 proc traverseRelease(c: var AtlasContext; nc: NimbleContext; g: var DepGraph; idx: int;
                      origin: CommitOrigin; r: Commit; lastNimbleContents: var string) =
-  let nimbleFile = c.findNimbleFile(g, g.nodes[idx])
+  let nimbleFile = c.findNimbleFile(g.nodes[idx].pkg)
   var pv = DependencyVersion(
     version: r.v,
     commit: r.h,
@@ -466,7 +445,7 @@ proc runBuildSteps(c: var AtlasContext; g: var DepGraph) =
         let activeVersion = g.nodes[i].activeVersion
         let r = if g.nodes[i].versions.len == 0: -1 else: g.nodes[i].versions[activeVersion].req
         if r >= 0 and r < g.reqs.len and g.reqs[r].hasInstallHooks:
-          let nf = c.findNimbleFile(g, g.nodes[i])
+          let nf = c.findNimbleFile(g.nodes[i].pkg)
           if nf.isSome:
             trace c, pkg.projectName, "running Nimble install hook"
             runNimScriptInstallHook c, nf.get, pkg.projectName

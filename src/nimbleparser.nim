@@ -6,7 +6,7 @@
 #    distribution, for details about the copyright.
 #
 
-import std / [os, strutils, tables, unicode, hashes]
+import std / [os, strutils, tables, unicode, hashes, options]
 import versions, satvars, packagesjson, reporters, gitops, parse_requires, pkgurls, compiledpatterns
 
 type
@@ -110,20 +110,33 @@ proc parseNimbleFile*(c: NimbleContext; nimbleFile: string; p: Patterns): Requir
         else:
           result.deps.add (createUrlSkipPatterns(u), query)
 
-proc findNimbleFile*(c: var Reporter; dir: string; ambiguous: var bool): string =
-  result = ""
-  var counter = 0
-  for x in walkFiles(dir / "*.nimble"):
-    inc counter
-    if result.len == 0:
-      result = x
-  if counter > 1:
-    ambiguous = true
-    result = ""
+proc findNimbleFile*(c: var Reporter, dir: string): Option[string] =
+  var nimbleFile = ""
+  var found = 0
+  for file in walkFiles(dir / "*.nimble"):
+    nimbleFile = file
+    found.inc
+  
+  if found > 1:
+    error c, dir, "ambiguous .nimble files; found: " & $found & " options"
+    result = string.none()
+  elif found == 0:
+    error c, dir, "no .nimble file found"
+    result = string.none()
+  else:
+    result = some(nimbleFile.absolutePath())
 
-#  if counter > 1:
-#    warn c, dir, "cannot determine `.nimble` file; there are multiple to choose from"
-#    result = ""
+proc findNimbleFile*(c: var Reporter, pkg: PkgUrl, dir: string): Option[string] =
+  var nimbleFile = pkg.projectName & ".nimble"
+  debug c, pkg.projectName, "findNimbleFile: searching: " & pkg.projectName &
+                                                " path: " & dir
+  if not fileExists(dir / nimbleFile):
+    some(nimbleFile.absolutePath())
+  else:
+    findNimbleFile(c, dir)
+
+proc findNimbleFile*(c: var Reporter, pkg: PkgUrl): Option[string] =
+  findNimbleFile(c, pkg, getCurrentDir())
 
 proc genRequiresLine(u: string): string = "requires \"$1\"\n" % u.escape("", "")
 
