@@ -79,7 +79,6 @@ suite "nimble stuff":
     let res = findNimbleFile(c, u, "/workspace/fakeDeps/apatheia")
     check res == some("/workspace/fakeDeps/apatheia.nimble")
 
-
 suite "tests":
   test "basic":
 

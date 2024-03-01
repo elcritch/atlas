@@ -272,9 +272,8 @@ proc expand*(c: var AtlasContext; g: var DepGraph; nc: NimbleContext; m: Travers
   var i = 0
   while i < g.nodes.len:
     if not processed.containsOrIncl(g.nodes[i].pkg):
-      trace c, $g.nodes[i].pkg.projectName, "expanding"
       let (dest, todo) = pkgUrlToDirname(c, g, g.nodes[i])
-      trace c, "expanded", $dest
+      trace c, $g.nodes[i].pkg.projectName, "expanded destination dir: " & $dest
       g.nodes[i].ondisk = dest
       if todo == DoClone:
         let (status, _) =

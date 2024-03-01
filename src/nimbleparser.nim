@@ -115,6 +115,8 @@ proc parseNimbleFile*(c: NimbleContext; nimbleFile: string; p: Patterns): Requir
 proc findNimbleFile*(c: var Reporter, dir: string): Option[string] =
   var nimbleFile = ""
   var found = 0
+  echo "findNimble: ", dir / "*.nimble"
+
   for file in walkFiles(dir / "*.nimble"):
     nimbleFile = file
     found.inc
@@ -123,7 +125,7 @@ proc findNimbleFile*(c: var Reporter, dir: string): Option[string] =
     error c, dir, "ambiguous .nimble files; found: " & $found & " options"
     result = string.none()
   elif found == 0:
-    error c, dir, "no .nimble file found"
+    error c, dir, "no nimble file found at"
     result = string.none()
   else:
     result = some(nimbleFile.absolutePath())
