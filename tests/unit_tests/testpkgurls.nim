@@ -54,12 +54,27 @@ suite "nimble stuff":
     let res = findNimbleFile(c, u)
     check res == some("/workspace/fakeDeps/apatheia.nimble")
 
+  test "with files":
+    let dir = "/workspace/fakeDeps/apatheia"
+    osutils.filesContext.currDir = dir
+    let res = findNimbleFile(c, dir)
+    check res == some("/workspace/fakeDeps/apatheia.nimble")
+
   test "missing":
     osutils.filesContext.walkDirs["/workspace/fakeDeps/apatheia/*.nimble"] = @[]
     let res = findNimbleFile(c, u, "/workspace/fakeDeps/apatheia")
     check res == string.none
 
   test "ambiguous":
+    osutils.filesContext.walkDirs["/workspace/fakeDeps/apatheia/*.nimble"] = @[
+      "/workspace/fakeDeps/apatheia.nimble",
+      "/workspace/fakeDeps/nim-apatheia.nimble"
+    ]
+    let res = findNimbleFile(c, u, "/workspace/fakeDeps/apatheia")
+    check res == string.none
+    check c.errors == 1
+
+  test "check module name recovery":
     osutils.filesContext.walkDirs["/workspace/fakeDeps/apatheia/*.nimble"] = @[
       "/workspace/fakeDeps/apatheia.nimble",
       "/workspace/fakeDeps/nim-apatheia.nimble"

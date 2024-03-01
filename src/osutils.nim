@@ -78,7 +78,7 @@ else:
 
   proc getCurrentDir*(): string =
     result = filesContext.currDir
-    echo "DBG:getCurrentDir: ", result
+    # echo "DBG:getCurrentDir: ", result
   proc setCurrentDir*(dir: string) =
     filesContext.currDir = dir
   proc absolutePath*(fl: string): string =
@@ -92,7 +92,7 @@ else:
   proc fileExists*(fl: string): bool =
     if fl in filesContext.fileExists:
       result = filesContext.fileExists[fl]
-    echo "DBG:fileExsists: ", result, " <- ", fl
+    # echo "DBG:fileExsists: ", result, " <- ", fl
 
   proc dirExists*(dir: string): bool =
     if dir in filesContext.dirExists:
@@ -102,4 +102,4 @@ else:
         if fl.isRelativeTo(dir):
           result = true
           break
-    echo "DBG:fileExsists: ", result, " <- ", dir
+    # echo "DBG:fileExsists: ", result, " <- ", dir
