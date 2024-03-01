@@ -188,12 +188,11 @@ proc pinGraph*(c: var AtlasContext; g: var DepGraph; lockFilePath: string; expor
   if fileExists(nimcfgPath):
     lf.nimcfg = readFile(nimcfgPath).splitLines()
 
-  var amb = false
-  let nimblePath = findNimbleFile(c, startPkg, amb)
-  if not amb and nimblePath.len > 0 and nimblePath.fileExists():
+  let nimblePath = findNimbleFile(c, startPkg)
+  if nimblePath.isSome:
     lf.nimbleFile = LockedNimbleFile(
-      filename: nimblePath.relativePath(c.currentDir),
-      content: readFile(nimblePath).splitLines())
+      filename: nimblePath.get().relativePath(c.currentDir),
+      content: readFile(nimblePath.get()).splitLines())
 
   if not exportNimble:
     write lf, lockFilePath
