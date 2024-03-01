@@ -137,7 +137,7 @@ proc findNimbleFile*(c: var Reporter, pkg: PkgUrl, dir: string): Option[string] 
   else:
     findNimbleFile(c, dir)
 
-proc findNimbleFile*(c: var Reporter, pkg: PkgUrl): Option[string] =
+proc findNimbleFile*(c: var Reporter, pkg: PkgUrl): Option[string] {.deprecated.} =
   echo "DBG:find:pkg: ", pkg
   findNimbleFile(c, pkg, getCurrentDir())
 

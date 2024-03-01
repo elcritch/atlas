@@ -86,18 +86,12 @@ else:
       fl
     else:
       filesContext.absPaths[fl]
-
   iterator walkFiles*(dir: string): string =
     for f in filesContext.walkDirs[dir]:
       yield f
-
   proc fileExists*(fl: string): bool =
     if fl in filesContext.fileExists:
       result = filesContext.fileExists[fl]
-    # if not result:
-    #   let fl = fl.splitPath().tail
-    #   if fl in filesContext.fileExists:
-    #     result = filesContext.fileExists[fl]
     echo "DBG:fileExsists: ", result, " <- ", fl
 
   proc dirExists*(dir: string): bool =

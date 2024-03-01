@@ -48,9 +48,10 @@ suite "nimble stuff":
   test "basic nimble path":
     let dir = "/workspace/fakeDeps/apatheia"
     let res = findNimbleFile(c, u, dir)
+    check res == some("/workspace/fakeDeps/apatheia.nimble")
     echo "nimble res: ", res
 
-  test "basic nimble path":
+  test "basic nimble path using currdir":
     osutils.filesContext.currDir = "/workspace/fakeDeps/apatheia"
     let res = findNimbleFile(c, u)
     check res == some("/workspace/fakeDeps/apatheia.nimble")
