@@ -134,7 +134,6 @@ proc genLockEntry(c: var AtlasContext;
                   w: Dependency,
                   cfg: CfgPath,
                   deps: HashSet[string]) =
-  var amb = false
   let nimbleFile = findNimbleFile(c, getCurrentDir())
   if nimbleFile.isNone:
     error c, getCurrentDir(), "error finding nimble file"

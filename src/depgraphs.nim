@@ -27,6 +27,7 @@ type
     status: CloneStatus
     activeVersion*: int
     ondisk*: string
+    nimbleFile*: Option[string]
 
   DepGraph* = object
     nodes: seq[Dependency]
@@ -59,7 +60,14 @@ proc readOnDisk(c: var AtlasContext; result: var DepGraph) =
         if n.isRoot:
           if not result.packageToDependency.hasKey(n.pkg):
             result.packageToDependency[n.pkg] = result.nodes.len
-            result.nodes.add Dependency(pkg: n.pkg, versions: @[], isRoot: true, isTopLevel: n.isTopLevel, activeVersion: -1)
+            result.nodes.add Dependency(
+              pkg: n.pkg,
+              versions: @[],
+              isRoot: true,
+              isTopLevel: n.isTopLevel,
+              activeVersion: -1,
+              nimbleFile: c.findNimbleFile(n.pkg, n.ondisk)
+            )
   except:
     error c, configFile, "cannot read: " & configFile
 
@@ -153,11 +161,11 @@ proc enrichVersionsViaExplicitHash(versions: var seq[DependencyVersion]; x: Vers
     versions.add DependencyVersion(version: Version"",
       commit: commit, req: EmptyReqs, v: NoVar)
 
-proc collectNimbleVersions*(c: var AtlasContext; nc: NimbleContext; g: var DepGraph; idx: int): seq[string] =
-  let outerNimbleFile = c.findNimbleFile(g.nodes[idx].pkg, getCurrentDir())
+proc collectNimbleVersions*(c: var AtlasContext; dep: var Dependency): seq[string] =
+  # let outerNimbleFile = c.findNimbleFile(g.nodes[idx].pkg, getCurrentDir())
   result = @[]
-  if outerNimbleFile.isSome:
-    let (outp, status) = exec(c, GitLog, [outerNimbleFile.get()])
+  if dep.nimbleFile.isSome:
+    let (outp, status) = exec(c, GitLog, [dep.nimbleFile.get()])
     if status == 0:
       for line in splitLines(outp):
         if line.len > 0 and not line.endsWith("^{}"):
@@ -166,7 +174,10 @@ proc collectNimbleVersions*(c: var AtlasContext; nc: NimbleContext; g: var DepGr
 
 proc traverseRelease(c: var AtlasContext; nc: NimbleContext; g: var DepGraph; idx: int;
                      origin: CommitOrigin; r: Commit; lastNimbleContents: var string) =
-  let nimbleFile = c.findNimbleFile(g.nodes[idx].pkg, getCurrentDir())
+  let pkg = g.nodes[idx].pkg
+  let nimbleFile = g.nodes[idx].nimbleFile
+  debug c, pkg.projectName, "traverseRelease: origin: " & $origin & " nimble: " & $nimbleFile
+  raise newException(Exception, "fail")
   var pv = DependencyVersion(
     version: r.v,
     commit: r.h,
@@ -221,7 +232,7 @@ proc traverseDependency(c: var AtlasContext; nc: NimbleContext; g: var DepGraph;
   var lastNimbleContents = "<invalid content>"
 
   let versions = move g.nodes[idx].versions
-  let nimbleVersions = collectNimbleVersions(c, nc, g, idx)
+  let nimbleVersions = collectNimbleVersions(c, g.nodes[idx])
 
   for (origin, r) in releases(c, m, versions, nimbleVersions):
     traverseRelease c, nc, g, idx, origin, r, lastNimbleContents
@@ -251,7 +262,7 @@ type
   PackageAction = enum
     DoNothing, DoClone
 
-proc pkgUrlToDirname(c: var AtlasContext; g: var DepGraph; d: Dependency): (string, PackageAction) =
+proc pkgUrlToDirname(c: var AtlasContext; g: var DepGraph; d: var Dependency): (string, PackageAction) =
   # XXX implement namespace support here
   var dest = g.ondisk.getOrDefault(d.pkg.url)
   trace c, "pkgUrlToDirname:dest", $dest
@@ -284,6 +295,7 @@ proc expand*(c: var AtlasContext; g: var DepGraph; nc: NimbleContext; m: Travers
         g.nodes[i].status = status
 
       if g.nodes[i].status == Ok:
+        g.nodes[i].nimbleFile = c.findNimbleFile(g.nodes[i].pkg, dest)
         withDir c, dest:
           traverseDependency(c, nc, g, i, m)
     inc i
@@ -444,7 +456,7 @@ proc runBuildSteps(c: var AtlasContext; g: var DepGraph) =
         let activeVersion = g.nodes[i].activeVersion
         let r = if g.nodes[i].versions.len == 0: -1 else: g.nodes[i].versions[activeVersion].req
         if r >= 0 and r < g.reqs.len and g.reqs[r].hasInstallHooks:
-          let nf = c.findNimbleFile(g.nodes[i].pkg, g.nodes[i].ondisk)
+          let nf = c.findNimbleFile(g.nodes[i].pkg, getCurrentDir())
           if nf.isSome:
             trace c, pkg.projectName, "running Nimble install hook"
             runNimScriptInstallHook c, nf.get, pkg.projectName
