@@ -112,7 +112,7 @@ proc parseNimbleFile*(c: NimbleContext; nimbleFile: string; p: Patterns): Requir
         else:
           result.deps.add (createUrlSkipPatterns(u), query)
 
-proc findNimbleFile*(c: var Reporter, dir: string): Option[string] =
+proc findNimbleFile*(c: var Reporter, dir: string, amb: var bool): Option[string] =
   var nimbleFile = ""
   var found = 0
   for file in walkFiles(dir / "*.nimble"):
@@ -128,6 +128,10 @@ proc findNimbleFile*(c: var Reporter, dir: string): Option[string] =
   else:
     result = some(nimbleFile.absolutePath())
 
+proc findNimbleFile*(c: var Reporter, dir: string): Option[string] =
+  var amb = false
+  findNimbleFile(c, dir, amb)
+
 proc findNimbleFile*(c: var Reporter, pkg: PkgUrl, dir: string): Option[string] =
   var nimbleFile = pkg.projectName & ".nimble"
   debug c, pkg.projectName, "findNimbleFile: searching: " & pkg.projectName &
@@ -137,9 +141,6 @@ proc findNimbleFile*(c: var Reporter, pkg: PkgUrl, dir: string): Option[string] 
     some(nimbleFile.absolutePath())
   else:
     findNimbleFile(c, dir)
-
-proc findNimbleFile*(c: var Reporter, pkg: PkgUrl): Option[string] {.deprecated.} =
-  findNimbleFile(c, pkg, getCurrentDir())
 
 proc genRequiresLine(u: string): string = "requires \"$1\"\n" % u.escape("", "")
 

@@ -456,21 +456,18 @@ proc main(c: var AtlasContext) =
     singleArg()
     #fillPackageLookupTable(c.nimbleContext, c, )
     var amb = false
-    var nimbleFile = findNimbleFile(c, c.workspace, amb)
+    let nimbleFile = findNimbleFile(c, c.workspace)
     var nc = createNimbleContext(c, c.depsDir)
 
-    if nimbleFile.len == 0:
-      nimbleFile = c.workspace / extractProjectName(c.workspace) & ".nimble"
+    if nimbleFile.isNone:
+      let nimbleFile = c.workspace / extractProjectName(c.workspace) & ".nimble"
       writeFile(nimbleFile, "")
-    patchNimbleFile(nc, c, c.overrides, nimbleFile, args[0])
+
+    patchNimbleFile(nc, c, c.overrides, nimbleFile.get(), args[0])
     if c.errors > 0:
       discard "don't continue for 'cannot resolve'"
-    elif nimbleFile.len > 0 and not amb:
-      installDependencies(c, nc, nimbleFile)
-    elif amb:
-      error c, args[0], "ambiguous .nimble file"
-    else:
-      error c, args[0], "cannot find .nimble file"
+    elif nimbleFile.isSome:
+      installDependencies(c, nc, nimbleFile.get())
 
   of "pin":
     optSingleArg(LockFileName)

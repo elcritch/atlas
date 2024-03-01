@@ -154,7 +154,7 @@ proc enrichVersionsViaExplicitHash(versions: var seq[DependencyVersion]; x: Vers
       commit: commit, req: EmptyReqs, v: NoVar)
 
 proc collectNimbleVersions*(c: var AtlasContext; nc: NimbleContext; g: var DepGraph; idx: int): seq[string] =
-  let outerNimbleFile = c.findNimbleFile(g.nodes[idx].pkg)
+  let outerNimbleFile = c.findNimbleFile(g.nodes[idx].pkg, getCurrentDir())
   result = @[]
   if outerNimbleFile.isSome:
     let (outp, status) = exec(c, GitLog, [outerNimbleFile.get()])
@@ -166,7 +166,7 @@ proc collectNimbleVersions*(c: var AtlasContext; nc: NimbleContext; g: var DepGr
 
 proc traverseRelease(c: var AtlasContext; nc: NimbleContext; g: var DepGraph; idx: int;
                      origin: CommitOrigin; r: Commit; lastNimbleContents: var string) =
-  let nimbleFile = c.findNimbleFile(g.nodes[idx].pkg)
+  let nimbleFile = c.findNimbleFile(g.nodes[idx].pkg, getCurrentDir())
   var pv = DependencyVersion(
     version: r.v,
     commit: r.h,
@@ -445,7 +445,7 @@ proc runBuildSteps(c: var AtlasContext; g: var DepGraph) =
         let activeVersion = g.nodes[i].activeVersion
         let r = if g.nodes[i].versions.len == 0: -1 else: g.nodes[i].versions[activeVersion].req
         if r >= 0 and r < g.reqs.len and g.reqs[r].hasInstallHooks:
-          let nf = c.findNimbleFile(g.nodes[i].pkg)
+          let nf = c.findNimbleFile(g.nodes[i].pkg, g.nodes[i].ondisk)
           if nf.isSome:
             trace c, pkg.projectName, "running Nimble install hook"
             runNimScriptInstallHook c, nf.get, pkg.projectName

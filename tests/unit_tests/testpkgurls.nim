@@ -50,8 +50,8 @@ suite "nimble stuff":
     check res == some("/workspace/fakeDeps/apatheia.nimble")
 
   test "with currdir":
-    osutils.filesContext.currDir = "/workspace/fakeDeps/apatheia"
-    let res = findNimbleFile(c, u)
+    let currDir = "/workspace/fakeDeps/apatheia"
+    let res = findNimbleFile(c, u, currDir)
     check res == some("/workspace/fakeDeps/apatheia.nimble")
 
   test "with files":
