@@ -6,7 +6,7 @@
 #    distribution, for details about the copyright.
 #
 
-import std / [sets, tables, os, strutils, streams, json, jsonutils, algorithm]
+import std / [sets, tables, os, strutils, streams, json, jsonutils, algorithm, options]
 
 import context, satvars, sat, gitops, runners, reporters, nimbleparser, pkgurls, cloner, versions
 
@@ -63,12 +63,12 @@ proc readOnDisk(c: var AtlasContext; result: var DepGraph) =
   except:
     error c, configFile, "cannot read: " & configFile
 
-proc createGraph*(c: var AtlasContext; s: PkgUrl): DepGraph =
-  result = DepGraph(nodes: @[],
-    reqs: defaultReqs())
+proc createGraph*(c: var AtlasContext; s: PkgUrl, readConfig = true): DepGraph =
+  result = DepGraph(nodes: @[], reqs: defaultReqs())
   result.packageToDependency[s] = result.nodes.len
   result.nodes.add Dependency(pkg: s, versions: @[], isRoot: true, isTopLevel: true, activeVersion: -1)
-  readOnDisk(c, result)
+  if readConfig:
+    readOnDisk(c, result)
 
 proc toJson*(d: DepGraph): JsonNode =
   result = newJObject()
@@ -144,16 +144,27 @@ iterator releases(c: var AtlasContext; m: TraversalMode; versions: seq[Dependenc
   else:
     yield (FromHead, Commit(h: "", v: Version"#head"))
 
-proc findNimbleFile(g: DepGraph; idx: int): (string, int) =
-  var nimbleFile = g.nodes[idx].pkg.projectName & ".nimble"
-  var found = 0
-  if fileExists(nimbleFile):
-    inc found
+proc findNimbleFile(c: var AtlasContext, g: DepGraph; dep: var Dependency): Option[string] =
+  var nimbleFile = dep.pkg.projectName & ".nimble"
+  debug c, dep.pkg.projectName, "findNimbleFile: searching: " & dep.pkg.projectName &
+                                                " path: " & dep.ondisk
+  if not fileExists(nimbleFile):
+    result = some(nimbleFile.absolutePath())
   else:
+    var found = 0
     for file in walkFiles("*.nimble"):
       nimbleFile = file
-      inc found
-  result = (ensureMove nimbleFile, found)
+      found.inc
+    
+    if found > 1:
+      error c, dep.pkg.projectName, "ambiguous .nimble files; found: " & $found & " options"
+      result = string.none()
+    elif found == 0:
+      error c, dep.pkg.projectName, "no .nimble file found"
+      result = string.none()
+    else:
+      result = some(nimbleFile.absolutePath())
+
 
 proc enrichVersionsViaExplicitHash(versions: var seq[DependencyVersion]; x: VersionInterval) =
   let commit = extractSpecificCommit(x)
@@ -164,10 +175,10 @@ proc enrichVersionsViaExplicitHash(versions: var seq[DependencyVersion]; x: Vers
       commit: commit, req: EmptyReqs, v: NoVar)
 
 proc collectNimbleVersions*(c: var AtlasContext; nc: NimbleContext; g: var DepGraph; idx: int): seq[string] =
-  let (outerNimbleFile, found) = findNimbleFile(g, idx)
+  let outerNimbleFile = c.findNimbleFile(g, g.nodes[idx])
   result = @[]
-  if found == 1:
-    let (outp, status) = exec(c, GitLog, [outerNimbleFile])
+  if outerNimbleFile.isSome:
+    let (outp, status) = exec(c, GitLog, [outerNimbleFile.get()])
     if status == 0:
       for line in splitLines(outp):
         if line.len > 0 and not line.endsWith("^{}"):
@@ -176,15 +187,16 @@ proc collectNimbleVersions*(c: var AtlasContext; nc: NimbleContext; g: var DepGr
 
 proc traverseRelease(c: var AtlasContext; nc: NimbleContext; g: var DepGraph; idx: int;
                      origin: CommitOrigin; r: Commit; lastNimbleContents: var string) =
-  let (nimbleFile, found) = findNimbleFile(g, idx)
+  let nimbleFile = c.findNimbleFile(g, g.nodes[idx])
   var pv = DependencyVersion(
     version: r.v,
     commit: r.h,
     req: EmptyReqs, v: NoVar)
   var badNimbleFile = false
-  if found != 1:
+  if nimbleFile.isNone:
     pv.req = UnknownReqs
   else:
+    let nimbleFile = nimbleFile.get()
     when (NimMajor, NimMinor, NimPatch) == (2, 0, 0):
       # bug #110; make it compatible with Nim 2.0.0
       # ensureMove requires mutable places when version < 2.0.2
@@ -263,6 +275,7 @@ type
 proc pkgUrlToDirname(c: var AtlasContext; g: var DepGraph; d: Dependency): (string, PackageAction) =
   # XXX implement namespace support here
   var dest = g.ondisk.getOrDefault(d.pkg.url)
+  trace c, "pkgUrlToDirname:dest", $dest
   if dest.len == 0:
     if d.isTopLevel:
       dest = c.workspace
@@ -280,7 +293,9 @@ proc expand*(c: var AtlasContext; g: var DepGraph; nc: NimbleContext; m: Travers
   var i = 0
   while i < g.nodes.len:
     if not processed.containsOrIncl(g.nodes[i].pkg):
+      trace c, $g.nodes[i].pkg.projectName, "expanding"
       let (dest, todo) = pkgUrlToDirname(c, g, g.nodes[i])
+      trace c, "expanded", $dest
       g.nodes[i].ondisk = dest
       if todo == DoClone:
         let (status, _) =
@@ -451,13 +466,15 @@ proc runBuildSteps(c: var AtlasContext; g: var DepGraph) =
         let activeVersion = g.nodes[i].activeVersion
         let r = if g.nodes[i].versions.len == 0: -1 else: g.nodes[i].versions[activeVersion].req
         if r >= 0 and r < g.reqs.len and g.reqs[r].hasInstallHooks:
-          let (nf, found) = findNimbleFile(g, i)
-          if found == 1:
-            runNimScriptInstallHook c, nf, pkg.projectName
+          let nf = c.findNimbleFile(g, g.nodes[i])
+          if nf.isSome:
+            trace c, pkg.projectName, "running Nimble install hook"
+            runNimScriptInstallHook c, nf.get, pkg.projectName
         # check for nim script builders
         for p in mitems c.plugins.builderPatterns:
           let f = p[0] % pkg.projectName
           if fileExists(f):
+            trace c, pkg.projectName, "running NimScript builder"
             runNimScriptBuilder c, p, pkg.projectName
 
 proc debugFormular(c: var AtlasContext; g: var DepGraph; f: Form; s: Solution) =
