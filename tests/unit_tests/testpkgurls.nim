@@ -12,7 +12,7 @@ template setupDepsAndGraph(url: string) =
     p {.inject.} = initPatterns()
     u {.inject.} = createUrl(url, p)
     c {.inject.} = AtlasContext()
-    g {.inject.} = createGraph(c, u)
+    g {.inject.} = createGraph(c, u, readConfig = false)
     d {.inject.} = Dependency()
 
 suite "test pkgurls":
@@ -29,8 +29,8 @@ suite "test pkgurls":
 
   test "basic url prefix":
     setupDepsAndGraph("https://github.com/elcritch/nim-apatheia")
-    check $u == "https://github.com/elcritch/apatheia"
-    check u.projectName == "apatheia"
+    check $u == "https://github.com/elcritch/nim-apatheia"
+    check u.projectName == "nim-apatheia"
 
 
 suite "tests":
