@@ -6,7 +6,7 @@
 #    distribution, for details about the copyright.
 #
 
-import std/[os, osproc, sequtils, strutils]
+import std/[osproc, sequtils, strutils]
 import reporters, osutils, versions
 
 type
@@ -86,7 +86,7 @@ proc clone*(c: var Reporter; url, dest: string; retries = 5; fullClones=false): 
   for i in 1..retries:
     if execShellCmd(cmd) == 0:
       return true
-    os.sleep(i*2_000)
+    sleep(i*2_000)
 
 proc gitDescribeRefTag*(c: var Reporter; commit: string): string =
   let (lt, status) = exec(c, GitDescribe, ["--tags", commit])

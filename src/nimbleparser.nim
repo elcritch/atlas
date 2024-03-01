@@ -6,8 +6,8 @@
 #    distribution, for details about the copyright.
 #
 
-import std / [os, strutils, tables, unicode, hashes, options]
-import versions, satvars, packagesjson, reporters, gitops, parse_requires, pkgurls, compiledpatterns
+import std / [strutils, tables, unicode, hashes, options]
+import osutils, versions, satvars, packagesjson, reporters, gitops, parse_requires, pkgurls, compiledpatterns
 
 type
   DependencyStatus* = enum

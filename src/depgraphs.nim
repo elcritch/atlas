@@ -6,9 +6,9 @@
 #    distribution, for details about the copyright.
 #
 
-import std / [sets, tables, os, strutils, streams, json, jsonutils, algorithm, options]
+import std / [sets, tables, strutils, streams, json, jsonutils, algorithm, options]
 
-import context, satvars, sat, gitops, runners, reporters, nimbleparser, pkgurls, cloner, versions
+import osutils, context, satvars, sat, gitops, runners, reporters, nimbleparser, pkgurls, cloner, versions
 
 type
   DependencyVersion* = object  # Represents a specific version of a project.
