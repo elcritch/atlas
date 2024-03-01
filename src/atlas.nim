@@ -454,19 +454,18 @@ proc main(c: var AtlasContext) =
     patchNimCfg c, deps, cfgPath
   of "use":
     singleArg()
-    #fillPackageLookupTable(c.nimbleContext, c, )
-    var amb = false
-    let nimbleFile = findNimbleFile(c, c.workspace)
+    var nimbleFile = findNimbleFile(c, c.workspace)
     var nc = createNimbleContext(c, c.depsDir)
 
     if nimbleFile.isNone:
-      let nimbleFile = c.workspace / extractProjectName(c.workspace) & ".nimble"
-      writeFile(nimbleFile, "")
+      nimbleFile = some c.workspace / extractProjectName(c.workspace) & ".nimble"
+      writeFile(nimbleFile.get, "")
+      nimbleFile = findNimbleFile(c, c.workspace)
 
     patchNimbleFile(nc, c, c.overrides, nimbleFile.get(), args[0])
     if c.errors > 0:
       discard "don't continue for 'cannot resolve'"
-    elif nimbleFile.isSome:
+    else:
       installDependencies(c, nc, nimbleFile.get())
 
   of "pin":

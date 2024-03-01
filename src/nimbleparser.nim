@@ -112,7 +112,7 @@ proc parseNimbleFile*(c: NimbleContext; nimbleFile: string; p: Patterns): Requir
         else:
           result.deps.add (createUrlSkipPatterns(u), query)
 
-proc findNimbleFile*(c: var Reporter, dir: string, amb: var bool): Option[string] =
+proc findNimbleFile*(c: var Reporter, dir: string): Option[string] =
   var nimbleFile = ""
   var found = 0
   for file in walkFiles(dir / "*.nimble"):
@@ -127,10 +127,6 @@ proc findNimbleFile*(c: var Reporter, dir: string, amb: var bool): Option[string
     result = string.none()
   else:
     result = some(nimbleFile.absolutePath())
-
-proc findNimbleFile*(c: var Reporter, dir: string): Option[string] =
-  var amb = false
-  findNimbleFile(c, dir, amb)
 
 proc findNimbleFile*(c: var Reporter, pkg: PkgUrl, dir: string): Option[string] =
   var nimbleFile = pkg.projectName & ".nimble"
