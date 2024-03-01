@@ -132,23 +132,6 @@ when false:
     result = PackageDir c.depsDir / pkg.repo.string
     trace c, pkg, "dependency not found using default"
 
-  proc findNimbleFile*(c: var AtlasContext; pkg: Package; depDir = PackageDir""): string =
-    let dir = if depDir.string.len == 0: dependencyDir(c, pkg).string
-              else: depDir.string
-    result = dir / (pkg.name.string & ".nimble")
-    debug c, pkg, "findNimbleFile: searching: " & pkg.repo.string & " path: " & pkg.path.string & " dir: " & dir & " curr: " & result
-    if not fileExists(result):
-      debug c, pkg, "findNimbleFile: not found: " & result
-      result = ""
-      for file in walkFiles(dir / "*.nimble"):
-        if result.len == 0:
-          result = file
-          trace c, pkg, "nimble file found " & result
-        else:
-          error c, pkg, "ambiguous .nimble file " & result
-          return ""
-    else:
-      trace c, pkg, "nimble file found " & result
 
 when false:
   proc resolvePackageUrl(c: var AtlasContext; url: string, checkOverrides = true): Package =

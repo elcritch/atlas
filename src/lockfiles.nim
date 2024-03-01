@@ -135,8 +135,11 @@ proc genLockEntry(c: var AtlasContext;
                   cfg: CfgPath,
                   deps: HashSet[string]) =
   var amb = false
-  let nimbleFile = findNimbleFile(c, "", amb)
-  let info = extractRequiresInfo(nimbleFile)
+  let nimbleFile = findNimbleFile(c, getCurrentDir())
+  if nimbleFile.isNone:
+    error c, getCurrentDir(), "error finding nimble file"
+    return
+  let info = extractRequiresInfo(nimbleFile.get())
   let commit = getCurrentCommit()
   infoNow c, w.pkg.projectName, "calculating nimble checksum"
   let chk = c.nimbleChecksum(w.pkg.projectName, w.ondisk)

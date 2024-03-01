@@ -9,6 +9,8 @@
 import std / [strutils, tables, unicode, hashes, options]
 import osutils, versions, satvars, packagesjson, reporters, gitops, parse_requires, pkgurls, compiledpatterns
 
+export options
+
 type
   DependencyStatus* = enum
     Normal, HasBrokenNimbleFile, HasUnknownNimbleFile, HasBrokenDep
