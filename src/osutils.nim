@@ -57,3 +57,5 @@ proc nimbleExec*(cmd: string; args: openArray[string]) =
     cmdLine.add ' '
     cmdLine.add quoteShell(args[i])
   discard os.execShellCmd(cmdLine)
+
+when defined(atlasUnitTests)
