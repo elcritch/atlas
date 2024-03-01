@@ -42,20 +42,30 @@ suite "nimble stuff":
   setup:
     setupDepsAndGraph("https://github.com/elcritch/apatheia")
     osutils.filesContext.currDir = "/workspace/"
-    osutils.filesContext.absPaths["/workspace/fakeDeps/apatheia/*.nimble"] = "/workspace/fakeDeps/apatheia.nimble"
     osutils.filesContext.walkDirs["/workspace/fakeDeps/apatheia/*.nimble"] = @["/workspace/fakeDeps/apatheia.nimble"]
 
-  test "basic nimble path":
+  test "basic path":
     let dir = "/workspace/fakeDeps/apatheia"
     let res = findNimbleFile(c, u, dir)
     check res == some("/workspace/fakeDeps/apatheia.nimble")
-    echo "nimble res: ", res
 
-  test "basic nimble path using currdir":
+  test "with currdir":
     osutils.filesContext.currDir = "/workspace/fakeDeps/apatheia"
     let res = findNimbleFile(c, u)
     check res == some("/workspace/fakeDeps/apatheia.nimble")
-    echo "nimble res: ", res
+
+  test "missing":
+    osutils.filesContext.walkDirs["/workspace/fakeDeps/apatheia/*.nimble"] = @[]
+    let res = findNimbleFile(c, u, "/workspace/fakeDeps/apatheia")
+    check res == string.none
+
+  test "ambiguous":
+    osutils.filesContext.walkDirs["/workspace/fakeDeps/apatheia/*.nimble"] = @[
+      "/workspace/fakeDeps/apatheia.nimble",
+      "/workspace/fakeDeps/nim-apatheia.nimble"
+    ]
+    let res = findNimbleFile(c, u, "/workspace/fakeDeps/apatheia")
+    check res == string.none
 
 
 suite "tests":
