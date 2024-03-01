@@ -50,11 +50,11 @@ suite "nimble stuff":
     let res = findNimbleFile(c, u, dir)
     echo "nimble res: ", res
 
-  # test "basic nimble path":
-  #   osutils.filesContext.currDir = "/workspace/fakeDeps/apatheia"
-  #   let res = findNimbleFile(c, u)
-  #   check res == some("/workspace/fakeDeps/apatheia.nimble")
-  #   echo "nimble res: ", res
+  test "basic nimble path":
+    osutils.filesContext.currDir = "/workspace/fakeDeps/apatheia"
+    let res = findNimbleFile(c, u)
+    check res == some("/workspace/fakeDeps/apatheia.nimble")
+    echo "nimble res: ", res
 
 
 suite "tests":
