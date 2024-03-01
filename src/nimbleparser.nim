@@ -130,7 +130,8 @@ proc findNimbleFile*(c: var Reporter, pkg: PkgUrl, dir: string): Option[string] 
   var nimbleFile = pkg.projectName & ".nimble"
   debug c, pkg.projectName, "findNimbleFile: searching: " & pkg.projectName &
                                                 " path: " & dir
-  echo "DBG:find:dir: ", dir
+  echo "DBG:find:pkg: ", pkg, " dir: ", dir
+  assert dir != ""
   if fileExists(dir / nimbleFile):
     some(nimbleFile.absolutePath())
   else:

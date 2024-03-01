@@ -1,6 +1,7 @@
 
 import std/unittest
 import std/json
+import std/options
 
 import context, satvars, sat, gitops, runners, reporters, nimbleparser, pkgurls, cloner, versions
 import osutils
@@ -15,6 +16,10 @@ template setupDepsAndGraph(url: string) =
     c {.inject.} = AtlasContext()
     g {.inject.} = createGraph(c, u, readConfig = false)
     d {.inject.} = Dependency()
+
+  c.depsDir = "fakeDeps"
+  c.workspace = "/workspace/"
+  c.projectDir = "/workspace"
 
 suite "test pkgurls":
 
@@ -33,17 +38,23 @@ suite "test pkgurls":
     check $u == "https://github.com/elcritch/nim-apatheia"
     check u.projectName == "nim-apatheia"
 
-test "nimble stuff":
-  test "basic nimble path":
+suite "nimble stuff":
+  setup:
     setupDepsAndGraph("https://github.com/elcritch/apatheia")
-    c.depsDir = "fakeDeps"
-    c.workspace = "/workspace/"
-    c.projectDir = "/workspace"
-    osutils.filesContext.absPaths["apatheia.nimble"] = "/workspace/fakeDeps/apatheia.nimble"
-    osutils.filesContext.walkDirs["*.nimble"] = @["/workspace/fakeDeps/apatheia.nimble"]
+    osutils.filesContext.currDir = "/workspace/"
+    osutils.filesContext.absPaths["/workspace/fakeDeps/apatheia/*.nimble"] = "/workspace/fakeDeps/apatheia.nimble"
+    osutils.filesContext.walkDirs["/workspace/fakeDeps/apatheia/*.nimble"] = @["/workspace/fakeDeps/apatheia.nimble"]
 
-    let res = findNimbleFile(c, u)
+  test "basic nimble path":
+    let dir = "/workspace/fakeDeps/apatheia"
+    let res = findNimbleFile(c, u, dir)
     echo "nimble res: ", res
+
+  # test "basic nimble path":
+  #   osutils.filesContext.currDir = "/workspace/fakeDeps/apatheia"
+  #   let res = findNimbleFile(c, u)
+  #   check res == some("/workspace/fakeDeps/apatheia.nimble")
+  #   echo "nimble res: ", res
 
 
 suite "tests":

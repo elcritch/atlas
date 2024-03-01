@@ -77,7 +77,8 @@ else:
   var filesContext*: OsFileContext
 
   proc getCurrentDir*(): string =
-    filesContext.currDir
+    result = filesContext.currDir
+    echo "DBG:getCurrentDir: ", result
   proc setCurrentDir*(dir: string) =
     filesContext.currDir = dir
   proc absolutePath*(fl: string): string =
