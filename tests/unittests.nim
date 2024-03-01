@@ -4,10 +4,7 @@ import std/[unittest, os, strutils]
 
 import context, osutils, versions
 
-import unittests/testpkgurls
-
-when false:
-  from nameresolver import resolvePackage
+import unit_tests/testpkgurls
 
 let
   basicExamples = {
