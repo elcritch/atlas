@@ -62,6 +62,7 @@ when not defined(atlasUnitTests):
   export os
 else:
   import std/tables
+  export tables
   from os import `/`, execShellCmd, sleep, copyDir
   export `/`, execShellCmd, sleep, copyDir
 
@@ -73,27 +74,37 @@ else:
       absPaths*: Table[string, string]
       currDir*: string
 
-  var testFilesContext*: OsFileContext
+  var filesContext*: OsFileContext
 
   proc getCurrentDir*(): string =
-    testFilesContext.currDir
+    filesContext.currDir
   proc setCurrentDir*(dir: string) =
-    testFilesContext.currDir = dir
+    filesContext.currDir = dir
   proc absolutePath*(fl: string): string =
-    testFilesContext.absPaths[fl]
+    if fl.isAbsolute():
+      fl
+    else:
+      filesContext.absPaths[fl]
 
   iterator walkFiles*(dir: string): string =
-    for f in testFilesContext.walkDirs[dir]:
+    for f in filesContext.walkDirs[dir]:
       yield f
 
   proc fileExists*(fl: string): bool =
-    if fl in testFilesContext.fileExists:
-      return testFilesContext.fileExists[fl]
+    if fl in filesContext.fileExists:
+      result = filesContext.fileExists[fl]
+    # if not result:
+    #   let fl = fl.splitPath().tail
+    #   if fl in filesContext.fileExists:
+    #     result = filesContext.fileExists[fl]
+    echo "DBG:fileExsists: ", result, " <- ", fl
 
   proc dirExists*(dir: string): bool =
-    if dir in testFilesContext.dirExists:
-      return testFilesContext.dirExists[dir]
+    if dir in filesContext.dirExists:
+      result = filesContext.dirExists[dir]
     else:
-      for (fl, exist) in testFilesContext.fileExists.pairs():
+      for (fl, exist) in filesContext.fileExists.pairs():
         if fl.isRelativeTo(dir):
-          return true
+          result = true
+          break
+    echo "DBG:fileExsists: ", result, " <- ", dir

@@ -130,12 +130,14 @@ proc findNimbleFile*(c: var Reporter, pkg: PkgUrl, dir: string): Option[string] 
   var nimbleFile = pkg.projectName & ".nimble"
   debug c, pkg.projectName, "findNimbleFile: searching: " & pkg.projectName &
                                                 " path: " & dir
-  if not fileExists(dir / nimbleFile):
+  echo "DBG:find:dir: ", dir
+  if fileExists(dir / nimbleFile):
     some(nimbleFile.absolutePath())
   else:
     findNimbleFile(c, dir)
 
 proc findNimbleFile*(c: var Reporter, pkg: PkgUrl): Option[string] =
+  echo "DBG:find:pkg: ", pkg
   findNimbleFile(c, pkg, getCurrentDir())
 
 proc genRequiresLine(u: string): string = "requires \"$1\"\n" % u.escape("", "")
