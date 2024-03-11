@@ -56,37 +56,3 @@ proc `==`*(a, b: PkgUrl): bool {.inline.} = a.u == b.u
 proc hash*(a: PkgUrl): Hash {.inline.} = hash(a.u)
 
 proc isFileProtocol*(s: PkgUrl): bool = s.u.startsWith("file://")
-
-# proc dir*(s: PkgUrl): string =
-#   if isFileProtocol(s):
-#     result = substr(s.u, len("file://"))
-#   else:
-#     result = s.projectName
-
-# proc dependencyDir*(c: var AtlasContext; pkg: Package): PackageDir =
-#   template checkDir(dir: string) =
-#     if dir.len > 0 and dirExists(dir):
-#       debug c, pkg, "dependencyDir: found: " & dir
-#       return PackageDir dir
-#     else:
-#       debug c, pkg, "dependencyDir: not found: " & dir
-
-#   debug c, pkg, "dependencyDir: check: pth: " & pkg.path.string & " cd: " & getCurrentDir() & " ws: " & c.workspace
-#   if pkg.exists:
-#     debug c, pkg, "dependencyDir: exists: " & pkg.path.string
-#     return PackageDir pkg.path.string.absolutePath
-#   if c.workspace.lastPathComponent == pkg.repo.string:
-#     debug c, pkg, "dependencyDir: workspace: " & c.workspace
-#     return PackageDir c.workspace
-
-#   if pkg.path.string.len > 0:
-#     checkDir pkg.path.string
-#     checkDir c.workspace / pkg.path.string
-#     checkDir c.depsDir / pkg.path.string
-
-#   checkDir c.workspace / pkg.repo.string
-#   checkDir c.depsDir / pkg.repo.string
-#   checkDir c.workspace / pkg.name.string
-#   checkDir c.depsDir / pkg.name.string
-#   result = PackageDir c.depsDir / pkg.repo.string
-#   trace c, pkg, "dependency not found using default"
