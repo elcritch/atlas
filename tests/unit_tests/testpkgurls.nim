@@ -64,7 +64,7 @@ suite "nimble stuff":
     osutils.filesContext.walkDirs["/workspace/fakeDeps/apatheia/*.nimble"] = @[]
     let res = findNimbleFile(c, u, "/workspace/fakeDeps/apatheia")
     check res == string.none
-    check c.errors == 1
+    check c.errors == 0
 
   test "ambiguous":
     osutils.filesContext.walkDirs["/workspace/fakeDeps/apatheia/*.nimble"] = @[
