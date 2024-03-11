@@ -124,7 +124,7 @@ proc findNimbleFile*(c: var Reporter, dir: string): Option[string] =
     error c, dir, "ambiguous .nimble files; found: " & $found & " options"
     result = string.none()
   elif found == 0:
-    error c, dir, "no nimble file found"
+    warn c, dir, "no nimble file found"
     result = string.none()
   else:
     result = some(nimbleFile.absolutePath())
