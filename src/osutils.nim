@@ -61,6 +61,14 @@ proc nimbleExec*(cmd: string; args: openArray[string]) =
 when not defined(atlasUnitTests):
   export os
 else:
+
+  ## This portion of the module sets up shims for a few file operations
+  ## used for unit testing proc's which rely on file io.
+  ## 
+  ## It greatly simplifies testing handling of various nimble file cases
+  ## without needing to create integration tests.
+  ##
+
   import std/tables
   export tables
   from os import `/`, execShellCmd, sleep, copyDir
@@ -78,7 +86,6 @@ else:
 
   proc getCurrentDir*(): string =
     result = filesContext.currDir
-    # echo "DBG:getCurrentDir: ", result
   proc setCurrentDir*(dir: string) =
     filesContext.currDir = dir
   proc absolutePath*(fl: string): string =
@@ -92,8 +99,6 @@ else:
   proc fileExists*(fl: string): bool =
     if fl in filesContext.fileExists:
       result = filesContext.fileExists[fl]
-    # echo "DBG:fileExsists: ", result, " <- ", fl
-
   proc dirExists*(dir: string): bool =
     if dir in filesContext.dirExists:
       result = filesContext.dirExists[dir]
@@ -102,4 +107,3 @@ else:
         if fl.isRelativeTo(dir):
           result = true
           break
-    # echo "DBG:fileExsists: ", result, " <- ", dir
