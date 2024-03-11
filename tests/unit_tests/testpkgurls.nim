@@ -1,6 +1,6 @@
 
 import std/unittest
-import std/json
+import std/strutils
 import std/options
 
 import context, satvars, sat, gitops, runners, reporters, nimbleparser, pkgurls, cloner, versions
@@ -39,45 +39,48 @@ suite "test pkgurls":
     check u.projectName == "nim-proj"
 
 suite "nimble stuff":
+  proc toDirSep(s: string): string =
+    result = s.replace("/", $DirSep)
+
   setup:
     setupDepsAndGraph("https://github.com/example/nim-proj")
     osutils.filesContext.currDir = "/workspace/"
     osutils.filesContext.walkDirs["/workspace/fakeDeps/apatheia/*.nimble"] = @["/workspace/fakeDeps/apatheia.nimble"]
 
   test "basic path":
-    let dir = "" / "workspace" / "fakeDeps" / "apatheia"
+    let dir = "/workspace/fakeDeps/apatheia".toDirSep
     let res = findNimbleFile(c, u, dir)
-    check res == some("" / "workspace" / "fakeDeps"/ "apatheia.nimble")
+    check res == some("/workspace/fakeDeps/apatheia.nimble".toDirSep)
 
   test "with currdir":
-    let currDir = "/workspace/fakeDeps/apatheia"
+    let currDir = "/workspace/fakeDeps/apatheia".toDirSep
     let res = findNimbleFile(c, u, currDir)
-    check res == some("/workspace/fakeDeps/apatheia.nimble")
+    check res == some("/workspace/fakeDeps/apatheia.nimble".toDirSep)
 
   test "with files":
-    let dir = "/workspace/fakeDeps/apatheia"
+    let dir = "/workspace/fakeDeps/apatheia".toDirSep
     osutils.filesContext.currDir = dir
     let res = findNimbleFile(c, dir)
-    check res == some("/workspace/fakeDeps/apatheia.nimble")
+    check res == some("/workspace/fakeDeps/apatheia.nimble".toDirSep)
 
   test "missing":
-    osutils.filesContext.walkDirs["/workspace/fakeDeps/apatheia/*.nimble"] = @[]
-    let res = findNimbleFile(c, u, "/workspace/fakeDeps/apatheia")
+    osutils.filesContext.walkDirs["/workspace/fakeDeps/apatheia/*.nimble".toDirSep] = @[]
+    let res = findNimbleFile(c, u, "/workspace/fakeDeps/apatheia".toDirSep)
     check res == string.none
     check c.errors == 0
 
   test "ambiguous":
-    osutils.filesContext.walkDirs["/workspace/fakeDeps/apatheia/*.nimble"] = @[
-      "/workspace/fakeDeps/apatheia.nimble",
-      "/workspace/fakeDeps/nim-apatheia.nimble"
+    osutils.filesContext.walkDirs["/workspace/fakeDeps/apatheia/*.nimble".toDirSep] = @[
+      "/workspace/fakeDeps/apatheia.nimble".toDirSep,
+      "/workspace/fakeDeps/nim-apatheia.nimble".toDirSep
     ]
-    let res = findNimbleFile(c, u, "/workspace/fakeDeps/apatheia")
+    let res = findNimbleFile(c, u, "/workspace/fakeDeps/apatheia".toDirSep)
     check res == string.none
     check c.errors == 1
 
   test "check module name recovery":
-    let res = findNimbleFile(c, u, "/workspace/fakeDeps/apatheia")
-    check res == some("/workspace/fakeDeps/apatheia.nimble")
+    let res = findNimbleFile(c, u, "/workspace/fakeDeps/apatheia".toDirSep)
+    check res == some("/workspace/fakeDeps/apatheia.nimble".toDirSep)
 
 suite "tests":
   test "basic":

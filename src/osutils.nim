@@ -71,8 +71,8 @@ else:
 
   import std/tables
   export tables
-  from os import `/`, execShellCmd, sleep, copyDir
-  export `/`, execShellCmd, sleep, copyDir
+  from os import `/`, execShellCmd, sleep, copyDir, DirSep
+  export `/`, execShellCmd, sleep, copyDir, DirSep
 
   type
     OsFileContext* = object
