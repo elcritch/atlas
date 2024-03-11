@@ -130,8 +130,6 @@ proc findNimbleFile*(c: var Reporter, dir: string): Option[string] =
     result = some(nimbleFile.absolutePath())
   debug c, dir, "findNimbleFile: found: " & nimbleFile
 
-var count = 0
-
 proc findNimbleFile*(c: var Reporter, pkg: PkgUrl, dir: string): Option[string] =
   var nimbleFile = pkg.projectName & ".nimble"
   debug c, pkg.projectName, "findNimbleFile: searching: " & pkg.projectName &
