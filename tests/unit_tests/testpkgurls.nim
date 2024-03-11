@@ -1,6 +1,7 @@
 
 import std/unittest
 import std/strutils
+import std/paths
 import std/options
 
 import context, satvars, sat, gitops, runners, reporters, nimbleparser, pkgurls, cloner, versions
