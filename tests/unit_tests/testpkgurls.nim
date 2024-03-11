@@ -9,6 +9,9 @@ import compiledpatterns
 import pkgurls
 import depgraphs
 
+proc toDirSep(s: string): string =
+  result = s.replace("/", $DirSep)
+
 template setupDepsAndGraph(url: string) =
   var
     p {.inject.} = initPatterns()
@@ -18,8 +21,8 @@ template setupDepsAndGraph(url: string) =
     d {.inject.} = Dependency()
 
   c.depsDir = "fakeDeps"
-  c.workspace = "/workspace/"
-  c.projectDir = "/workspace"
+  c.workspace = "/workspace/".toDirSep
+  c.projectDir = "/workspace".toDirSep
 
 suite "test pkgurls":
 
@@ -39,16 +42,15 @@ suite "test pkgurls":
     check u.projectName == "nim-proj"
 
 suite "nimble stuff":
-  proc toDirSep(s: string): string =
-    result = s.replace("/", $DirSep)
 
   setup:
     setupDepsAndGraph("https://github.com/example/nim-proj")
-    osutils.filesContext.currDir = "/workspace/"
-    osutils.filesContext.walkDirs["/workspace/fakeDeps/apatheia/*.nimble"] = @["/workspace/fakeDeps/apatheia.nimble"]
+    osutils.filesContext.currDir = "/workspace/".toDirSep
+    osutils.filesContext.walkDirs["/workspace/fakeDeps/apatheia/*.nimble".toDirSep] = @["/workspace/fakeDeps/apatheia.nimble".toDirSep]
 
   test "basic path":
     let dir = "/workspace/fakeDeps/apatheia".toDirSep
+    echo "BAISC PATH: ", dir
     let res = findNimbleFile(c, u, dir)
     check res == some("/workspace/fakeDeps/apatheia.nimble".toDirSep)
 
