@@ -82,10 +82,10 @@ proc testSemVer2(expected: string) =
         echo "expected ", expected, " but got ", outp
         raise newException(AssertionDefect, "Test failed!")
     else:
-      echo "\n\n<<<<<<<<<<<<<<<< failed "
-      echo "testSemVer2:command: ", cmd
+      echo "TESTSEMVER2:command: ", cmd
       echo "testSemVer2:pwd: ", getCurrentDir()
-      echo "testSemVer2:failed command:\n", outp
+      echo "\n\n<<<<<<<<<<<<<<<< failed "
+      echo "\ntestSemVer2:failed command:\n\n", outp
       echo ">>>>>>>>>>>>>>>> failed\n"
       assert false, "testSemVer2"
 
