@@ -336,10 +336,6 @@ proc main(c: var AtlasContext) =
     if c.projectDir == c.workspace or c.projectDir == c.depsDir:
       fatal action & " command must be executed in a project, not in the workspace"
 
-  proc findCurrentNimble(): string =
-    for x in walkPattern("*.nimble"):
-      return x
-
   var autoinit = false
   var explicitProjectOverride = false
   var explicitDepsDirOverride = false
@@ -491,16 +487,16 @@ proc main(c: var AtlasContext) =
     # projectCmd()
     if args.len > 1:
       fatal "install command takes a single argument"
-    var nimbleFile = ""
+    var nimbleFile: Option[string]
     if args.len == 1:
-      nimbleFile = args[0]
+      nimbleFile = some args[0]
     else:
-      nimbleFile = findCurrentNimble()
-    if nimbleFile.len == 0:
+      nimbleFile = findNimbleFile(c, getCurrentDir())
+    if nimbleFile.isNone:
       fatal "could not find a .nimble file"
     else:
       var nc = createNimbleContext(c, c.depsDir)
-      installDependencies(c, nc, nimbleFile)
+      installDependencies(c, nc, nimbleFile.get())
   of "refresh":
     noArgs()
     updatePackages(c, c.depsDir)
