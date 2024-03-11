@@ -113,6 +113,10 @@ proc parseNimbleFile*(c: NimbleContext; nimbleFile: string; p: Patterns): Requir
           result.deps.add (createUrlSkipPatterns(u), query)
 
 proc findNimbleFile*(c: var Reporter, dir: string): Option[string] =
+  ## Search the given directory for a Nimble file.
+  ##
+  ## An error is reported if there are multiple Nimble files 
+  ## which results in an ambiguity.
   var nimbleFile = ""
   var found = 0
 
@@ -131,6 +135,11 @@ proc findNimbleFile*(c: var Reporter, dir: string): Option[string] =
   debug c, dir, "findNimbleFile: found: " & nimbleFile
 
 proc findNimbleFile*(c: var Reporter, pkg: PkgUrl, dir: string): Option[string] =
+  ## Search the given directory for a Nimble file starting with the 
+  ## name from the package's URL.
+  ##
+  ## An error is reported if there are multiple Nimble files 
+  ## which results in an ambiguity.
   var nimbleFile = pkg.projectName & ".nimble"
   debug c, pkg.projectName, "findNimbleFile: searching: " & pkg.projectName &
                                                 " path: " & dir
