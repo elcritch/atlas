@@ -78,7 +78,11 @@ proc testSemVer2(expected: string) =
     if outp.contains expected:
       discard "fine"
     else:
-      echo "expected ", expected, " but got ", outp
+      echo "# Failure #"
+      echo "## Expected:\n", expected
+      echo ""
+      echo "## Actual:\n", outp
+      echo ""
       raise newException(AssertionDefect, "Test failed!")
 
 proc testMinVer() =
