@@ -73,7 +73,6 @@ proc cloneUrl*(c: var AtlasContext,
         else:
           (OtherError, "exernal program failed: " & hgCmdStr)
   else:
-    echo "CLONING: "
     if gitops.clone(c, url.url, dest, fullClones=true): # gitops.clone has buit-in retrying
       (Ok, "")
     else:
