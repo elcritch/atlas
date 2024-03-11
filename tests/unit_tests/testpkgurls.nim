@@ -45,9 +45,9 @@ suite "nimble stuff":
     osutils.filesContext.walkDirs["/workspace/fakeDeps/apatheia/*.nimble"] = @["/workspace/fakeDeps/apatheia.nimble"]
 
   test "basic path":
-    let dir = "/workspace/fakeDeps/apatheia"
+    let dir = "" / "workspace" / "fakeDeps" / "apatheia"
     let res = findNimbleFile(c, u, dir)
-    check res == some("/workspace/fakeDeps/apatheia.nimble")
+    check res == some("" / "workspace" / "fakeDeps"/ "apatheia.nimble")
 
   test "with currdir":
     let currDir = "/workspace/fakeDeps/apatheia"
