@@ -152,7 +152,7 @@ proc integrationTest() =
   # Test installation of some "important_packages" which we are sure
   # won't disappear in the near or far future. Turns out `nitter` has
   # quite some dependencies so it suffices:
-  exec atlasExe & " --verbosity:normal --keepWorkspace use https://github.com/zedeus/nitter"
+  exec atlasExe & " --verbosity:trace --keepWorkspace use https://github.com/zedeus/nitter"
   discard sameDirContents("expected", ".")
 
 proc cleanupIntegrationTest() =
