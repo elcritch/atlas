@@ -46,10 +46,13 @@ proc `==`*(a, b: Requirements): bool =
 proc updatePackages*(c: var Reporter; depsDir: string) =
   if dirExists(depsDir / DefaultPackagesSubDir):
     withDir(c, depsDir / DefaultPackagesSubDir):
+      trace c, getCurrentDir(), "updating packages"
+      echo "TRY CLONING PACKAGES"
       gitPull(c, DefaultPackagesSubDir)
   else:
     withDir c, depsDir:
       trace c, getCurrentDir(), "cloning packages"
+      echo "TRY CLONING PACKAGES"
       let success = clone(c, "https://github.com/nim-lang/packages", DefaultPackagesSubDir)
       if not success:
         error c, DefaultPackagesSubDir, "cannot clone packages repo"
