@@ -86,7 +86,7 @@ proc clone*(c: var Reporter; url, dest: string; retries = 5; fullClones=false): 
   debug c, url, "cloning using command: " & cmd
   for i in 1..retries:
     let res = execShellCmd(cmd)
-    debug c, url, "cloning status: " & res
+    debug c, url, "cloning status: " & $res
     if res == 0:
       return true
     trace c, url, "trying to clone again"
