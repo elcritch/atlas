@@ -49,6 +49,7 @@ proc updatePackages*(c: var Reporter; depsDir: string) =
       gitPull(c, DefaultPackagesSubDir)
   else:
     withDir c, depsDir:
+      trace c, getCurrentDir(), "cloning packages"
       let success = clone(c, "https://github.com/nim-lang/packages", DefaultPackagesSubDir)
       if not success:
         error c, DefaultPackagesSubDir, "cannot clone packages repo"
