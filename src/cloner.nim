@@ -53,9 +53,11 @@ proc cloneUrl*(c: var AtlasContext,
   infoNow c, url.projectName, "Cloning url: " & modurl
 
   # Checking repo with git
+  trace c, "atlas cloner", "checking repo " & $url
   let gitCmdStr = "git ls-remote --quiet --tags " & modurl
   var success = execCmdEx(gitCmdStr)[1] == QuitSuccess
   if not success and isGitHub:
+    trace c, "atlas cloner", "failed check ls-remote..."
     # retry multiple times to avoid annoying GitHub timeouts:
     success = retryUrl(gitCmdStr, modurl, c, url.projectName, false)
 
