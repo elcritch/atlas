@@ -561,6 +561,10 @@ proc main =
   var c = AtlasContext(projectDir: getCurrentDir(), currentDir: getCurrentDir(), workspace: "")
   try:
     main(c)
+  except Exception as err:
+     echo repr err
+  except Defect as err:
+     echo repr err
   finally:
     writePendingMessages(c)
   if c.errors > 0:
