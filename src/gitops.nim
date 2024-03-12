@@ -85,7 +85,9 @@ proc clone*(c: var Reporter; url, dest: string; retries = 5; fullClones=false): 
   let cmd = $GitClone & " " & extraArgs & " " & quoteShell(url) & " " & dest
   debug c, url, "cloning using command: " & cmd
   for i in 1..retries:
-    if execShellCmd(cmd) == 0:
+    let res = execShellCmd(cmd)
+    debug c, url, "cloning status: " & res
+    if res == 0:
       return true
     trace c, url, "trying to clone again"
     sleep(i*2_000)
