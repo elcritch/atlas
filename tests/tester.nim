@@ -13,15 +13,6 @@ var atlasExe = absolutePath("bin" / "atlas".addFileExt(ExeExt))
 if execShellCmd("nim c -o:$# -d:debug src/atlas.nim" % [atlasExe]) != 0:
   quit("FAILURE: compilation of atlas failed")
 
-when defined(linux):
-  atlasExe = "time -v " & atlasExe
-else:
-  atlasExe = "time " & atlasExe
-
-when defined(linux):
-  echo "DF: "
-  echo execCmdEx("df -h")
-
 proc sameDirContents(expected, given: string): bool =
   result = true
   for _, e in walkDir(expected):

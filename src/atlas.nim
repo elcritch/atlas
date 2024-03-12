@@ -562,9 +562,14 @@ proc main =
   try:
     main(c)
   except Exception as err:
-     echo repr err
+    echo "Atlas error: "
+    echo repr err
   except Defect as err:
-     echo repr err
+    echo "Atlas Defect: "
+    echo repr err
+  except CatchableError as err:
+    echo "Atlas catchable error: "
+    echo repr err
   finally:
     writePendingMessages(c)
   if c.errors > 0:
