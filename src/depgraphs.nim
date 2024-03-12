@@ -119,6 +119,7 @@ iterator releases(c: var AtlasContext;
                   versions: seq[DependencyVersion];
                   nimbleCommits: seq[string]): (CommitOrigin, Commit) =
   let cc = c.getCurrentCommit()
+  trace c, pkg.projectName, "iterating commit " & $cc
   if cc.isSome:
     case m
     of AllReleases:
@@ -160,7 +161,7 @@ iterator releases(c: var AtlasContext;
 
       finally:
         # discard exec(c, GitCheckout, [cc.get()])
-        trace c, pkg.projectName, "checking out commit: " & cc.get()
+        trace c, pkg.projectName, "attempt to checkout out " & cc.get()
         c.checkoutGitCommit(pkg.projectName, cc.get())
     of CurrentCommit:
       yield (FromHead, Commit(h: "", v: Version"#head"))
@@ -191,7 +192,7 @@ proc traverseRelease(c: var AtlasContext; nc: NimbleContext; g: var DepGraph; id
                      origin: CommitOrigin; r: Commit; lastNimbleContents: var string) =
   let pkg = g.nodes[idx].pkg
   let nimbleFile = g.nodes[idx].nimbleFile
-  # debug c, pkg.projectName, "traverseRelease: origin: " & $origin & " commit: " & $r
+  debug c, pkg.projectName, "traverseRelease: origin: " & $origin & " commit: " & $r
   var pv = DependencyVersion(
     version: r.v,
     commit: r.h,
@@ -254,7 +255,7 @@ proc traverseDependency(c: var AtlasContext; nc: NimbleContext; g: var DepGraph;
   let nimbleVersions = collectNimbleVersions(c, g.nodes[idx])
 
   for (origin, r) in releases(c, m, g.nodes[idx].pkg, versions, nimbleVersions):
-    # trace c, g.nodes[idx].pkg.projectName, "traverseDependency: " & $c.getCurrentCommit()
+    trace c, g.nodes[idx].pkg.projectName, "traverseDependency: " & $c.getCurrentCommit()
     traverseRelease c, nc, g, idx, origin, r, lastNimbleContents
   debug c, g.nodes[idx].pkg.projectName, "traverseDependencies: " & $g.nodes[idx].versions.mapIt($it.version & " <- " & ($(it.commit & "000000")[0..5]))
 
