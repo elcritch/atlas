@@ -47,7 +47,7 @@ proc updatePackages*(c: var Reporter; depsDir: string) =
   if dirExists(depsDir / DefaultPackagesSubDir):
     withDir(c, depsDir / DefaultPackagesSubDir):
       trace c, getCurrentDir(), "updating packages"
-      echo "TRY CLONING PACKAGES"
+      echo "TRY UPDATING PACKAGES"
       gitPull(c, DefaultPackagesSubDir)
   else:
     withDir c, depsDir:

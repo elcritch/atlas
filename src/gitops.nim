@@ -87,6 +87,7 @@ proc clone*(c: var Reporter; url, dest: string; retries = 5; fullClones=false): 
   for i in 1..retries:
     if execShellCmd(cmd) == 0:
       return true
+    trace c, url, "trying to clone again"
     sleep(i*2_000)
 
 proc gitDescribeRefTag*(c: var Reporter; commit: string): string =
