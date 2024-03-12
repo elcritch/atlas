@@ -135,6 +135,8 @@ proc listFiles*(c: var Reporter): seq[string] =
 
 proc checkoutGitCommit*(c: var Reporter; p, commit: string) =
   debug(c, p, "checking out commit " & commit)
+  echo getStackTrace()
+  echo ""
   let (currentCommit, statusA) = exec(c, GitCurrentCommit, [])
   if statusA == 0 and currentCommit.strip() == commit:
     info(c, p, "updated package to " & commit)
