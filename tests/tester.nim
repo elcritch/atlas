@@ -81,7 +81,7 @@ end of selection
 proc testSemVer2(expected: string) =
   createDir "semproject"
   withDir "semproject":
-    let cmd = atlasExe & " --full --keepWorkspace --resolver=SemVer --colors:off --list use proj_a"
+    let cmd = atlasExe & " --verbosity:debug --full --keepWorkspace --resolver=SemVer --colors:off --list use proj_a"
     let (outp, status) = execCmdEx(cmd)
     if outp.contains expected:
       discard "fine"
