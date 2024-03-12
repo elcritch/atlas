@@ -69,6 +69,11 @@ const
 end of selection
 """
 
+template withTestDir(dir: string, blk: untyped) =
+  echo "Running test in dir: ", dir
+  withDir dir:
+    `blk`
+
 proc testSemVer2(expected: string) =
   createDir "semproject"
   withDir "semproject":
@@ -98,7 +103,7 @@ proc testMinVer() =
     else:
       assert false, outp
 
-withDir "tests/ws_semver2":
+withTestDir "tests/ws_semver2":
   try:
     buildGraph()
     testSemVer2(SemVerExpectedResult)
@@ -112,7 +117,7 @@ withDir "tests/ws_semver2":
     removeDir "proj_c"
     removeDir "proj_d"
 
-withDir "tests/ws_semver2":
+withTestDir "tests/ws_semver2":
   try:
     buildGraphNoGitTags()
     testSemVer2(SemVerExpectedResultNoGitTags)
