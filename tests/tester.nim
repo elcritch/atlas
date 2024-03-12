@@ -20,7 +20,7 @@ else:
 
 when defined(linux):
   echo "DF: "
-  execShellCmd("df -h")
+  echo execShell("df -h")
 
 proc sameDirContents(expected, given: string): bool =
   result = true
