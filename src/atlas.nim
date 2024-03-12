@@ -214,9 +214,12 @@ proc installDependencies(c: var AtlasContext; nc: var NimbleContext; nimbleFile:
   let (dir, pkgname, _) = splitFile(nimbleFile)
   info c, pkgname, "installing dependencies for " & pkgname & ".nimble"
   var g = createGraph(c, createUrlSkipPatterns(dir))
+  trace c, pkgname, "traversing depency loop"
   let paths = traverseLoop(c, nc, g)
+  trace c, pkgname, "done traversing depencies"
   let cfgPath = if CfgHere in c.flags: CfgPath c.currentDir else: findCfgDir(c)
   patchNimCfg(c, paths, cfgPath)
+  trace c, pkgname, "executing post install actions"
   afterGraphActions c, g
 
 proc updateDir(c: var AtlasContext; dir, filter: string) =
@@ -454,9 +457,11 @@ proc main(c: var AtlasContext) =
     var nc = createNimbleContext(c, c.depsDir)
 
     if nimbleFile.isNone:
+      trace c, getCurrentDir().relativePath(c.workspace), "no nimble file found for project"
       nimbleFile = some c.workspace / extractProjectName(c.workspace) & ".nimble"
       writeFile(nimbleFile.get, "")
       nimbleFile = findNimbleFile(c, c.workspace)
+      trace c, getCurrentDir().relativePath(c.workspace), "wrote new nimble file"
 
     patchNimbleFile(nc, c, c.overrides, nimbleFile.get(), args[0])
     if c.errors > 0:
