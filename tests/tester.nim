@@ -69,14 +69,16 @@ const
 end of selection
 """
 
-template withTestDir(dir: string, blk: untyped) =
-  echo "\n# Running test in dir: ", dir, "\n"
+template withTestDir(dir: string, desc: string, blk: untyped) =
+  echo "\n# Running test ", desc, " in dir: ", dir, "\n"
   withDir dir:
     `blk`
+  echo "\n## Finished running test in dir: ", dir, "\n"
 
 proc testSemVer2(expected: string) =
   createDir "semproject"
   withDir "semproject":
+    echo "## Running test in subdir `semproject`"
     let cmd = atlasExe & " --verbosity:debug --full --keepWorkspace --resolver=SemVer --colors:off --list use proj_a"
     let (outp, status) = execCmdEx(cmd)
     if outp.contains expected:
@@ -90,6 +92,7 @@ proc testSemVer2(expected: string) =
       echo ""
       echo ""
       raise newException(AssertionDefect, "Test failed!")
+  echo "### Done Running test in subdir `semproject`"
 
 proc testMinVer() =
   buildGraph()
@@ -105,7 +108,7 @@ proc testMinVer() =
     else:
       assert false, outp
 
-withTestDir "tests/ws_semver2":
+withTestDir "tests/ws_semver2", "semver2 plain":
   try:
     buildGraph()
     testSemVer2(SemVerExpectedResult)
@@ -119,7 +122,7 @@ withTestDir "tests/ws_semver2":
     removeDir "proj_c"
     removeDir "proj_d"
 
-withTestDir "tests/ws_semver2":
+withTestDir "tests/ws_semver2", "semver2 no git tags":
   try:
     buildGraphNoGitTags()
     testSemVer2(SemVerExpectedResultNoGitTags)
