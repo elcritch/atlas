@@ -137,6 +137,7 @@ proc checkoutGitCommit*(c: var Reporter; p, commit: string) =
   debug(c, p, "checking out commit " & commit)
   let (currentCommit, statusA) = exec(c, GitCurrentCommit, [])
   if statusA == 0 and currentCommit.strip() == commit:
+    info(c, p, "updated package to " & commit)
     return
 
   let (outp, statusB) = exec(c, GitCheckout, [commit])
@@ -147,6 +148,8 @@ proc checkoutGitCommit*(c: var Reporter; p, commit: string) =
 
 proc checkoutGitCommitFull*(c: var Reporter; p, commit: string; fullClones: bool) =
   var smExtraArgs: seq[string] = @[]
+
+  trace(c, p, "attempt to checkout out package commit " & commit)
 
   if not fullClones and commit.len == 40:
     smExtraArgs.add "--depth=1"
