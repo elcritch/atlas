@@ -18,6 +18,9 @@ when defined(linux):
 else:
   atlasExe = "time " & atlasExe
 
+when defined(linux):
+  echo "DF: "
+  execShellCmd("df -h")
 
 proc sameDirContents(expected, given: string): bool =
   result = true
