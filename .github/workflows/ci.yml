@@ -19,9 +19,9 @@ jobs:
           # - os: linux
           #   cpu: i386
           #   nim_branch: devel
-          # - os: macos
-          #   cpu: amd64
-          #   nim_branch: devel
+          - os: macos
+            cpu: amd64
+            nim_branch: devel
           # - os: windows
           #   cpu: amd64
           #   nim_branch: devel
