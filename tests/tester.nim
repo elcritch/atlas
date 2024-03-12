@@ -78,9 +78,6 @@ proc testSemVer2(expected: string) =
   createDir "semproject"
   withDir "semproject":
     let cmd = atlasExe & " --verbosity:debug --full --keepWorkspace --resolver=SemVer --colors:off --list use proj_a"
-    echo "RUN FIRST: "
-    discard execShellCmd(cmd)
-    echo "RUN NORMAL: "
     let (outp, status) = execCmdEx(cmd)
     if outp.contains expected:
       discard "fine"
