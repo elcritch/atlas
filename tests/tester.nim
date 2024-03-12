@@ -9,9 +9,14 @@ if execShellCmd("nim c -d:debug -r tests/unittests.nim") != 0:
 
 var failures = 0
 
-let atlasExe = absolutePath("bin" / "atlas".addFileExt(ExeExt))
+var atlasExe = absolutePath("bin" / "atlas".addFileExt(ExeExt))
 if execShellCmd("nim c -o:$# -d:release src/atlas.nim" % [atlasExe]) != 0:
   quit("FAILURE: compilation of atlas failed")
+
+when defined(linux):
+  atlasExe = "time -v " & atlasExe
+else:
+  atlasExe = "time " & atlasExe
 
 
 proc sameDirContents(expected, given: string): bool =
