@@ -70,7 +70,7 @@ end of selection
 """
 
 template withTestDir(dir: string, blk: untyped) =
-  echo "Running test in dir: ", dir
+  echo "\n# Running test in dir: ", dir, "\n"
   withDir dir:
     `blk`
 
