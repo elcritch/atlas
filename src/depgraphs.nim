@@ -178,15 +178,9 @@ proc enrichVersionsViaExplicitHash(versions: var seq[DependencyVersion]; x: Vers
       commit: commit, req: EmptyReqs, v: NoVar)
 
 proc collectNimbleVersions*(c: var AtlasContext; dep: var Dependency): seq[string] =
-  # let outerNimbleFile = c.findNimbleFile(g.nodes[idx].pkg, getCurrentDir())
   result = @[]
   if dep.nimbleFile.isSome:
-    let (outp, status) = exec(c, GitLog, [dep.nimbleFile.get()])
-    if status == 0:
-      for line in splitLines(outp):
-        if line.len > 0 and not line.endsWith("^{}"):
-          result.add line
-    result.reverse()
+    result = getFileHashes(c, dep.nimbleFile.get())
   trace c, dep.pkg.projectName, "nimbleVersions: " & $result
 
 proc traverseRelease(c: var AtlasContext; nc: NimbleContext; g: var DepGraph; idx: int;

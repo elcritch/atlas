@@ -6,7 +6,7 @@
 #    distribution, for details about the copyright.
 #
 
-import std/[osproc, sequtils, strutils, options]
+import std/[osproc, sequtils, strutils, options, algorithm]
 import reporters, osutils, versions
 
 type
@@ -95,6 +95,15 @@ proc clone*(c: var Reporter; url, dest: string; retries = 5; fullClones=false): 
 proc gitDescribeRefTag*(c: var Reporter; commit: string): string =
   let (lt, status) = exec(c, GitDescribe, ["--tags", commit])
   result = if status == 0: strutils.strip(lt) else: ""
+
+proc getFileHashes*(c: var Reporter; nimbleFile: string): seq[string] =
+  result = @[]
+  let (outp, status) = exec(c, GitLog, [nimbleFile])
+  if status == 0:
+    for line in splitLines(outp):
+      if line.len > 0 and not line.endsWith("^{}"):
+        result.add line
+  result.reverse()
 
 proc getLastTaggedCommit*(c: var Reporter): string =
   let (ltr, status) = exec(c, GitLastTaggedRef, [])
