@@ -180,7 +180,7 @@ proc enrichVersionsViaExplicitHash(versions: var seq[DependencyVersion]; x: Vers
 proc collectNimbleVersions*(c: var AtlasContext; dep: var Dependency): seq[string] =
   result = @[]
   if dep.nimbleFile.isSome:
-    result = getFileHashes(c, dep.nimbleFile.get())
+    result = gitops.lookupFileHashes(c, dep.nimbleFile.get())
   trace c, dep.pkg.projectName, "nimbleVersions: " & $result
 
 proc traverseRelease(c: var AtlasContext; nc: NimbleContext; g: var DepGraph; idx: int;

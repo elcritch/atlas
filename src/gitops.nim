@@ -96,7 +96,7 @@ proc gitDescribeRefTag*(c: var Reporter; commit: string): string =
   let (lt, status) = exec(c, GitDescribe, ["--tags", commit])
   result = if status == 0: strutils.strip(lt) else: ""
 
-proc getFileHashes*(c: var Reporter; nimbleFile: string): seq[string] =
+proc lookupFileHashes*(c: var Reporter; nimbleFile: string): seq[string] =
   result = @[]
   let (outp, status) = exec(c, GitLog, [nimbleFile])
   if status == 0:
