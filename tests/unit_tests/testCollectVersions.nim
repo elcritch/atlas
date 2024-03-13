@@ -22,18 +22,26 @@ template setupDepsAndGraph(dir: string) =
     u {.inject.} = createUrl("file://" & dir, p)
     c {.inject.} = AtlasContext()
     g {.inject.} = createGraph(c, u, readConfig = false)
-    d {.inject.} = Dependency()
 
-  c.depsDir = "fakeDeps"
-  c.workspace = "/workspace/".toDirSep
-  c.projectDir = "/workspace".toDirSep
+  c.depsDir = "source"
+  c.workspace = dir.toDirSep
+  c.projectDir = dir.toDirSep
+  c.verbosity = 3
 
 suite "test pkgurls":
 
   test "basic url":
     withTempTestDir "basic_url":
       buildGraphNoGitTags()
+      echo "\n"
       setupDepsAndGraph(dir)
+      var d = Dependency()
+      let depDir = "source" / "proj_a/"
+      let nimble = depDir / "proj_a.nimble"
+      setCurrentDir(depDir)
+      d.pkg = createUrl("file://" & $depDir, p)
+      d.nimbleFile = some nimble
+      echo "D: ", d
       let versions = collectNimbleVersions(c, d)
       echo "VERSIONS: ", versions
 

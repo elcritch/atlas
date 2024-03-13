@@ -98,6 +98,7 @@ proc gitDescribeRefTag*(c: var Reporter; commit: string): string =
 
 proc lookupFileHashes*(c: var Reporter; nimbleFile: string): seq[string] =
   result = @[]
+  echo "lookupFileHashes: ", getCurrentDir().absolutePath
   let (outp, status) = exec(c, GitLog, [nimbleFile])
   if status == 0:
     for line in splitLines(outp):

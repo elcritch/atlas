@@ -58,7 +58,7 @@ proc nimbleExec*(cmd: string; args: openArray[string]) =
     cmdLine.add quoteShell(args[i])
   discard os.execShellCmd(cmdLine)
 
-when not defined(atlasUnitTests):
+when not defined(atlasUnitTests) or defined(atlasNoUnitTestFiles):
   export os
 else:
 
