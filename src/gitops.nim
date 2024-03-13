@@ -87,7 +87,6 @@ proc clone*(c: var Reporter; url, dest: string; retries = 5; fullClones=false): 
   for i in 1..retries:
     let res = execShellCmd(cmd)
     debug c, url, "cloning status: " & $res
-    discard execShellCmd("ls -lh")
     if res == 0 and dirExists(dest):
       return true
     trace c, url, "trying to clone again"
