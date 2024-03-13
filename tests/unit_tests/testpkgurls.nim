@@ -4,7 +4,7 @@ import std/strutils
 import std/paths
 import std/options
 
-import context, satvars, sat, gitops, runners, reporters, nimbleparser, pkgurls, cloner, versions
+import context, reporters, nimbleparser, pkgurls
 import osutils
 import compiledpatterns
 import pkgurls
