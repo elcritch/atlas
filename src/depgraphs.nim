@@ -187,6 +187,7 @@ proc collectNimbleVersions*(c: var AtlasContext; dep: var Dependency): seq[strin
         if line.len > 0 and not line.endsWith("^{}"):
           result.add line
     result.reverse()
+  trace c, dep.pkg.projectName, "nimbleVersions: " & $result
 
 proc traverseRelease(c: var AtlasContext; nc: NimbleContext; g: var DepGraph; idx: int;
                      origin: CommitOrigin; r: Commit; lastNimbleContents: var string) =
