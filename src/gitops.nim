@@ -104,6 +104,8 @@ proc lookupFileHashes*(c: var Reporter; nimbleFile: string): seq[string] =
     for line in splitLines(outp):
       if line.len > 0 and not line.endsWith("^{}"):
         result.add line
+  else:
+    warn c, nimbleFile, "error looking up git hash history: " & outp
   result.reverse()
 
 proc getLastTaggedCommit*(c: var Reporter): string =
