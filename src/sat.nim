@@ -462,7 +462,12 @@ proc satisfiableIter(f: Formular; sout: var Solution; cnt, maxIters: int): SatRe
 proc satisfiable*(f: Formular; sout: var Solution;
                   maxIters: int = MaxDefaultIterations): SatResult =
   ## Determines if the SAT problem given in the given Formular `f` is satisfiable.
-  satisfiableIter(f, sout, cnt = 1, maxIters = maxIters)
+  result = satisfiableIter(f, sout, cnt = 1, maxIters = maxIters)
+  if result == MaxIterationLimitError:
+    echo "\n"
+    echo "SAT SOLVER: MaxIterationLimitError"
+    echo f
+    echo "\n"
 
 type
   Space = seq[Solution]
