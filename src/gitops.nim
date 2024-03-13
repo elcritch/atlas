@@ -135,8 +135,6 @@ proc listFiles*(c: var Reporter): seq[string] =
 
 proc checkoutGitCommit*(c: var Reporter; p, commit: string) =
   debug(c, p, "checking out commit " & commit)
-  echo getStackTrace()
-  echo ""
   let (currentCommit, statusA) = exec(c, GitCurrentCommit, [])
   if statusA == 0 and currentCommit.strip() == commit:
     info(c, p, "updated package to " & commit)
@@ -250,7 +248,7 @@ proc getCurrentCommit*(c: var Reporter): Option[string] =
   let (currentCommit, status) = exec(c, GitCurrentCommit, [])
   if status == 0:
     return some currentCommit.strip()
-    
+
 
 proc isOutdated*(c: var Reporter; displayName: string): bool =
   ## determine if the given git repo `f` is updateable
