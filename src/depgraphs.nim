@@ -507,6 +507,10 @@ proc solve*(c: var AtlasContext; g: var DepGraph; f: Form) =
 
   let status = satisfiable(f.f, s)
   if status == MaxIterationLimitError:
+    echo "\n"
+    echo "SAT MaxIterationLimitError: "
+    echo f.f
+    echo "\n"
     raise newException(ValueError, "unsolvable setup: ")
   elif status == Satisfied:
     for n in mitems g.nodes:
