@@ -37,6 +37,7 @@ suite "test pkgurls":
       setupDepsAndGraph(dir)
       var d = Dependency()
       let depDir = "source" / "proj_a/"
+      ## TODOX: how to handle this relative or not thing?
       let nimble = "proj_a.nimble"
       setCurrentDir(depDir)
       d.pkg = createUrl("file://" & $depDir, p)
