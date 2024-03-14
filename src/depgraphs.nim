@@ -501,8 +501,7 @@ proc solve*(c: var AtlasContext; g: var DepGraph; f: Form) =
   #debugFormular c, g, f, s
 
   var status = 
-    try:
-      satisfiable(f.f, s)
+    try: satisfiable(f.f, s)
     except SatOverflowError as err:
       echo "\n"
       echo "SAT MaxIterationLimitError: "
