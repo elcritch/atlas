@@ -500,14 +500,17 @@ proc solve*(c: var AtlasContext; g: var DepGraph; f: Form) =
   var s = createSolution(m)
   #debugFormular c, g, f, s
 
-  let status = satisfiable(f.f, s)
-  if status == MaxIterationLimitError:
-    echo "\n"
-    echo "SAT MaxIterationLimitError: "
-    echo f.f
-    echo "\n"
-    raise newException(ValueError, "unsolvable setup: ")
-  elif status == Satisfied:
+  var status = 
+    try:
+      satisfiable(f.f, s)
+    except SatOverflowError:
+      echo "\n"
+      echo "SAT MaxIterationLimitError: "
+      echo f.f
+      echo "\n"
+      raise newException(ValueError, "unsolvable setup: ")
+
+  if status:
     for n in mitems g.nodes:
       if n.isRoot: n.active = true
     for i in 0 ..< m:
