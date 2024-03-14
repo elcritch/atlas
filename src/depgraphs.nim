@@ -503,12 +503,12 @@ proc solve*(c: var AtlasContext; g: var DepGraph; f: Form) =
   var status = 
     try:
       satisfiable(f.f, s)
-    except SatOverflowError:
+    except SatOverflowError as err:
       echo "\n"
       echo "SAT MaxIterationLimitError: "
       echo f.f
       echo "\n"
-      raise newException(ValueError, "unsolvable setup: ")
+      raise err
 
   if status:
     for n in mitems g.nodes:
