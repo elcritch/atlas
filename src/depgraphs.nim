@@ -498,14 +498,13 @@ proc debugFormular(c: var AtlasContext; g: var DepGraph; f: Form; s: Solution) =
 proc solve*(c: var AtlasContext; g: var DepGraph; f: Form) =
   let m = f.idgen
   var s = createSolution(m)
-  #debugFormular c, g, f, s
 
   var status =
     try: satisfiable(f.f, s)
     except SatOverflowError as err:
       echo "\n"
       echo "SAT MaxIterationLimitError: "
-      echo f.f
+      debugFormular c, g, f, s
       echo "\n"
       raise err
 

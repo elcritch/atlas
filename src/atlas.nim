@@ -566,15 +566,6 @@ proc main =
   var c = AtlasContext(projectDir: getCurrentDir(), currentDir: getCurrentDir(), workspace: "")
   try:
     main(c)
-  except Exception as err:
-    echo "Atlas error: "
-    echo repr err
-  except Defect as err:
-    echo "Atlas Defect: "
-    echo repr err
-  except CatchableError as err:
-    echo "Atlas catchable error: "
-    echo repr err
   finally:
     writePendingMessages(c)
   if c.errors > 0:
