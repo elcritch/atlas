@@ -500,7 +500,7 @@ proc solve*(c: var AtlasContext; g: var DepGraph; f: Form) =
   var s = createSolution(m)
   #debugFormular c, g, f, s
 
-  var status = 
+  var status =
     try: satisfiable(f.f, s)
     except SatOverflowError as err:
       echo "\n"
