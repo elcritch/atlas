@@ -8,7 +8,12 @@
 
 import std / [sets, sequtils, tables, strutils, streams, json, jsonutils, algorithm, options]
 
-import osutils, context, satvars, sat, gitops, runners, reporters, nimbleparser, pkgurls, cloner, versions
+import osutils, context, gitops, runners, reporters, nimbleparser, pkgurls, cloner, versions
+
+when defined(nimAtlasBootstrap):
+  import ../dist/sat/src/sat/[sat, satvars]
+else:
+  import sat/[sat, satvars]
 
 type
   DependencyVersion* = object  # Represents a specific version of a project.
