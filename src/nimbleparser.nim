@@ -6,8 +6,10 @@
 #    distribution, for details about the copyright.
 #
 
-import std / [os, strutils, tables, unicode, hashes]
+import std / [os, strutils, tables, unicode, hashes, options]
 import osutils, versions, packagesjson, reporters, gitops, parse_requires, pkgurls, compiledpatterns
+
+export options
 
 when defined(nimAtlasBootstrap):
   import ../dist/sat/src/sat/satvars
