@@ -186,7 +186,7 @@ proc collectNimbleVersions*(c: var AtlasContext; dep: var Dependency): seq[strin
   result = @[]
   if dep.nimbleFile.isSome:
     result = gitops.lookupFileHashes(c, dep.nimbleFile.get())
-  trace c, dep.pkg.projectName, "nimbleVersions: " & $result
+  debug c, dep.pkg.projectName, "nimble commit versions: " & $result
 
 proc traverseRelease(c: var AtlasContext; nc: NimbleContext; g: var DepGraph; idx: int;
                      origin: CommitOrigin; r: Commit; lastNimbleContents: var string) =
@@ -255,7 +255,7 @@ proc traverseDependency(c: var AtlasContext; nc: NimbleContext; g: var DepGraph;
   let nimbleVersions = collectNimbleVersions(c, g.nodes[idx])
 
   for (origin, r) in releases(c, m, g.nodes[idx].pkg, versions, nimbleVersions):
-    trace c, g.nodes[idx].pkg.projectName, "traverseDependency: " & $c.getCurrentCommit()
+    debug c, g.nodes[idx].pkg.projectName, "traverseDependency: " & $c.getCurrentCommit()
     traverseRelease c, nc, g, idx, origin, r, lastNimbleContents
   debug c, g.nodes[idx].pkg.projectName, "traverseDependencies: " & $g.nodes[idx].versions.mapIt($it.version & " <- " & ($(it.commit & "000000")[0..5]))
 
