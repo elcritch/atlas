@@ -6,9 +6,9 @@
 #    distribution, for details about the copyright.
 #
 
-import std / [sets, sequtils, tables, strutils, streams, json, jsonutils, algorithm, options]
+import std / [os, sets, sequtils, tables, strutils, streams, json, jsonutils, algorithm, options]
 
-import osutils, context, gitops, runners, reporters, nimbleparser, pkgurls, cloner, versions
+import context, gitops, runners, reporters, nimbleparser, pkgurls, cloner, versions
 
 when defined(nimAtlasBootstrap):
   import ../dist/sat/src/sat/[sat, satvars]

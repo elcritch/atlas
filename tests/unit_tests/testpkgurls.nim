@@ -4,8 +4,9 @@ import std/strutils
 import std/paths
 import std/options
 
-import context, reporters, nimbleparser, pkgurls
-import osutils
+import ../setups
+
+import context, reporters, nimbleparser
 import compiledpatterns
 import pkgurls
 import depgraphs
@@ -25,6 +26,23 @@ template setupDepsAndGraph(url: string) =
   c.workspace = "/workspace/".toDirSep
   c.projectDir = "/workspace".toDirSep
 
+template withProjectDir*(names: varargs[string], blk: untyped) =
+  createDir "workspace"
+  setCurrentDir("workspace")
+  c.workspace = os.getCurrentDir()
+  for name in names:
+    createDir name
+    setCurrentDir(name)
+    c.projectDir = os.getCurrentDir()
+  `blk`
+  discard
+  when false:
+    echo "\n<<<<<< CWD: ", os.getCurrentDir()
+    echo "workspace: ", c.workspace
+    echo "projectDir: ", c.projectDir, "\n"
+    discard execShellCmd("find " & dir)
+    echo ">>>>>>\n\n"
+
 suite "test pkgurls":
 
   test "basic url":
@@ -42,55 +60,49 @@ suite "test pkgurls":
     check $u == "https://github.com/example/nim-proj"
     check u.projectName == "nim-proj"
 
+# var testTemplateDir: string
+# withTempTestDirFull("test_template", remove=false):
+#   buildGraphNoGitTags()
+#   testTemplateDir = dir
+
 suite "nimble stuff":
-
   setup:
-    setupDepsAndGraph("https://github.com/example/nim-proj")
-    osutils.filesContext.currDir = "/workspace/".toDirSep
-    osutils.filesContext.walkDirs["/workspace/fakeDeps/apatheia/*.nimble".toDirSep] = @["/workspace/fakeDeps/apatheia.nimble".toDirSep]
+    setupDepsAndGraph("https://github.com/example/nim-testProj1")
 
-  test "basic path":
-    let dir = "/workspace/fakeDeps/apatheia".toDirSep
-    echo "BAISC PATH: ", dir
-    let res = findNimbleFile(c, u, dir)
-    check res == some("/workspace/fakeDeps/apatheia.nimble".toDirSep)
+  test "find nimble in project dir from project dir":
+    withTempTestDir "test":
+      withProjectDir "fakeDeps", "testProj1":
+        writeFile("testProj1.nimble", "")
+        let projDir = "workspace" / "fakeDeps" / "testProj1"
+        let res1 = findNimbleFile(c, u, dir / projDir)
+        check res1.get().relativePath(dir) == projDir / "testProj1.nimble"
 
-  test "with currdir":
-    let currDir = "/workspace/fakeDeps/apatheia".toDirSep
-    let res = findNimbleFile(c, u, currDir)
-    check res == some("/workspace/fakeDeps/apatheia.nimble".toDirSep)
+        setCurrentDir(dir / "workspace")
+        let res2 = findNimbleFile(c, u, dir / projDir)
+        check res2.get().relativePath(dir) == projDir / "testProj1.nimble"
 
-  test "with files":
-    let dir = "/workspace/fakeDeps/apatheia".toDirSep
-    osutils.filesContext.currDir = dir
-    let res = findNimbleFile(c, dir)
-    check res == some("/workspace/fakeDeps/apatheia.nimble".toDirSep)
+  test "find nimble in project dir with other name":
+    withTempTestDir "test":
+      withProjectDir "fakeDeps", "nim-testProj1":
+        writeFile("testProj1.nimble", "")
+        let projDir = "workspace" / "fakeDeps" / "nim-testProj1"
+        let res = findNimbleFile(c, u, dir / projDir)
+        check res.get().relativePath(dir) == projDir / "testProj1.nimble"
 
   test "missing":
-    osutils.filesContext.walkDirs["/workspace/fakeDeps/apatheia/*.nimble".toDirSep] = @[]
-    let res = findNimbleFile(c, u, "/workspace/fakeDeps/apatheia".toDirSep)
-    check res == string.none
-    check c.errors == 0
+    withTempTestDir "basic_url":
+      withProjectDir "fakeDeps", "testProj1":
+        let projDir = "workspace" / "fakeDeps" / "testProj1"
+        let res1 = findNimbleFile(c, u, dir / projDir)
+        check res1.isNone()
 
   test "ambiguous":
-    osutils.filesContext.walkDirs["/workspace/fakeDeps/apatheia/*.nimble".toDirSep] = @[
-      "/workspace/fakeDeps/apatheia.nimble".toDirSep,
-      "/workspace/fakeDeps/nim-apatheia.nimble".toDirSep
-    ]
-    let res = findNimbleFile(c, u, "/workspace/fakeDeps/apatheia".toDirSep)
-    check res == string.none
-    check c.errors == 1
-
-  test "check module name recovery":
-    let res = findNimbleFile(c, u, "/workspace/fakeDeps/apatheia".toDirSep)
-    check res == some("/workspace/fakeDeps/apatheia.nimble".toDirSep)
-
-suite "tests":
-  test "basic":
-
-    setupDepsAndGraph("https://github.com/codex-storage/apatheia.git")
-    echo "U: ", u
-    # echo "G: ", g.toJson().pretty()
-
-
+    withTempTestDir "basic_url":
+      withProjectDir "fakeDeps", "testProj1":
+        writeFile("testProj1.nimble", "")
+        writeFile("testProj2.nimble", "")
+        let projDir = "workspace" / "fakeDeps" / "testProj1"
+        let res = findNimbleFile(c, u, dir / projDir)
+        check res == string.none
+        check c.errors == 1
 

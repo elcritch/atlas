@@ -6,7 +6,7 @@
 #    distribution, for details about the copyright.
 #
 
-import std/[osproc, sequtils, strutils, options, algorithm]
+import std/[os, osproc, sequtils, strutils, options, algorithm]
 import reporters, osutils, versions
 
 type
