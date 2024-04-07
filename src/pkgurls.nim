@@ -24,7 +24,6 @@ proc extractProjectName*(s: string): string =
   result = s.substr(first+1, last)
   if result.endsWith(GitSuffix):
     result.setLen result.len - len(GitSuffix)
-  echo "EXTRACTPROJECTNAME: ", s, " result: ", result
 
 type
   PkgUrl* = object
