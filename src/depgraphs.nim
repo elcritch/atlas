@@ -265,9 +265,10 @@ proc copyFromDisk(c: var AtlasContext; w: Dependency; destDir: string): (CloneSt
 
   #let dir = selectDir(u & "@" & w.commit, u)
   if w.isTopLevel:
+    info c, destDir, "skipping copy for file protocol"
     result = (Ok, "")
   elif dirExists(dir):
-    info c, destDir, "cloning: " & dir
+    info c, destDir, "copying dir: " & dir
     copyDir(dir, destDir)
     result = (Ok, "")
   else:
