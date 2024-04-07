@@ -567,6 +567,9 @@ proc solve*(c: var AtlasContext; g: var DepGraph; f: Form) =
 
     error c, c.workspace, "version conflict; for more information use --showGraph"
     for p in mitems(g.nodes):
+      trace c, p.pkg.projectName, "node: " & $p.pkg
+      for v in p.versions:
+        trace c, p.pkg.projectName, "version: " & repr v
       var usedVersions = 0
       for ver in mvalidVersions(p, g):
         if s.isTrue(ver.v):
