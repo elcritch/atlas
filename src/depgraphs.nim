@@ -285,6 +285,7 @@ proc pkgUrlToDirname(c: var AtlasContext; g: var DepGraph; d: var Dependency): (
   var dest = if d.ondisk.len() > 0: d.ondisk
              else: g.ondisk.getOrDefault(d.pkg.url)
   trace c, d.pkg.projectName, "using dirname: `" & $absolutePath(dest) & "` for url: " & $d.pkg.url
+  trace c, d.pkg.projectName, "PKG: " & $d.pkg
   if dest.len == 0:
     if d.isTopLevel:
       debug c, d.pkg.projectName, "using toplevel dirname: `" & $c.workspace
@@ -307,12 +308,12 @@ proc expand*(c: var AtlasContext; g: var DepGraph; nc: NimbleContext; m: Travers
   ## Expand the graph by adding all dependencies.
   var processed = initHashSet[PkgUrl]()
   var i = 0
-  trace c, "atlas:expanding", "nodes count: " & $g.nodes.len
   for node in g.nodes:
-    trace c, "expand", "nodes: " & $node
+    debug c, "atlas::expanding", "nodes: " & $node
   while i < g.nodes.len:
     if not processed.containsOrIncl(g.nodes[i].pkg):
       let (dest, todo) = pkgUrlToDirname(c, g, g.nodes[i])
+      trace c, $g.nodes[i].pkg.projectName, "dir: " & repr g.nodes[i].pkg
       trace c, $g.nodes[i].pkg.projectName, "expanded destination dir: " & $dest & " todo: " & $todo
       g.nodes[i].ondisk = dest
       if todo == DoClone:
