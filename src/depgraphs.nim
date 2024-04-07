@@ -258,7 +258,8 @@ const
 
 proc copyFromDisk(c: var AtlasContext; w: Dependency; destDir: string): (CloneStatus, string) =
   var dir = w.pkg.url
-  if dir.startsWith(FileWorkspace): dir = c.workspace / dir.substr(FileWorkspace.len)
+  if dir.startsWith(FileWorkspace):
+    dir = c.workspace / dir.substr(FileWorkspace.len)
   #template selectDir(a, b: string): string =
   #  if dirExists(a): a else: b
 
