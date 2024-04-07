@@ -138,7 +138,7 @@ proc generateDepGraph(c: var AtlasContext; g: DepGraph) =
   writeFile(dotFile, "digraph deps {\n$1}\n" % dotGraph)
   let graphvizDotPath = findExe("dot")
   if graphvizDotPath.len == 0:
-    warn c, "", "gendepend: Graphviz's tool dot is required; see https://graphviz.org/download for downloading"
+    warn c, "atlas::gendepend", "Graphviz's tool dot is required; see https://graphviz.org/download for downloading"
   else:
     discard execShellCmd("dot -Tpng -odeps.png " & quoteShell(dotFile))
 
