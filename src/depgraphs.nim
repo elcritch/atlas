@@ -523,6 +523,7 @@ proc solve*(c: var AtlasContext; g: var DepGraph; f: Form) =
       raise err
 
   if status:
+    # found a solution
     for n in mitems g.nodes:
       if n.isRoot: n.active = true
     for i in 0 ..< m:
@@ -555,20 +556,24 @@ proc solve*(c: var AtlasContext; g: var DepGraph; f: Form) =
               info c, item.pkg.projectName, "[ ] " & toString item
       info c, "../resolve", "end of selection"
   else:
-    #echo "FORM: ", f.f
+    # no solution found
     var notFound = 0
     for p in mitems(g.nodes):
       if p.isRoot and p.status != Ok:
         error c, c.workspace, "cannot find package: " & p.pkg.projectName
         inc notFound
-    if notFound > 0: return
+    if notFound > 0:
+      return
+
     error c, c.workspace, "version conflict; for more information use --showGraph"
     for p in mitems(g.nodes):
       var usedVersions = 0
       for ver in mvalidVersions(p, g):
-        if s.isTrue(ver.v): inc usedVersions
+        if s.isTrue(ver.v):
+          inc usedVersions
       if usedVersions > 1:
         for ver in mvalidVersions(p, g):
+          error c, p.pkg.projectName, "valid versions: " & string(ver.version) & " required"
           if s.isTrue(ver.v):
             error c, p.pkg.projectName, string(ver.version) & " required"
 
