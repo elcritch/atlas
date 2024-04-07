@@ -223,8 +223,10 @@ proc installDependencies(c: var AtlasContext; nc: var NimbleContext; nimbleFile:
   # 2. install deps from .nimble
   let (dir, pkgname, _) = splitFile(nimbleFile)
   info c, pkgname, "installing dependencies for " & pkgname & ".nimble"
-  var g = createGraph(c, createUrlSkipPatterns(dir))
+  debug c, pkgname, "installing dependencies using nimble at " & $absolutePath(nimbleFile)
+  var g = createGraph(c, createUrlSkipPatterns(dir), nimbleFile=nimbleFile.some, ondisk=dir.absolutePath())
   trace c, pkgname, "traversing depency loop"
+  trace c, pkgname, "traversing depency loop: " & $g.nodes
   let paths = traverseLoop(c, nc, g)
   trace c, pkgname, "done traversing depencies"
   let cfgPath = if CfgHere in c.flags: CfgPath c.currentDir else: findCfgDir(c)

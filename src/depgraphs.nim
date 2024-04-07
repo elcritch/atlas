@@ -35,7 +35,7 @@ type
     nimbleFile*: Option[string]
 
   DepGraph* = object
-    nodes: seq[Dependency]
+    nodes*: seq[Dependency]
     reqs: seq[Requirements]
     packageToDependency: Table[PkgUrl, int]
     ondisk: OrderedTable[string, string] # URL -> dirname mapping
@@ -76,10 +76,15 @@ proc readOnDisk(c: var AtlasContext; result: var DepGraph) =
   except:
     error c, configFile, "cannot read: " & configFile
 
-proc createGraph*(c: var AtlasContext; s: PkgUrl, readConfig = true): DepGraph =
+proc createGraph*(c: var AtlasContext; s: PkgUrl;
+                  readConfig = true,
+                  nimbleFile = string.none,
+                  ondisk = ""): DepGraph =
   result = DepGraph(nodes: @[], reqs: defaultReqs())
   result.packageToDependency[s] = result.nodes.len
-  result.nodes.add Dependency(pkg: s, versions: @[], isRoot: true, isTopLevel: true, activeVersion: -1)
+  result.nodes.add Dependency(pkg: s, versions: @[],
+                              isRoot: true, isTopLevel: true, activeVersion: -1,
+                              nimbleFile: nimbleFile, ondisk: ondisk)
   if readConfig:
     readOnDisk(c, result)
 
@@ -275,13 +280,21 @@ type
 
 proc pkgUrlToDirname(c: var AtlasContext; g: var DepGraph; d: var Dependency): (string, PackageAction) =
   # XXX implement namespace support here
-  var dest = g.ondisk.getOrDefault(d.pkg.url)
-  trace c, d.pkg.projectName, "using dirname: " & $dest & " for url: " & $d.pkg.url
+  var dest = if d.ondisk.len() > 0: d.ondisk
+             else: g.ondisk.getOrDefault(d.pkg.url)
+  trace c, d.pkg.projectName, "using dirname: `" & $absolutePath(dest) & "` for url: " & $d.pkg.url
   if dest.len == 0:
     if d.isTopLevel:
+      debug c, d.pkg.projectName, "using toplevel dirname: `" & $c.workspace
       dest = c.workspace
     else:
-      let depsDir = if d.isRoot: c.workspace else: c.depsDir
+      let depsDir =
+        if d.isRoot:
+          debug c, d.pkg.projectName, "using root dirname: `" & $c.workspace
+          c.workspace
+        else:
+          debug c, d.pkg.projectName, "using depsDir dirname: `" & $c.depsDir
+          c.depsDir
       dest = depsDir / d.pkg.projectName
   result = (dest, if dirExists(dest): DoNothing else: DoClone)
 
@@ -292,10 +305,13 @@ proc expand*(c: var AtlasContext; g: var DepGraph; nc: NimbleContext; m: Travers
   ## Expand the graph by adding all dependencies.
   var processed = initHashSet[PkgUrl]()
   var i = 0
+  trace c, "atlas:expanding", "nodes count: " & $g.nodes.len
+  for node in g.nodes:
+    trace c, "expand", "nodes: " & $node
   while i < g.nodes.len:
     if not processed.containsOrIncl(g.nodes[i].pkg):
       let (dest, todo) = pkgUrlToDirname(c, g, g.nodes[i])
-      trace c, $g.nodes[i].pkg.projectName, "expanded destination dir: " & $dest
+      trace c, $g.nodes[i].pkg.projectName, "expanded destination dir: " & $dest & " todo: " & $todo
       g.nodes[i].ondisk = dest
       if todo == DoClone:
         let (status, _) =
@@ -306,6 +322,7 @@ proc expand*(c: var AtlasContext; g: var DepGraph; nc: NimbleContext; m: Travers
         g.nodes[i].status = status
 
       if g.nodes[i].status == Ok:
+        debug c, "atlas:expand", "node status: " & $g.nodes[i].status
         g.nodes[i].nimbleFile = c.findNimbleFile(g.nodes[i].pkg, dest)
         withDir c, dest:
           traverseDependency(c, nc, g, i, m)
