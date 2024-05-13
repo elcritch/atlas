@@ -245,9 +245,13 @@ proc traverseDependency(c: var AtlasContext; nc: NimbleContext; g: var DepGraph;
                         m: TraversalMode) =
   var lastNimbleContents = "<invalid content>"
 
+  debug c, g.nodes[idx].pkg.projectName, "traverseDependency:setup: " & $g.nodes[idx]
   let versions = move g.nodes[idx].versions
   let nimbleVersions = collectNimbleVersions(c, g.nodes[idx])
 
+  ## TODO: this needs to be split out 
+  ##       the releases should be found separately from traversing the dep
+  ##       at the least so it can be tested, and or run separately
   for (origin, r) in releases(c, m, g.nodes[idx].pkg, versions, nimbleVersions):
     debug c, g.nodes[idx].pkg.projectName, "traverseDependency: " & $c.getCurrentCommit()
     traverseRelease c, nc, g, idx, origin, r, lastNimbleContents
