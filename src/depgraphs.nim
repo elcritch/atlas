@@ -35,7 +35,7 @@ type
     nimbleFile*: Option[string]
 
   DepGraph* = object
-    nodes: seq[Dependency]
+    nodes*: seq[Dependency]
     reqs: seq[Requirements]
     packageToDependency: Table[PkgUrl, int]
     ondisk: OrderedTable[string, string] # URL -> dirname mapping
@@ -76,10 +76,15 @@ proc readOnDisk(c: var AtlasContext; result: var DepGraph) =
   except:
     error c, configFile, "cannot read: " & configFile
 
-proc createGraph*(c: var AtlasContext; s: PkgUrl, readConfig = true): DepGraph =
+proc createGraph*(c: var AtlasContext; s: PkgUrl;
+                  readConfig = true,
+                  nimbleFile = string.none,
+                  ondisk = ""): DepGraph =
   result = DepGraph(nodes: @[], reqs: defaultReqs())
   result.packageToDependency[s] = result.nodes.len
-  result.nodes.add Dependency(pkg: s, versions: @[], isRoot: true, isTopLevel: true, activeVersion: -1)
+  result.nodes.add Dependency(pkg: s, versions: @[],
+                              isRoot: true, isTopLevel: true, activeVersion: -1,
+                              nimbleFile: nimbleFile, ondisk: ondisk)
   if readConfig:
     readOnDisk(c, result)
 
@@ -240,9 +245,13 @@ proc traverseDependency(c: var AtlasContext; nc: NimbleContext; g: var DepGraph;
                         m: TraversalMode) =
   var lastNimbleContents = "<invalid content>"
 
+  debug c, g.nodes[idx].pkg.projectName, "traverseDependency:setup: " & $g.nodes[idx]
   let versions = move g.nodes[idx].versions
   let nimbleVersions = collectNimbleVersions(c, g.nodes[idx])
 
+  ## TODO: this needs to be split out 
+  ##       the releases should be found separately from traversing the dep
+  ##       at the least so it can be tested, and or run separately
   for (origin, r) in releases(c, m, g.nodes[idx].pkg, versions, nimbleVersions):
     debug c, g.nodes[idx].pkg.projectName, "traverseDependency: " & $c.getCurrentCommit()
     traverseRelease c, nc, g, idx, origin, r, lastNimbleContents
@@ -253,15 +262,17 @@ const
 
 proc copyFromDisk(c: var AtlasContext; w: Dependency; destDir: string): (CloneStatus, string) =
   var dir = w.pkg.url
-  if dir.startsWith(FileWorkspace): dir = c.workspace / dir.substr(FileWorkspace.len)
+  if dir.startsWith(FileWorkspace):
+    dir = c.workspace / dir.substr(FileWorkspace.len)
   #template selectDir(a, b: string): string =
   #  if dirExists(a): a else: b
 
   #let dir = selectDir(u & "@" & w.commit, u)
   if w.isTopLevel:
+    info c, destDir, "skipping copy for file protocol"
     result = (Ok, "")
   elif dirExists(dir):
-    info c, destDir, "cloning: " & dir
+    info c, destDir, "copying dir: " & dir
     copyDir(dir, destDir)
     result = (Ok, "")
   else:
@@ -275,13 +286,22 @@ type
 
 proc pkgUrlToDirname(c: var AtlasContext; g: var DepGraph; d: var Dependency): (string, PackageAction) =
   # XXX implement namespace support here
-  var dest = g.ondisk.getOrDefault(d.pkg.url)
-  trace c, d.pkg.projectName, "using dirname: " & $dest & " for url: " & $d.pkg.url
+  var dest = if d.ondisk.len() > 0: d.ondisk
+             else: g.ondisk.getOrDefault(d.pkg.url)
+  trace c, d.pkg.projectName, "using dirname: `" & $absolutePath(dest) & "` for url: " & $d.pkg.url
+  trace c, d.pkg.projectName, "PKG: " & $d.pkg
   if dest.len == 0:
     if d.isTopLevel:
+      debug c, d.pkg.projectName, "using toplevel dirname: `" & $c.workspace
       dest = c.workspace
     else:
-      let depsDir = if d.isRoot: c.workspace else: c.depsDir
+      let depsDir =
+        if d.isRoot:
+          debug c, d.pkg.projectName, "using root dirname: `" & $c.workspace
+          c.workspace
+        else:
+          debug c, d.pkg.projectName, "using depsDir dirname: `" & $c.depsDir
+          c.depsDir
       dest = depsDir / d.pkg.projectName
   result = (dest, if dirExists(dest): DoNothing else: DoClone)
 
@@ -292,10 +312,13 @@ proc expand*(c: var AtlasContext; g: var DepGraph; nc: NimbleContext; m: Travers
   ## Expand the graph by adding all dependencies.
   var processed = initHashSet[PkgUrl]()
   var i = 0
+  for node in g.nodes:
+    debug c, "atlas::expanding", "nodes: " & $node
   while i < g.nodes.len:
     if not processed.containsOrIncl(g.nodes[i].pkg):
       let (dest, todo) = pkgUrlToDirname(c, g, g.nodes[i])
-      trace c, $g.nodes[i].pkg.projectName, "expanded destination dir: " & $dest
+      trace c, $g.nodes[i].pkg.projectName, "dir: " & repr g.nodes[i].pkg
+      trace c, $g.nodes[i].pkg.projectName, "expanded destination dir: " & $dest & " todo: " & $todo
       g.nodes[i].ondisk = dest
       if todo == DoClone:
         let (status, _) =
@@ -306,6 +329,7 @@ proc expand*(c: var AtlasContext; g: var DepGraph; nc: NimbleContext; m: Travers
         g.nodes[i].status = status
 
       if g.nodes[i].status == Ok:
+        debug c, "atlas:expand", "node status: " & $g.nodes[i].status
         g.nodes[i].nimbleFile = c.findNimbleFile(g.nodes[i].pkg, dest)
         withDir c, dest:
           traverseDependency(c, nc, g, i, m)
@@ -503,6 +527,7 @@ proc solve*(c: var AtlasContext; g: var DepGraph; f: Form) =
       raise err
 
   if status:
+    # found a solution
     for n in mitems g.nodes:
       if n.isRoot: n.active = true
     for i in 0 ..< m:
@@ -535,20 +560,27 @@ proc solve*(c: var AtlasContext; g: var DepGraph; f: Form) =
               info c, item.pkg.projectName, "[ ] " & toString item
       info c, "../resolve", "end of selection"
   else:
-    #echo "FORM: ", f.f
+    # no solution found
     var notFound = 0
     for p in mitems(g.nodes):
       if p.isRoot and p.status != Ok:
         error c, c.workspace, "cannot find package: " & p.pkg.projectName
         inc notFound
-    if notFound > 0: return
+    if notFound > 0:
+      return
+
     error c, c.workspace, "version conflict; for more information use --showGraph"
     for p in mitems(g.nodes):
+      trace c, p.pkg.projectName, "node: " & $p.pkg
+      for v in p.versions:
+        trace c, p.pkg.projectName, "version: " & repr v
       var usedVersions = 0
       for ver in mvalidVersions(p, g):
-        if s.isTrue(ver.v): inc usedVersions
+        if s.isTrue(ver.v):
+          inc usedVersions
       if usedVersions > 1:
         for ver in mvalidVersions(p, g):
+          error c, p.pkg.projectName, "valid versions: " & string(ver.version) & " required"
           if s.isTrue(ver.v):
             error c, p.pkg.projectName, string(ver.version) & " required"
 

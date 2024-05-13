@@ -138,9 +138,7 @@ proc generateDepGraph(c: var AtlasContext; g: DepGraph) =
   writeFile(dotFile, "digraph deps {\n$1}\n" % dotGraph)
   let graphvizDotPath = findExe("dot")
   if graphvizDotPath.len == 0:
-    #echo("gendepend: Graphviz's tool dot is required, " &
-    #  "see https://graphviz.org/download for downloading")
-    discard
+    warn c, "atlas::gendepend", "Graphviz's tool dot is required; see https://graphviz.org/download for downloading"
   else:
     discard execShellCmd("dot -Tpng -odeps.png " & quoteShell(dotFile))
 
@@ -221,10 +219,15 @@ proc traverse(c: var AtlasContext; nc: var NimbleContext; start: string): seq[Cf
 proc installDependencies(c: var AtlasContext; nc: var NimbleContext; nimbleFile: string) =
   # 1. find .nimble file in CWD
   # 2. install deps from .nimble
-  let (dir, pkgname, _) = splitFile(nimbleFile)
+  let (dir, pkgname, _) = splitFile(nimbleFile.absolutePath())
   info c, pkgname, "installing dependencies for " & pkgname & ".nimble"
-  var g = createGraph(c, createUrlSkipPatterns(dir))
+  info c, pkgname, "installing dir: " & dir & " from nimble: " & nimbleFile
+  debug c, pkgname, "installing dependencies using nimble at " & $absolutePath(nimbleFile)
+  var g = createGraph(c, createUrlSkipPatterns(dir),
+                      nimbleFile=nimbleFile.absolutePath().some,
+                      ondisk=dir.absolutePath())
   trace c, pkgname, "traversing depency loop"
+  trace c, pkgname, "traversing depency loop: " & $g.nodes
   let paths = traverseLoop(c, nc, g)
   trace c, pkgname, "done traversing depencies"
   let cfgPath = if CfgHere in c.flags: CfgPath c.currentDir else: findCfgDir(c)

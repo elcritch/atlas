@@ -100,7 +100,8 @@ proc parseNimbleFile*(c: NimbleContext; nimbleFile: string; p: Patterns): Requir
     var didReplace = false
     var u = substitute(p, name, didReplace)
     if not didReplace:
-      u = (if name.isUrl: name else: c.nameToUrl.getOrDefault(unicode.toLower name, ""))
+      u = if name.isUrl: name
+          else: c.nameToUrl.getOrDefault(unicode.toLower name, "")
 
     if u.len == 0:
       result.status = HasBrokenDep
