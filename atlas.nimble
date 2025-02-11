@@ -8,7 +8,6 @@ skipDirs = @["doc"]
 bin = @["atlas"]
 
 # Dependencies
-
 requires "nim >= 2.0.0"
 requires "sat"
 
