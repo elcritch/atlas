@@ -6,7 +6,7 @@
 #    distribution, for details about the copyright.
 #
 
-import std / [os, uri]
+import std / [os, uri, paths]
 import versions, parserequires, compiledpatterns, reporters
 
 const
@@ -40,7 +40,7 @@ type
     IgnoreUrls
 
   AtlasContext* = object of Reporter
-    projectDir*, workspace*, origDepsDir*, currentDir*: string
+    projectDir*, workspace*, origDepsDir*, currentDir*: Path
     flags*: set[Flag]
     #urlMapping*: Table[string, Package] # name -> url mapping
     overrides*: Patterns
@@ -54,8 +54,8 @@ type
 
 proc `==`*(a, b: CfgPath): bool {.borrow.}
 
-proc depsDir*(c: AtlasContext): string =
-  if c.origDepsDir == "":
+proc depsDir*(c: AtlasContext): Path =
+  if c.origDepsDir == Path "":
     c.workspace
   elif c.origDepsDir.isAbsolute:
     c.origDepsDir
@@ -63,19 +63,19 @@ proc depsDir*(c: AtlasContext): string =
     (c.workspace / c.origDepsDir).absolutePath
 
 proc displayName(c: AtlasContext; p: string): string =
-  if p == c.workspace:
+  if p == c.workspace.string:
     p.absolutePath
-  elif c.depsDir != "" and p.isRelativeTo(c.depsDir):
-    p.relativePath(c.depsDir)
-  elif p.isRelativeTo(c.workspace):
-    p.relativePath(c.workspace)
+  elif $c.depsDir != "" and p.isRelativeTo($c.depsDir):
+    p.relativePath($c.depsDir)
+  elif p.isRelativeTo($c.workspace):
+    p.relativePath($c.workspace)
   else:
     p
 
-template projectFromCurrentDir*(): untyped = c.currentDir.absolutePath
+proc projectFromCurrentDir*(c: AtlasContext): Path = c.currentDir.absolutePath
 
 template withDir*(c: var AtlasContext; dir: string; body: untyped) =
-  let oldDir = getCurrentDir()
+  let oldDir = ospaths2.getCurrentDir()
   debug c, dir, "Current directory is now: " & dir
   try:
     setCurrentDir(dir)
@@ -84,7 +84,7 @@ template withDir*(c: var AtlasContext; dir: string; body: untyped) =
     setCurrentDir(oldDir)
 
 template tryWithDir*(c: var AtlasContext; dir: string; body: untyped) =
-  let oldDir = getCurrentDir()
+  let oldDir = ospaths2.getCurrentDir()
   try:
     if dirExists(dir):
       setCurrentDir(dir)
