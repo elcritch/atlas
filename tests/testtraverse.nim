@@ -4,7 +4,8 @@ import std / [strutils, os, osproc, sequtils, strformat, unittest]
 import basic/context
 import testerutils
 
-ensureGitHttpServer()
+if not dirExists("tests/ws_testtraverse/buildGraph"):
+  ensureGitHttpServer()
 
 template removeDirs() =
   removeDir "does_not_exist"
@@ -17,27 +18,26 @@ template removeDirs() =
   removeDir "proj_d"
 
 proc setupGraph* =
-  createDir "buildGraph"
-  withDir "buildGraph":
-
-    exec "git clone http://localhost:4242/buildGraph/proj_a"
-    exec "git clone http://localhost:4242/buildGraph/proj_b"
-    exec "git clone http://localhost:4242/buildGraph/proj_c"
-    exec "git clone http://localhost:4242/buildGraph/proj_d"
+  if not dirExists("buildGraph"):
+    createDir "buildGraph"
+    withDir "buildGraph":
+      exec "git clone http://localhost:4242/buildGraph/proj_a"
+      exec "git clone http://localhost:4242/buildGraph/proj_b"
+      exec "git clone http://localhost:4242/buildGraph/proj_c"
+      exec "git clone http://localhost:4242/buildGraph/proj_d"
 
 proc setupGraphNoGitTags* =
-  createDir "buildGraphNoGitTags"
-  withDir "buildGraphNoGitTags":
-
-    exec "git clone http://localhost:4242/buildGraphNoGitTags/proj_a"
-    exec "git clone http://localhost:4242/buildGraphNoGitTags/proj_b"
-    exec "git clone http://localhost:4242/buildGraphNoGitTags/proj_c"
-    exec "git clone http://localhost:4242/buildGraphNoGitTags/proj_d"
+  if not dirExists("buildGraphNoGitTags"):
+    createDir "buildGraphNoGitTags"
+    withDir "buildGraphNoGitTags":
+      exec "git clone http://localhost:4242/buildGraphNoGitTags/proj_a"
+      exec "git clone http://localhost:4242/buildGraphNoGitTags/proj_b"
+      exec "git clone http://localhost:4242/buildGraphNoGitTags/proj_c"
+      exec "git clone http://localhost:4242/buildGraphNoGitTags/proj_d"
 
 suite "basic repo tests":
   test "tests/ws_testtraverse":
       withDir "tests/ws_testtraverse":
-        removeDirs()
         setupGraph()
         let semVerExpectedResult = dedent"""
         [Info] (../resolve) selected:
@@ -53,7 +53,6 @@ suite "basic repo tests":
 
   test "tests/ws_testtraverse":
       withDir "tests/ws_testtraverse":
-        removeDirs()
         setupGraphNoGitTags()
         let semVerExpectedResultNoGitTags = dedent"""
         [Info] (../resolve) selected:
