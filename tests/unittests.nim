@@ -147,3 +147,4 @@ suite "versions":
     assert lastPathComponent("a/b") == "b"
     assert lastPathComponent("meh/longer/here/") == "here"
     assert lastPathComponent("meh/longer/here") == "here"
+
