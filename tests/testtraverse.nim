@@ -4,6 +4,7 @@ import std / [strutils, os, osproc, tables, sequtils, strformat, unittest]
 import basic/[sattypes, context, gitops, reporters, nimbleparser, pkgurls, versions]
 import basic/depgraphtypes
 import depgraphs
+import pkgcache
 import testerutils
 
 if not dirExists("tests/ws_testtraverse/buildGraph"):
@@ -49,7 +50,7 @@ suite "basic repo tests":
           let url = createUrlSkipPatterns(dep)
           graph.nodes.add Dependency(
             pkg: url, versions: @[], isRoot: false, isTopLevel: false, activeVersion: -1,
-            ondisk: Path dep,
+            ondisk: Path(dep),
             state: Found
           )
 
@@ -60,8 +61,19 @@ suite "basic repo tests":
         check graph[0].isTopLevel == true
 
         for i in 0..<graph.nodes.len():
+          let nv = collectNimbleVersions(nc, graph[i])
+          echo "VERSIONS: ", "idx=", i, " ", nv
+        echo "\n"
+
+        check collectNimbleVersions(nc, graph[1]) == @["f2796032bf264fde834a141f0372f60eba17a90d", "05446e3b3c8a043704bd1321fc75459c701840b1"]
+        check collectNimbleVersions(nc, graph[2]) == @["5cfac43f580c103e79005f21b25c82ee34707e54", "aa61b1d5eed8ba9d2ef0afcf05bb7de1f9cede5d"]
+        check collectNimbleVersions(nc, graph[3]) == @["5cfac43f580c103e79005f21b25c82ee34707e54", "aa61b1d5eed8ba9d2ef0afcf05bb7de1f9cede5d"]
+        check collectNimbleVersions(nc, graph[4]) == @["6809134018d7b61fdbef1becd9e3c077a3be1c68", "f351cd520bdbe59d13babef63613d8e7fd11e667"]
+
+        for i in 0..<graph.nodes.len():
           traverseDependency(nc, graph, i, TraversalMode.AllReleases)
 
+        echo "\nGRAPH:POST:"
         dumpJson graph
 
   test "tests/ws_testtraverse":
