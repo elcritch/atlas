@@ -3,6 +3,8 @@ import std / [sets, paths, dirs, files, tables, os, strutils, streams, json, jso
 import basic/[depgraphtypes, osutils, context, gitops, reporters, nimbleparser, pkgurls, versions]
 import runners, cloner, pkgcache 
 
+import std/[json, jsonutils]
+
 export depgraphtypes
 
 when defined(nimAtlasBootstrap):
@@ -310,8 +312,13 @@ proc debugFormular(graph: var DepGraph; form: Form; solution: Solution) =
     if solution.isTrue(VarId(varIdx)):
       echo "v", varIdx, ": T"
 
+proc debugGraph(graph: var DepGraph) =
+  echo "GRAPH: "
+  echo $(%* graph)
+
 proc solve*(graph: var DepGraph; form: Form) =
   let maxVar = form.idgen
+  debugGraph(graph)
   var solution = createSolution(maxVar)
   debugFormular graph, form, solution
 

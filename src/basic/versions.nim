@@ -7,6 +7,7 @@
 #
 
 import std / [strutils, parseutils, algorithm, hashes]
+import std / json
 
 type
   Version* = distinct string

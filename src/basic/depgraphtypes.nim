@@ -39,6 +39,16 @@ const
   UnknownReqs* = 1
   FileWorkspace* = "file://./"
 
+proc `%`*(v: Version): JsonNode {.borrow.}
+proc `%`*(v: VarId): JsonNode {.borrow.}
+proc `%`*(v: Path): JsonNode {.borrow.}
+proc `%`*(v: (PkgUrl, VersionInterval)): JsonNode =
+  %* {"url": v[0], "interval": v[1]}
+proc `%`*[K,V](t: Table[K, V]): JsonNode =
+  result = newJObject()
+  for k, v in t: result[$k] = % v
+  
+
 proc `[]`*(g: DepGraph, idx: int): Dependency =
   g.nodes[idx]
 
