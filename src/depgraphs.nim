@@ -361,7 +361,6 @@ proc solve*(graph: var DepGraph; form: Form) =
           if solution.isTrue(ver.v):
             error pkg.pkg.projectName, string(ver.version) & " required"
 
-
 proc traverseLoop*(nc: var NimbleContext; g: var DepGraph): seq[CfgPath] =
   result = @[]
   expand(g, nc, TraversalMode.AllReleases)
