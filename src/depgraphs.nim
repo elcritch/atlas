@@ -69,6 +69,7 @@ proc traverseRelease(nimbleCtx: NimbleContext; graph: var DepGraph; idx: int;
     req: EmptyReqs, v: NoVar)
   var badNimbleFile = false
   if nimbleFiles.len() != 1:
+    trace "traverseRelease", "skipping: nimble file not found or unique"
     packageVer.req = UnknownReqs
   else:
     let nimbleFile = nimbleFiles[0]
@@ -76,6 +77,10 @@ proc traverseRelease(nimbleCtx: NimbleContext; graph: var DepGraph; idx: int;
       var nimbleContents = readFile($nimbleFile)
     else:
       let nimbleContents = readFile($nimbleFile)
+    debug "traverseRelease", "nimble: " & $nimbleFile
+    debug "traverseRelease", "nimble contents: "
+    for line in nimbleContents.splitLines():
+      debug "...", line
     if lastNimbleContents == nimbleContents:
       packageVer.req = graph[idx].versions[^1].req
     else:
