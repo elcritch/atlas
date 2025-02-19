@@ -15,39 +15,49 @@ proc createGraph*(s: PkgUrl): DepGraph =
   result.packageToDependency[s] = result.nodes.len
   result.nodes.add Dependency(pkg: s, versions: @[], isRoot: true, isTopLevel: true, activeVersion: -1)
 
-proc setupGraph* =
+proc setupGraph*(): seq[string] =
+  let projs = @["proj_a", "proj_c", "proj_c", "proj_d"]
   if not dirExists("buildGraph"):
     createDir "buildGraph"
     withDir "buildGraph":
-      exec "git clone http://localhost:4242/buildGraph/proj_a"
-      exec "git clone http://localhost:4242/buildGraph/proj_b"
-      exec "git clone http://localhost:4242/buildGraph/proj_c"
-      exec "git clone http://localhost:4242/buildGraph/proj_d"
+      for proj in projs:
+        exec("git clone http://localhost:4242/buildGraph/$1" % [proj])
+  for proj in projs:
+    result.add(ospaths2.getCurrentDir() / "buildGraph" / proj)
 
-proc setupGraphNoGitTags* =
+proc setupGraphNoGitTags*(): seq[string] =
+  let projs = @["proj_a", "proj_c", "proj_c", "proj_d"]
   if not dirExists("buildGraphNoGitTags"):
     createDir "buildGraphNoGitTags"
     withDir "buildGraphNoGitTags":
-      exec "git clone http://localhost:4242/buildGraphNoGitTags/proj_a"
-      exec "git clone http://localhost:4242/buildGraphNoGitTags/proj_b"
-      exec "git clone http://localhost:4242/buildGraphNoGitTags/proj_c"
-      exec "git clone http://localhost:4242/buildGraphNoGitTags/proj_d"
+      for proj in projs:
+        exec("git clone http://localhost:4242/buildGraph/$1" % [proj])
+  for proj in projs:
+    result.add(ospaths2.getCurrentDir() / "buildGraphNoGitTags" / proj)
 
 suite "basic repo tests":
   test "tests/ws_testtraverse":
       withDir "tests/ws_testtraverse":
-        setupGraph()
+        let deps = setupGraph()
+        var nc = NimbleContext()
+        echo "DEPS: ", deps
         var graph = createGraph(createUrlSkipPatterns(ospaths2.getCurrentDir()))
+        graph[0].ondisk = paths.getCurrentDir()
+        graph[0].state = Found
 
         dumpJson graph
         check graph[0].pkg.projectName == "ws_testtraverse"
         check endsWith($(graph[0].pkg), "atlas/tests/ws_testtraverse")
-        # expand(g, nc, TraversalMode.AllReleases)
-        
+        check graph[0].isRoot == true
+        check graph[0].isTopLevel == true
+
+        traverseDependency(nc, graph, 0, TraversalMode.AllReleases)
+
+        dumpJson graph
 
   test "tests/ws_testtraverse":
       withDir "tests/ws_testtraverse":
-        setupGraphNoGitTags()
+        let deps = setupGraphNoGitTags()
         
 
 infoNow "tester", "All tests run successfully"
