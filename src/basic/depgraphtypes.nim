@@ -48,6 +48,9 @@ proc `%`*[K,V](t: Table[K, V]): JsonNode =
   result = newJObject()
   for k, v in t: result[$k] = % v
   
+proc dumpJson*(graph: var DepGraph) =
+  echo $(%* graph)
+
 
 proc `[]`*(g: DepGraph, idx: int): Dependency =
   g.nodes[idx]
@@ -55,7 +58,7 @@ proc `[]`*(g: DepGraph, idx: int): Dependency =
 proc `[]`*(g: var DepGraph, idx: int): var Dependency =
   g.nodes[idx]
 
-proc defaultReqs(): seq[Requirements] =
+proc defaultReqs*(): seq[Requirements] =
   @[Requirements(deps: @[], v: NoVar), Requirements(status: HasUnknownNimbleFile, v: NoVar)]
 
 proc toJson*(d: DepGraph): JsonNode =

@@ -129,7 +129,9 @@ proc traverseDependency*(nimbleCtx: NimbleContext;
 
 proc expand*(graph: var DepGraph; nimbleCtx: NimbleContext; mode: TraversalMode) =
   ## Expand the graph by adding all dependencies.
-  trace "expand", "nodes: " & $graph.nodes
+  # trace "expand", "nodes: " & $graph.nodes
+  echo "EXPAND:GRAPH:"
+  dumpJson(graph)
   var processed = initHashSet[PkgUrl]()
   var i = 0
   while i < graph.nodes.len:
@@ -312,13 +314,10 @@ proc debugFormular(graph: var DepGraph; form: Form; solution: Solution) =
     if solution.isTrue(VarId(varIdx)):
       echo "v", varIdx, ": T"
 
-proc debugGraph(graph: var DepGraph) =
-  echo "GRAPH: "
-  echo $(%* graph)
-
 proc solve*(graph: var DepGraph; form: Form) =
   let maxVar = form.idgen
-  debugGraph(graph)
+  echo "SOLVE:GRAPH:"
+  dumpJson(graph)
   var solution = createSolution(maxVar)
   debugFormular graph, form, solution
 

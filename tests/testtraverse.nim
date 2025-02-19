@@ -1,21 +1,19 @@
 # Small program that runs the test cases
 
-import std / [strutils, os, osproc, sequtils, strformat, unittest]
-import basic/context
+import std / [strutils, os, osproc, tables, sequtils, strformat, unittest]
+import basic/[sattypes, context, gitops, reporters, nimbleparser, pkgurls, versions]
+import basic/depgraphtypes
+import depgraphs
 import testerutils
 
 if not dirExists("tests/ws_testtraverse/buildGraph"):
   ensureGitHttpServer()
 
-template removeDirs() =
-  removeDir "does_not_exist"
-  removeDir "semproject"
-  removeDir "minproject"
-  removeDir "source"
-  removeDir "proj_a"
-  removeDir "proj_b"
-  removeDir "proj_c"
-  removeDir "proj_d"
+proc createGraph*(s: PkgUrl): DepGraph =
+  result = DepGraph(nodes: @[],
+    reqs: defaultReqs())
+  result.packageToDependency[s] = result.nodes.len
+  result.nodes.add Dependency(pkg: s, versions: @[], isRoot: true, isTopLevel: true, activeVersion: -1)
 
 proc setupGraph* =
   if not dirExists("buildGraph"):
@@ -39,37 +37,18 @@ suite "basic repo tests":
   test "tests/ws_testtraverse":
       withDir "tests/ws_testtraverse":
         setupGraph()
-        let semVerExpectedResult = dedent"""
-        [Info] (../resolve) selected:
-        [Info] (proj_a) [ ] (proj_a, 1.1.0)
-        [Info] (proj_a) [x] (proj_a, 1.0.0)
-        [Info] (proj_b) [ ] (proj_b, 1.1.0)
-        [Info] (proj_b) [x] (proj_b, 1.0.0)
-        [Info] (proj_c) [x] (proj_c, 1.2.0)
-        [Info] (proj_d) [ ] (proj_d, 2.0.0)
-        [Info] (proj_d) [x] (proj_d, 1.0.0)
-        [Info] (../resolve) end of selection
-        """
+        var graph = createGraph(createUrlSkipPatterns(ospaths2.getCurrentDir()))
+
+        dumpJson graph
+        check graph[0].pkg.projectName == "ws_testtraverse"
+        check endsWith($(graph[0].pkg), "atlas/tests/ws_testtraverse")
+        # expand(g, nc, TraversalMode.AllReleases)
+        
 
   test "tests/ws_testtraverse":
       withDir "tests/ws_testtraverse":
         setupGraphNoGitTags()
-        let semVerExpectedResultNoGitTags = dedent"""
-        [Info] (../resolve) selected:
-        [Info] (proj_a) [ ] (proj_a, #head)
-        [Info] (proj_a) [ ] (proj_a, 1.1.0)
-        [Info] (proj_a) [x] (proj_a, 1.0.0)
-        [Info] (proj_b) [ ] (proj_b, #head)
-        [Info] (proj_b) [ ] (proj_b, 1.1.0)
-        [Info] (proj_b) [x] (proj_b, 1.0.0)
-        [Info] (proj_c) [ ] (proj_c, #head)
-        [Info] (proj_c) [x] (proj_c, 1.2.0)
-        [Info] (proj_c) [ ] (proj_c, 1.0.0)
-        [Info] (proj_d) [ ] (proj_d, #head)
-        [Info] (proj_d) [ ] (proj_d, 2.0.0)
-        [Info] (proj_d) [x] (proj_d, 1.0.0)
-        [Info] (../resolve) end of selection
-        """
+        
 
 infoNow "tester", "All tests run successfully"
 
