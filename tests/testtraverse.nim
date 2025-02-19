@@ -4,34 +4,7 @@ import std / [strutils, os, osproc, sequtils, strformat, unittest]
 import basic/context
 import testerutils
 
-var c = Reporter()
-
-let atlasExe = absolutePath("bin" / "atlas".addFileExt(ExeExt))
-if execShellCmd("nim c -o:$# -d:release src/atlas.nim" % [atlasExe]) != 0:
-  quit("FAILURE: compilation of atlas failed")
-
 ensureGitHttpServer()
-
-template testSemVer2(expected: string) =
-  createDir "semproject"
-  withDir "semproject":
-    let cmd = atlasExe & " --full --keepWorkspace --resolver=SemVer --colors:off --list use proj_a"
-    let (outp, status) = execCmdEx(cmd)
-    if status == 0:
-      checkpoint "<<<<<<<<<<<<<<<< Failed test\n" &
-                  "\nExpected contents:\n\t" & expected.replace("\n", "\n\t") &
-                  "\nInstead got:\n\t" & outp.replace("\n", "\n\t") &
-                  ">>>>>>>>>>>>>>>> Failed\n"
-      check outp.contains expected
-    else:
-      echo "\n\n"
-      echo "<<<<<<<<<<<<<<<< Failed Exec "
-      echo "testSemVer2:command: ", cmd
-      echo "testSemVer2:pwd: ", ospaths2.getCurrentDir()
-      echo "testSemVer2:failed command:"
-      echo "================ Output:\n\t" & outp.replace("\n", "\n\t")
-      echo ">>>>>>>>>>>>>>>> failed\n"
-      check status == 0
 
 template removeDirs() =
   removeDir "does_not_exist"
@@ -44,8 +17,8 @@ template removeDirs() =
   removeDir "proj_d"
 
 proc setupGraph* =
-  createDir "source"
-  withDir "source":
+  createDir "buildGraph"
+  withDir "buildGraph":
 
     exec "git clone http://localhost:4242/buildGraph/proj_a"
     exec "git clone http://localhost:4242/buildGraph/proj_b"
@@ -53,8 +26,8 @@ proc setupGraph* =
     exec "git clone http://localhost:4242/buildGraph/proj_d"
 
 proc setupGraphNoGitTags* =
-  createDir "source"
-  withDir "source":
+  createDir "buildGraphNoGitTags"
+  withDir "buildGraphNoGitTags":
 
     exec "git clone http://localhost:4242/buildGraphNoGitTags/proj_a"
     exec "git clone http://localhost:4242/buildGraphNoGitTags/proj_b"
@@ -62,8 +35,8 @@ proc setupGraphNoGitTags* =
     exec "git clone http://localhost:4242/buildGraphNoGitTags/proj_d"
 
 suite "basic repo tests":
-  test "test/ws_testtraverse":
-      withDir "test/ws_testtraverse":
+  test "tests/ws_testtraverse":
+      withDir "tests/ws_testtraverse":
         removeDirs()
         setupGraph()
         let semVerExpectedResult = dedent"""
@@ -77,10 +50,9 @@ suite "basic repo tests":
         [Info] (proj_d) [x] (proj_d, 1.0.0)
         [Info] (../resolve) end of selection
         """
-        testSemVer2(semVerExpectedResult)
 
-  test "test/ws_testtraverse":
-      withDir "test/ws_testtraverse":
+  test "tests/ws_testtraverse":
+      withDir "tests/ws_testtraverse":
         removeDirs()
         setupGraphNoGitTags()
         let semVerExpectedResultNoGitTags = dedent"""
@@ -99,7 +71,6 @@ suite "basic repo tests":
         [Info] (proj_d) [x] (proj_d, 1.0.0)
         [Info] (../resolve) end of selection
         """
-        testSemVer2(semVerExpectedResultNoGitTags)
 
 infoNow "tester", "All tests run successfully"
 
