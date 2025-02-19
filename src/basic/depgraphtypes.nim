@@ -72,13 +72,11 @@ proc findNimbleFile*(nimbleFile: Path): seq[Path] =
 
 proc findNimbleFile*(dir: Path, projectName: string): seq[Path] =
   var nimbleFile = dir / Path(projectName & ".nimble")
-  debug "findNimbleFile:check:projectName", " path: " & $projectName & " dir: " & $dir
   result = findNimbleFile(nimbleFile)
-  debug "findNimbleFile:res:", " res: " & $result
   if result.len() == 0:
     for file in walkFiles($dir / "*.nimble"):
-      debug "findNimbleFile:search:", " file: " & $file
       result.add Path(file)
+  debug "findNimbleFile:search:", " name: " & projectName & " found: " & $result
 
 proc findNimbleFile*(dep: Dependency): seq[Path] =
   doAssert(dep.ondisk.string != "", "Package ondisk must be set before findNimbleFile can be called! Package: " & $(dep))
