@@ -60,10 +60,12 @@ suite "basic repo tests":
         check graph[0].isRoot == true
         check graph[0].isTopLevel == true
 
+        context().verbosity = 0
         for i in 0..<graph.nodes.len():
           let nv = collectNimbleVersions(nc, graph[i])
           echo "collectNimbleVersions(nc, graph[$1]) == " % [$i], nv
         echo "\n"
+        context().verbosity = 3
 
         # These will change if atlas-tests is regnerated!
         check collectNimbleVersions(nc, graph[1]) == @["f2796032bf264fde834a141f0372f60eba17a90d", "05446e3b3c8a043704bd1321fc75459c701840b1"]

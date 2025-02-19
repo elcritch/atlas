@@ -77,7 +77,7 @@ proc findNimbleFile*(dir: Path, projectName: string): seq[Path] =
   debug "findNimbleFile:res:", " res: " & $result
   if result.len() == 0:
     for file in walkFiles($dir / "*.nimble"):
-      echo "findNimbleFile:search:", " file: ", file
+      debug "findNimbleFile:search:", " file: " & $file
       result.add Path(file)
 
 proc findNimbleFile*(dep: Dependency): seq[Path] =
