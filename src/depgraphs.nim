@@ -313,6 +313,7 @@ proc debugFormular(graph: var DepGraph; form: Form; solution: Solution) =
 proc solve*(graph: var DepGraph; form: Form) =
   let maxVar = form.idgen
   var solution = createSolution(maxVar)
+  debugFormular graph, form, solution
 
   if satisfiable(form.formula, solution):
     for node in mitems graph.nodes:
