@@ -62,9 +62,10 @@ suite "basic repo tests":
 
         for i in 0..<graph.nodes.len():
           let nv = collectNimbleVersions(nc, graph[i])
-          echo "VERSIONS: ", "idx=", i, " ", nv
+          echo "collectNimbleVersions(nc, graph[$1]) == " % [$i], nv
         echo "\n"
 
+        # These will change if atlas-tests is regnerated!
         check collectNimbleVersions(nc, graph[1]) == @["f2796032bf264fde834a141f0372f60eba17a90d", "05446e3b3c8a043704bd1321fc75459c701840b1"]
         check collectNimbleVersions(nc, graph[2]) == @["5cfac43f580c103e79005f21b25c82ee34707e54", "aa61b1d5eed8ba9d2ef0afcf05bb7de1f9cede5d"]
         check collectNimbleVersions(nc, graph[3]) == @["5cfac43f580c103e79005f21b25c82ee34707e54", "aa61b1d5eed8ba9d2ef0afcf05bb7de1f9cede5d"]
