@@ -10,8 +10,7 @@ if not dirExists("tests/ws_testtraverse/buildGraph"):
   ensureGitHttpServer()
 
 proc createGraph*(s: PkgUrl): DepGraph =
-  result = DepGraph(nodes: @[],
-    reqs: defaultReqs())
+  result = DepGraph(nodes: @[], reqs: defaultReqs())
   result.packageToDependency[s] = result.nodes.len
   result.nodes.add Dependency(pkg: s, versions: @[], isRoot: true, isTopLevel: true, activeVersion: -1)
 
@@ -36,14 +35,23 @@ proc setupGraphNoGitTags*(): seq[string] =
     result.add(ospaths2.getCurrentDir() / "buildGraphNoGitTags" / proj)
 
 suite "basic repo tests":
+  setup:
+    context().verbosity = 3
   test "tests/ws_testtraverse":
       withDir "tests/ws_testtraverse":
         let deps = setupGraph()
         var nc = NimbleContext()
-        echo "DEPS: ", deps
         var graph = createGraph(createUrlSkipPatterns(ospaths2.getCurrentDir()))
         graph[0].ondisk = paths.getCurrentDir()
         graph[0].state = Found
+
+        for dep in deps:
+          let url = createUrlSkipPatterns(dep)
+          graph.nodes.add Dependency(
+            pkg: url, versions: @[], isRoot: false, isTopLevel: false, activeVersion: -1,
+            ondisk: Path dep,
+            state: Found
+          )
 
         dumpJson graph
         check graph[0].pkg.projectName == "ws_testtraverse"
@@ -51,7 +59,8 @@ suite "basic repo tests":
         check graph[0].isRoot == true
         check graph[0].isTopLevel == true
 
-        traverseDependency(nc, graph, 0, TraversalMode.AllReleases)
+        for i in 0..<graph.nodes.len():
+          traverseDependency(nc, graph, i, TraversalMode.AllReleases)
 
         dumpJson graph
 
