@@ -1,8 +1,5 @@
 name: atlas ci
 on:
-  push:
-    branches:
-    - '*'
   pull_request:
 
 jobs:
