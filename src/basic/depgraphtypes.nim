@@ -89,16 +89,13 @@ type
 proc pkgUrlToDirname*(g: var DepGraph; d: Dependency): (Path, PackageAction) =
   # XXX implement namespace support here
   var dest = Path g.ondisk.getOrDefault(d.pkg.url)
-  echo "pkgUrlToDirname: ", dest
   if dest.string.len == 0:
     if d.isTopLevel:
-      echo "pkgUrlToDirname: ", "workspace"
       dest = context().workspace
     else:
       let depsDir =
         if d.isRoot: context().workspace
         else: context().depsDir
-      echo "pkgUrlToDirname: ", "depsDir: ", depsDir
       dest = depsDir / Path d.pkg.projectName
   result = (dest, if dirExists(dest): DoNothing else: DoClone)
 

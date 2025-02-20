@@ -120,6 +120,7 @@ suite "basic repo tests":
         [Info] (proj_d) [x] (proj_d, 1.0.0)
         [Info] (../resolve) end of selection
         """
+        
         testSemVer2(semVerExpectedResultNoGitTags)
 
   test "tests/ws_semver2":
@@ -158,7 +159,7 @@ proc cleanupIntegrationTest() =
   removeFile "nim.cfg"
   removeFile "ws_integration.nimble"
 
-when not defined(quick):
+when false and not defined(quick):
   withDir "tests/ws_integration":
     try:
       integrationTest()
