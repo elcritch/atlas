@@ -129,14 +129,18 @@ suite "basic repo tests":
         check graph[3].ondisk.string.endsWith("ws_testtraverse/buildGraph/proj_c")
         check graph[4].ondisk.string.endsWith("ws_testtraverse/buildGraph/proj_d")
 
-        check graph[1].versions[0].commit == "05446e3b3c8a043704bd1321fc75459c701840b1"
-        check graph[1].versions[1].commit == "f2796032bf264fde834a141f0372f60eba17a90d"
-        check graph[2].versions[0].commit == "88d262ecb41d6613692c89640230e27d09939266"
-        check graph[2].versions[1].commit == "d9ea0bbae7a707331fc2049cf6e6a6f0021dfefd"
-        check graph[3].versions[0].commit == "aa61b1d5eed8ba9d2ef0afcf05bb7de1f9cede5d"
+        check graph[1].versions[0].commit == "34511493b0416904fe8cde9bec96e55ba2a81e88"
+        check graph[1].versions[1].commit == "c2bd74420ee22f5bf6bfe647b94d86223a1ab6e4"
+        check graph[1].versions.len() == 2
+        check graph[2].versions[0].commit == "c9ca3f58577ee53481d9171ebb6cfec5e512fd39"
+        check graph[2].versions[1].commit == "561acc4524ad5450e9a891db90aec203ec9f8f82"
+        check graph[2].versions.len() == 2
+        check graph[3].versions[0].commit == "216d32097a406f7c938bb719b63cc9a6d4ee2aa6"
         # check graph[3].versions[1].commit == "5cfac43f580c103e79005f21b25c82ee34707e54" # no tag
-        check graph[4].versions[0].commit == "f351cd520bdbe59d13babef63613d8e7fd11e667"
-        check graph[4].versions[1].commit == "6809134018d7b61fdbef1becd9e3c077a3be1c68"
+        check graph[3].versions.len() == 1
+        check graph[4].versions[0].commit == "a5363208fcda8a56fc4138a41d32920245dc03a8"
+        check graph[4].versions[1].commit == "4af5e36a3a77b61ad5ff8122a284b65f37de62f7"
+        check graph[4].versions.len() == 2
 
         echo "\nGRAPH:POST:"
         dumpJson graph, "graph-ws_testtraverse-traverseDependency-post.json"
