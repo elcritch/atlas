@@ -49,9 +49,6 @@ suite "basic repo tests":
         let deps = setupGraph()
         var nc = NimbleContext()
         var graph = DepGraph(nodes: @[], reqs: defaultReqs())
-        # var graph = createGraph(createUrlSkipPatterns(ospaths2.getCurrentDir() / "buildGraph/proj_a"))
-        # graph[0].ondisk = Path deps[0]
-        # graph[0].state = Found
 
         dumpJson graph
 
@@ -102,9 +99,14 @@ suite "basic repo tests":
 
         let deps = setupGraph()
         var nc = NimbleContext()
-        var graph = createGraph(createUrlSkipPatterns(ospaths2.getCurrentDir() / "buildGraph/proj_a"))
-        # graph[0].ondisk = paths.getCurrentDir()
-        graph[0].state = Found
+        var graph = DepGraph(nodes: @[], reqs: defaultReqs())
+        let url = createUrlSkipPatterns(deps[0])
+        graph.nodes.add Dependency(
+          pkg: url,
+          versions: @[], isRoot: false, isTopLevel: false, activeVersion: -1,
+          ondisk: Path(deps[0]),
+          state: Found
+        )
 
         # for dep in deps[0..0]:
         #   let url = createUrlSkipPatterns(dep)
