@@ -6,7 +6,7 @@
 #    distribution, for details about the copyright.
 #
 
-import std / [os, strutils, tables, unicode, sets, json, hashes, algorithm]
+import std / [os, strutils, tables, unicode, sequtils, sets, json, hashes, algorithm]
 import basic/[context, depgraphtypes, versions, osutils, nimbleparser, packageinfos, reporters, gitops, parserequires, pkgurls, compiledpatterns]
 
 const
@@ -57,9 +57,8 @@ proc collectNimbleVersions*(nc: NimbleContext; dep: Dependency): seq[Commit] =
   let nimbleFiles = findNimbleFile(dep)
   let dir = dep.ondisk
   doAssert(dep.ondisk.string != "", "Package ondisk must be set before collectNimbleVersions can be called! Package: " & $(dep))
-  trace "collectNimbleVersions", "dep: " & dep.pkg.projectName & " at: " & $dep.ondisk
   result = @[]
   if nimbleFiles.len() == 1:
     result = collectFileCommits(dir, nimbleFiles[0], ignoreError = true)
     result.reverse()
-    trace "collectNimbleVersions", "result: " & $result
+    trace "collectNimbleVersions", "commits: " & $mapIt(result, it.shortHash())

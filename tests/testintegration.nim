@@ -4,31 +4,39 @@ import std / [strutils, os, osproc, sequtils, strformat, unittest]
 import basic/context
 import testerutils
 
+if execShellCmd("nim c -o:$# -d:release src/atlas.nim" % [atlasExe]) != 0:
+  quit("FAILURE: compilation of atlas failed")
+
 proc integrationTest() =
   # Test installation of some "important_packages" which we are sure
   # won't disappear in the near or far future. Turns out `nitter` has
   # quite some dependencies so it suffices:
 
-  exec atlasExe & " --proxy=http://localhost:4242/ --dumbproxy --full --verbosity:trace --keepWorkspace use https://github.com/zedeus/nitter"
+  let cmd = atlasExe & " --proxy=http://localhost:4242/ --dumbproxy --full --verbosity:trace --keepWorkspace use https://github.com/zedeus/nitter"
+  let res = execShellCmd cmd
   # exec atlasExe & " --verbosity:trace --keepWorkspace use https://github.com/zedeus/nitter"
 
   sameDirContents("expected", ".")
+
+  if res != 0:
+    quit "FAILURE RUNNING: " & cmd
 
 proc cleanupIntegrationTest() =
   var dirs: seq[string] = @[]
   for k, f in walkDir("."):
     if k == pcDir and dirExists(f / ".git"):
       dirs.add f
-  for d in dirs: removeDir d
+  for d in dirs:
+    echo "Removing dir: ", d.absolutePath
+    removeDir d
   removeFile "nim.cfg"
   removeFile "ws_integration.nimble"
+  echo "Removing configs"
 
 withDir "tests/ws_integration":
-  try:
-    integrationTest()
-  finally:
     when not defined(keepTestDirs):
       cleanupIntegrationTest()
+    integrationTest()
 
 # if failures > 0: quit($failures & " failures occurred.")
 

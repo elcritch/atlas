@@ -41,7 +41,7 @@ type
     FullClones
     IgnoreUrls
 
-  AtlasContext* = object of Reporter
+  AtlasContext* = object
     projectDir*, workspace*, origDepsDir*, currentDir*: Path
     flags*: set[Flag]
     #urlMapping*: Table[string, Package] # name -> url mapping
@@ -61,9 +61,6 @@ proc setContext*(ctx: AtlasContext) =
   atlasContext = ctx
 proc context*(): var AtlasContext =
   atlasContext
-
-proc errors*(): int =
-  atlasContext.errors
 
 proc `==`*(a, b: CfgPath): bool {.borrow.}
 
@@ -105,24 +102,3 @@ proc projectFromCurrentDir*(): Path = context().currentDir.absolutePath
 #       body
 #   finally:
 #     setCurrentDir(oldDir)
-
-proc warn*(p: Path | string, arg: string) =
-  warn(atlasContext, $p, arg)
-
-proc error*(p: Path | string, arg: string) =
-  error(atlasContext, $p, arg)
-
-proc info*(p: Path | string, arg: string) =
-  info(atlasContext, $p, arg)
-
-proc trace*(p: Path | string, arg: string) =
-  trace(atlasContext, $p, arg)
-
-proc debug*(p: Path | string, arg: string) =
-  debug(atlasContext, $p, arg)
-
-proc fatal*(msg: string | Path, prefix = "fatal", code = 1) =
-  fatal(atlasContext, msg, prefix, code)
-
-proc infoNow*(p: Path | string, arg: string) =
-  infoNow(atlasContext, $p, arg)

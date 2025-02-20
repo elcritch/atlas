@@ -115,9 +115,9 @@ proc tag(tag: string) =
   pushTag(context().projectDir, tag)
 
 proc tag(field: Natural) =
-  let oldErrors = context().errors
+  let oldErrors = atlasErrors()
   let newTag = incrementLastTag(context().projectDir, field)
-  if context().errors == oldErrors:
+  if atlasErrors() == oldErrors:
     tag(newTag)
 
 proc generateDepGraph(g: DepGraph) =
@@ -141,12 +141,12 @@ proc generateDepGraph(g: DepGraph) =
     discard execShellCmd("dot -Tpng -odeps.png " & quoteShell($dotFile))
 
 proc afterGraphActions(g: DepGraph) =
-  if context().errors == 0 and KeepWorkspace notin context().flags:
+  if atlasErrors() == 0 and KeepWorkspace notin context().flags:
     writeConfig toJson(g)
 
   if ShowGraph in context().flags:
     generateDepGraph g
-  if context().errors == 0 and AutoEnv in context().flags:
+  if atlasErrors() == 0 and AutoEnv in context().flags:
     let v = g.bestNimVersion
     if v != Version"":
       setupNimEnv context().workspace, v.string, Keep in context().flags
@@ -310,7 +310,7 @@ proc mainRun() =
   var explicitProjectOverride = false
   var explicitDepsDirOverride = false
   if existsEnv("NO_COLOR") or not isatty(stdout) or (getEnv("TERM") == "dumb"):
-    context().noColors = true
+    setAtlasNoColors(true)
   for kind, key, val in getopt():
     case kind
     of cmdArgument:
@@ -360,8 +360,8 @@ proc mainRun() =
       of "global", "g": context().flags.incl GlobalWorkspace
       of "colors":
         case val.normalize
-        of "off": context().noColors = true
-        of "on": context().noColors = false
+        of "off": setAtlasNoColors(true)
+        of "on": setAtlasNoColors(false)
         else: writeHelp()
       of "proxy":
         context().proxy = val.parseUri()
@@ -369,11 +369,14 @@ proc mainRun() =
         context().dumbProxy = true
       of "verbosity":
         case val.normalize
-        of "normal": context().verbosity = 0
-        of "trace": context().verbosity = 1
-        of "debug": context().verbosity = 2
+        of "quiet": setAtlasVerbosity(Ignore)
+        of "error": setAtlasVerbosity(Error)
+        of "warning": setAtlasVerbosity(Warning)
+        of "normal": setAtlasVerbosity(Info)
+        of "trace": setAtlasVerbosity(Trace)
+        of "debug": setAtlasVerbosity(Debug)
         else: writeHelp()
-      of "assertonerror": context().assertOnError = true
+      of "assertonerror": setAtlasAssertOnError(true)
       of "resolver":
         try:
           context().defaultAlgo = parseEnum[ResolutionAlgorithm](val)
@@ -439,7 +442,7 @@ proc mainRun() =
 
     patchNimbleFile(nc, context().overrides, nimbleFiles[0], args[0])
 
-    if context().errors > 0:
+    if atlasErrors() > 0:
       discard "don't continue for 'cannot resolve'"
     elif nimbleFiles.len() == 1:
       installDependencies(nc, nimbleFiles[0].Path)
@@ -542,8 +545,8 @@ proc main =
   try:
     mainRun()
   finally:
-    context().writePendingMessages()
-  if context().errors > 0:
+    atlasWritePendingMessages()
+  if atlasErrors() > 0:
     quit 1
 
 when isMainModule:

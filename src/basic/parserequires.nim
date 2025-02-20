@@ -4,6 +4,7 @@
 import std / [strutils, paths]
 
 import compiler / [ast, idents, msgs, syntaxes, options, pathutils, lineinfos]
+import reporters
 
 type
   NimbleFileInfo* = object
@@ -16,6 +17,9 @@ type
 
 proc eqIdent(a, b: string): bool {.inline.} =
   cmpIgnoreCase(a, b) == 0 and a[0] == b[0]
+
+proc handleError(cfg: ConfigRef, li: TLineInfo, msg: string) =
+  warn("nimbleparser", "error parsing: " & msg & " file: " & repr(li))
 
 proc extract(n: PNode; conf: ConfigRef; result: var NimbleFileInfo) =
   case n.kind
@@ -32,7 +36,7 @@ proc extract(n: PNode; conf: ConfigRef; result: var NimbleFileInfo) =
           if ch.kind in {nkStrLit..nkTripleStrLit}:
             result.requires.add ch.strVal
           else:
-            localError(conf, ch.info, "'requires' takes string literals")
+            handleError(conf, ch.info, "'requires' takes string literals")
             result.hasErrors = true
       of "task":
         if n.len >= 3 and n[1].kind == nkIdent and n[2].kind in {nkStrLit..nkTripleStrLit}:

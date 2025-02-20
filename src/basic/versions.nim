@@ -226,6 +226,14 @@ type
     h*: string
     v*: Version
 
+proc shortHash*(c: Commit): string =
+  if c.h.len() == 40:
+    c.h[0..7]
+  elif c.h.len() == 0:
+    ""
+  else:
+    "err:"&c.h
+
 proc parseTaggedVersions*(outp: string, requireVersions = true): seq[Commit] =
   result = @[]
   for line in splitLines(outp):

@@ -25,7 +25,6 @@ iterator releases(path: Path,
                   nimbleCommits: seq[Commit]): (CommitOrigin, Commit) =
   let currentCommit = currentGitCommit(path, ignoreError = true)
   trace "depgraphs:releases", "currentCommit: " & $currentCommit
-  trace "depgraphs:releases", "nimbleCommits: " & $nimbleCommits
   if currentCommit.len() == 0:
     yield (FromHead, Commit(h: "", v: Version"#head"))
   else:
@@ -127,7 +126,7 @@ proc traverseDependency*(nimbleCtx: NimbleContext;
 
   let versions = move graph[idx].versions
   let nimbleVersions = collectNimbleVersions(nimbleCtx, graph[idx])
-  trace "traverseDependency", "nimble versions: " & $nimbleVersions
+  debug "traverseDependency", "nimble versions: " & $nimbleVersions
 
   if graph[idx].isRoot:
     let (origin, release) = (FromHead, Commit(h: "", v: Version"#head"))
@@ -150,7 +149,7 @@ proc expand*(graph: var DepGraph; nimbleCtx: NimbleContext; mode: TraversalMode)
     if not processed.containsOrIncl(graph[i].pkg):
       let (dest, todo) = pkgUrlToDirname(graph, graph[i])
 
-      trace "expand", "todo: " & $todo & " pkg: " & graph[i].pkg.projectName & " dest: " & $dest
+      debug "expand", "todo: " & $todo & " pkg: " & graph[i].pkg.projectName & " dest: " & $dest
       # important: the ondisk path set here!
       graph[i].ondisk = dest
 

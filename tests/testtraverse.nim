@@ -37,7 +37,7 @@ proc setupGraphNoGitTags*(): seq[string] =
 
 suite "basic repo tests":
   setup:
-    context().verbosity = 2
+    setAtlasVerbosity(Info)
   test "ws_testtraverse collect nimbles":
       withDir "tests/ws_testtraverse":
         context().flags = {UsesOverrides, KeepWorkspace, ListVersions, FullClones}
@@ -71,8 +71,8 @@ suite "basic repo tests":
         check graph.nodes.mapIt(it.pkg.projectName) == @["ws_testtraverse", "proj_a", "proj_b", "proj_c", "proj_d"]
 
         when true:
-          context().verbosity = 0
-          defer: context().verbosity = 3
+          setAtlasVerbosity(Error)
+          defer: setAtlasVerbosity(Trace)
           # for i in 0..<graph.nodes.len():
           #   let nv = collectNimbleVersions(nc, graph[i])
           #   echo "check collectNimbleVersions(nc, graph[$1]) == " % [$i], nv
@@ -136,7 +136,6 @@ suite "basic repo tests":
         check collectNimbleVersions(nc, graph[3]) == @[Commit(h: "c7540297c01dc57a98cb1fce7660ab6f2a0cee5f"), Commit(h: "9331e14f3fa20ed75b7d5c0ab93aa5fb0293192f")]
         check collectNimbleVersions(nc, graph[4]) == @[Commit(h: "0dec9c9733129919972416f04e73b1fb2cbf3bd3"), Commit(h: "dd98f775ae33d450dc7f936f850e247e820e31ad")]
 
-        echo "\nGRAPH:POST:"
         dumpJson graph, "graph-ws_testtraverse-traverseDependency-post.json"
 
   test "ws_testtraverse collectNimble no git tags":

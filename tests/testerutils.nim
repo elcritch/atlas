@@ -28,8 +28,10 @@ template sameDirContents*(expected, given: string) =
       let gdata = readFile(g)
       check gdata == edata
       if gdata != edata:
-        echo "FAILURE: files differ: ", e.absolutePath
+        echo "FAILURE: files differ: ", e.absolutePath, " to: ", g.absolutePath
         echo diffFiles(e, g).output
+      else:
+        echo "SUCCESS: files match: ", e.absolutePath
     else:
       echo "FAILURE: file does not exist: ", g
       check fileExists(g)
