@@ -85,7 +85,10 @@ suite "basic repo tests":
         check graph.nodes.mapIt(it.pkg.projectName) == @["ws_testtraverse", "proj_a", "proj_b", "proj_c", "proj_d"]
 
         for i in 0..<graph.nodes.len():
-          traverseDependency(nc, graph, i, TraversalMode.AllReleases)
+          let deps = traverseDependency(nc, graph, i, TraversalMode.AllReleases)
+          for k, v in deps:
+            graph.nodes.add v
+          echo "DEPS: ", deps
 
         check graph[0].versions.len() == 1
         check graph[1].versions.len() == 2
