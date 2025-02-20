@@ -6,7 +6,7 @@
 #    distribution, for details about the copyright.
 #
 
-import std/[os, files, dirs, paths, osproc, sequtils, strutils, uri]
+import std/[os, files, dirs, paths, osproc, sequtils, strutils, uri, algorithm]
 import reporters, osutils, versions, context
 
 type
@@ -118,6 +118,12 @@ proc collectTaggedVersions*(path: Path): seq[Commit] =
     result = parseTaggedVersions(outp)
   else:
     result = @[]
+
+proc collectFileCommits*(path, file: Path, ignoreError = false): seq[Commit] =
+  let (outp, status) = exec(GitLog, path, [$file], ignoreError=ignoreError)
+  if status == Ok:
+    result = parseTaggedVersions(outp, requireVersions = false)
+    trace "collectFileCommits", "outp: " & repr(outp) & " result: " & $result
 
 proc versionToCommit*(path: Path, algo: ResolutionAlgorithm; query: VersionInterval): string =
   let allVersions = collectTaggedVersions(path)

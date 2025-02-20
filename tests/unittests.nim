@@ -107,6 +107,13 @@ suite "versions":
     32b4192b3f0771af11e9d850046e5f3dd42a9a5f 0.8.14
     """
 
+    let onlyCommits {.used.} = dedent"""
+    24870f48c40da2146ce12ff1e675e6e7b9748355
+    b54236aaee2fc90200cb3a4e7070820ced9ce605
+    f06dc8ee3baf8f64cce67a28a6e6e8a8cd9bf04b
+
+    """
+
   test "basics":
     check v"1.0" < v"1.0.1"
     check v"1.0" < v"1.1"
@@ -148,3 +155,10 @@ suite "versions":
     assert lastPathComponent("meh/longer/here/") == "here"
     assert lastPathComponent("meh/longer/here") == "here"
 
+  test "onlyCommits with parseTaggedVersions":
+    let tags = parseTaggedVersions(onlyCommits, false)
+    echo "TAGS: ", $tags
+    check tags.len() == 3
+    check tags[0].h == "24870f48c40da2146ce12ff1e675e6e7b9748355"
+    check tags[1].h == "b54236aaee2fc90200cb3a4e7070820ced9ce605"
+    check tags[2].h == "f06dc8ee3baf8f64cce67a28a6e6e8a8cd9bf04b"

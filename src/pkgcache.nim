@@ -53,16 +53,13 @@ proc createNimbleContext*(depsdir: Path): NimbleContext =
   result = NimbleContext()
   fillPackageLookupTable(result, depsdir)
 
-proc collectNimbleVersions*(nc: NimbleContext; dep: Dependency): seq[string] =
+proc collectNimbleVersions*(nc: NimbleContext; dep: Dependency): seq[Commit] =
   let nimbleFiles = findNimbleFile(dep)
   let dir = dep.ondisk
   doAssert(dep.ondisk.string != "", "Package ondisk must be set before collectNimbleVersions can be called! Package: " & $(dep))
   trace "collectNimbleVersions", "dep: " & dep.pkg.projectName & " at: " & $dep.ondisk
   result = @[]
   if nimbleFiles.len() == 1:
-    let (outp, status) = exec(GitLog, dir, [$nimbleFiles[0]], ignoreError = true)
-    if status == Ok:
-      for line in splitLines(outp):
-        if line.len > 0 and not line.endsWith("^{}"):
-          result.add line
+    result = collectFileCommits(dir, nimbleFiles[0])
     result.reverse()
+    trace "collectNimbleVersions", "result: " & $result

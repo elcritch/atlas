@@ -226,7 +226,7 @@ type
     h*: string
     v*: Version
 
-proc parseTaggedVersions*(outp: string): seq[Commit] =
+proc parseTaggedVersions*(outp: string, requireVersions = true): seq[Commit] =
   result = @[]
   for line in splitLines(outp):
     if not line.endsWith("^{}"):
@@ -236,8 +236,11 @@ proc parseTaggedVersions*(outp: string): seq[Commit] =
       while i < line.len and line[i] in Whitespace: inc i
       while i < line.len and line[i] notin Digits: inc i
       let v = parseVersion(line, i)
-      if v != Version(""):
-        result.add Commit(h: line.substr(0, commitEnd-1), v: v)
+      let h = line.substr(0, commitEnd-1)
+      if h == "":
+        continue
+      if v != Version("") or not requireVersions:
+        result.add Commit(h: h, v: v)
   result.sort proc (a, b: Commit): int =
     (if a.v < b.v: 1
     elif a.v == b.v: 0

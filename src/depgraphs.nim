@@ -22,7 +22,7 @@ type
 
 iterator releases(path: Path,
                   mode: TraversalMode; versions: seq[DependencyVersion];
-                  nimbleCommits: seq[string]): (CommitOrigin, Commit) =
+                  nimbleCommits: seq[Commit]): (CommitOrigin, Commit) =
   let currentCommit = currentGitCommit(path, ignoreError = true)
   trace "depgraphs:releases", "currentCommit: " & $currentCommit
   trace "depgraphs:releases", "nimbleCommits: " & $nimbleCommits
@@ -47,11 +47,11 @@ iterator releases(path: Path,
             if status == Ok:
               yield (FromGitTag, tag)
               inc produced
-        for hash in nimbleCommits:
-          if not uniqueCommits.containsOrIncl(hash):
-            let status = checkoutGitCommit(path, hash)
+        for commit in nimbleCommits:
+          if not uniqueCommits.containsOrIncl(commit.h):
+            let status = checkoutGitCommit(path, commit.h)
             if status == Ok:
-              yield (FromNimbleFile, Commit(h: hash, v: Version""))
+              yield (FromNimbleFile, commit)
 
         if produced == 0:
           yield (FromHead, Commit(h: "", v: Version"#head"))
