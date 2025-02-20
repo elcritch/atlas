@@ -23,7 +23,7 @@ type
 iterator releases(path: Path,
                   mode: TraversalMode; versions: seq[DependencyVersion];
                   nimbleCommits: seq[string]): (CommitOrigin, Commit) =
-  let currentCommit = currentGitCommit(path)
+  let currentCommit = currentGitCommit(path, ignoreError = true)
   trace "depgraphs:releases", "currentCommit: " & $currentCommit
   trace "depgraphs:releases", "nimbleCommits: " & $nimbleCommits
   if currentCommit.len() == 0:

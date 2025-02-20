@@ -138,6 +138,9 @@ suite "basic repo tests":
         check graph[4].versions[0].commit == "f351cd520bdbe59d13babef63613d8e7fd11e667"
         check graph[4].versions[1].commit == "6809134018d7b61fdbef1becd9e3c077a3be1c68"
 
+        echo "\nGRAPH:POST:"
+        dumpJson graph, "graph-ws_testtraverse-traverseDependency-post.json"
+
   test "ws_testtraverse collectNimble no git tags":
     when false:
       withDir "tests/ws_testtraverse":
