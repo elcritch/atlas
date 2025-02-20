@@ -31,6 +31,7 @@ type
     nodes*: seq[Dependency]
     reqs*: seq[Requirements]
     packageToDependency*: Table[PkgUrl, int]
+    ondisk*: OrderedTable[string, Path] # URL -> dirname mapping
     reqsByDeps*: Table[Requirements, int]
 
 const
@@ -99,7 +100,7 @@ type
 
 proc pkgUrlToDirname*(g: var DepGraph; d: Dependency): (Path, PackageAction) =
   # XXX implement namespace support here
-  var dest = Path d.pkg.url
+  var dest = Path g.ondisk.getOrDefault(d.pkg.url)
   if dest.string.len == 0:
     if d.isTopLevel:
       dest = context().workspace

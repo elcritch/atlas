@@ -23,7 +23,7 @@ type
 iterator releases(path: Path,
                   mode: TraversalMode; versions: seq[DependencyVersion];
                   nimbleCommits: seq[string]): (CommitOrigin, Commit) =
-  let currentCommit = currentGitCommit(path, ignoreError = true)
+  let currentCommit = currentGitCommit(path)
   trace "depgraphs:releases", "currentCommit: " & $currentCommit
   trace "depgraphs:releases", "nimbleCommits: " & $nimbleCommits
   if currentCommit.len() == 0:
@@ -108,6 +108,7 @@ proc traverseRelease(nimbleCtx: NimbleContext; graph: var DepGraph; idx: int;
         if depIdx == -1:
           depIdx = graph.nodes.len
           graph.packageToDependency[dep] = depIdx
+          # graph.nodes.add Dependency(pkg: dep, versions: @[], isRoot: idx == 0, activeVersion: -1)
           infoNow "traverseRelease", "depIdx: " & $depIdx & " adding dep: " & $dep
           graph.nodes.add Dependency(pkg: dep, versions: @[], isRoot: depIdx == 0, activeVersion: -1)
           enrichVersionsViaExplicitHash graph[depIdx].versions, interval
@@ -382,9 +383,6 @@ proc solve*(graph: var DepGraph; form: Form) =
         for ver in mvalidVersions(pkg, graph):
           if solution.isTrue(ver.v):
             error pkg.pkg.projectName, string(ver.version) & " required"
-
-  if context().dumpGraphs:
-    dumpJson(graph, "graph-solved.json")
 
 proc traverseLoop*(nc: var NimbleContext; g: var DepGraph): seq[CfgPath] =
   result = @[]
