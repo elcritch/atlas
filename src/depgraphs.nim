@@ -62,8 +62,7 @@ iterator releases(path: Path,
       yield (FromHead, Commit(h: "", v: Version"#head"))
 
 proc traverseRelease(nimbleCtx: NimbleContext; graph: var DepGraph; idx: int;
-                     origin: CommitOrigin; release: Commit; lastNimbleContents: var string,
-                     deps: var Table[int, Dependency]) =
+                     origin: CommitOrigin; release: Commit; lastNimbleContents: var string) =
   trace "traverseRelease", "name: " & graph[idx].pkg.projectName & " origin: " & $origin & " release: " & $release
   let nimbleFiles = findNimbleFile(graph[idx])
   var packageVer = DependencyVersion(
@@ -110,18 +109,16 @@ proc traverseRelease(nimbleCtx: NimbleContext; graph: var DepGraph; idx: int;
       for dep, interval in items(graph.reqs[packageVer.req].deps):
         var depIdx = graph.packageToDependency.getOrDefault(dep, -1)
         infoNow "traverseRelease", "depIdx: " & $depIdx
-        infoNow "traverseRelease", "result: " & $deps
         if depIdx == -1:
-          depIdx = graph.nodes.len + deps.len
+          depIdx = graph.nodes.len
           graph.packageToDependency[dep] = depIdx
           # graph.nodes.add Dependency(pkg: dep, versions: @[], isRoot: idx == 0, activeVersion: -1)
           infoNow "traverseRelease", "depIdx: " & $depIdx & " adding dep: " & $dep
-          deps[depIdx] = Dependency(pkg: dep, versions: @[], isRoot: idx == 0, activeVersion: -1)
-          infoNow "traverseRelease", "result:post: " & $deps
-          enrichVersionsViaExplicitHash deps[depIdx].versions, interval
+          graph.nodes.add Dependency(pkg: dep, versions: @[], isRoot: idx == 0, activeVersion: -1)
+          enrichVersionsViaExplicitHash graph[depIdx].versions, interval
         else:
-          deps[depIdx].isRoot = deps[depIdx].isRoot or idx == 0
-          enrichVersionsViaExplicitHash deps[depIdx].versions, interval
+          graph[depIdx].isRoot = graph[depIdx].isRoot or idx == 0
+          enrichVersionsViaExplicitHash graph[depIdx].versions, interval
     else:
       badNimbleFile = true
 
@@ -131,7 +128,7 @@ proc traverseRelease(nimbleCtx: NimbleContext; graph: var DepGraph; idx: int;
     graph[idx].versions.add ensureMove packageVer
 
 proc traverseDependency*(nimbleCtx: NimbleContext;
-                         graph: var DepGraph, idx: int, mode: TraversalMode): Table[int, Dependency] =
+                         graph: var DepGraph, idx: int, mode: TraversalMode) =
   var lastNimbleContents = "<invalid content>"
 
   let versions = move graph[idx].versions
@@ -140,11 +137,11 @@ proc traverseDependency*(nimbleCtx: NimbleContext;
 
   if graph[idx].isRoot:
     let (origin, release) = (FromHead, Commit(h: "", v: Version"#head"))
-    traverseRelease(nimbleCtx, graph, idx, origin, release, lastNimbleContents, result)
+    traverseRelease(nimbleCtx, graph, idx, origin, release, lastNimbleContents)
     graph[idx].state = Processed
   else:
     for (origin, release) in releases(graph[idx].ondisk, mode, versions, nimbleVersions):
-      traverseRelease(nimbleCtx, graph, idx, origin, release, lastNimbleContents, result)
+      traverseRelease(nimbleCtx, graph, idx, origin, release, lastNimbleContents)
 
     graph[idx].state = Processed
 
@@ -183,8 +180,7 @@ proc expand*(graph: var DepGraph; nimbleCtx: NimbleContext; mode: TraversalMode)
           graph[i].errors.add "ondisk location missing"
 
       if graph[i].state == Found:
-        let newDeps = traverseDependency(nimbleCtx, graph, i, mode)
-        echo "NEW DEPS: ", newDeps
+        traverseDependency(nimbleCtx, graph, i, mode)
     inc i
 
 iterator mvalidVersions*(pkg: var Dependency; graph: var DepGraph): var DependencyVersion =

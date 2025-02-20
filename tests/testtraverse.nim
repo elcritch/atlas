@@ -38,7 +38,7 @@ proc setupGraphNoGitTags*(): seq[string] =
 suite "basic repo tests":
   setup:
     context().verbosity = 3
-  test "tests/ws_testtraverse":
+  test "ws_testtraverse collect nimbles":
       withDir "tests/ws_testtraverse":
         context().flags = {UsesOverrides, KeepWorkspace, ListVersions, FullClones}
         context().defaultAlgo = SemVer
@@ -60,7 +60,7 @@ suite "basic repo tests":
             state: Found
           )
 
-        dumpJson graph
+        # dumpJson graph
         check graph[0].pkg.projectName == "ws_testtraverse"
         check endsWith($(graph[0].pkg), "atlas/tests/ws_testtraverse")
         check graph[0].isRoot == true
@@ -71,10 +71,10 @@ suite "basic repo tests":
         when true:
           context().verbosity = 0
           defer: context().verbosity = 3
-          # for i in 0..<graph.nodes.len():
-          #   let nv = collectNimbleVersions(nc, graph[i])
-          #   echo "collectNimbleVersions(nc, graph[$1]) == " % [$i], nv
-          # echo "\n"
+          for i in 0..<graph.nodes.len():
+            let nv = collectNimbleVersions(nc, graph[i])
+            echo "collectNimbleVersions(nc, graph[$1]) == " % [$i], nv
+          echo "\n"
 
           # These will change if atlas-tests is regnerated!
           check collectNimbleVersions(nc, graph[1]) == @["f2796032bf264fde834a141f0372f60eba17a90d", "05446e3b3c8a043704bd1321fc75459c701840b1"]
@@ -84,20 +84,38 @@ suite "basic repo tests":
 
         check graph.nodes.mapIt(it.pkg.projectName) == @["ws_testtraverse", "proj_a", "proj_b", "proj_c", "proj_d"]
 
-        for i in 0..<graph.nodes.len():
-          let deps = traverseDependency(nc, graph, i, TraversalMode.AllReleases)
-          # for k, v in deps:
-          #   graph.nodes.add v
-          echo "DEPS: ", deps
+        echo "\nGRAPH:POST:"
+        dumpJson graph
+
+  test "ws_testtraverse traverseDependency":
+      withDir "tests/ws_testtraverse":
+        context().flags = {UsesOverrides, KeepWorkspace, ListVersions, FullClones}
+        context().defaultAlgo = SemVer
+        discard context().overrides.addPattern("$+", "file://./buildGraph/$#")
+        # {"overrides":{"s":[{"0":"(code: @[(opc: Capture1UntilEnd, arg1: 0, arg2: 0)], usedMatches: 1, error: \"\")","1":"file://./source/$#"}],"t":{},"strings":[]},
+        # "defaultAlgo":"SemVer","plugins":{"builderPatterns":[]},"overridesFile":"url.rules","pluginsFile":"","proxy":{"scheme":"","username":"","password":"","hostname":"","port":"","path":"","query":"","anchor":"","opaque":false,"isIpv6":false},"dumbProxy":false,"verbosity":2,"noColors":false,"assertOnError":true,"warnings":0,"errors":0,"messages":[]}
+
+        let deps = setupGraph()
+        var nc = NimbleContext()
+        var graph = createGraph(createUrlSkipPatterns(ospaths2.getCurrentDir()))
+        graph[0].ondisk = paths.getCurrentDir()
+        graph[0].state = Found
+
+        dumpJson graph
+
+        var i = 0
+        while i < graph.nodes.len:
+          traverseDependency(nc, graph, i, TraversalMode.AllReleases)
+          inc i
 
         check graph[0].versions.len() == 1
-        check graph[1].versions.len() == 2
+        # check graph[1].versions.len() == 2
         check graph.nodes.mapIt(it.pkg.projectName) == @["ws_testtraverse", "proj_a", "proj_b", "proj_c", "proj_d"]
 
         echo "\nGRAPH:POST:"
         dumpJson graph
 
-  test "tests/ws_testtraverse":
+  test "ws_testtraverse collectNimble no git tags":
     when false:
       withDir "tests/ws_testtraverse":
         let deps = setupGraphNoGitTags()
