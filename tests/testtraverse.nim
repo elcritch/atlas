@@ -127,6 +127,22 @@ suite "basic repo tests":
         check graph[0].versions.len() == 1
         check graph.nodes.mapIt(it.pkg.projectName) == @["ws_testtraverse", "proj_a", "proj_b", "proj_c", "proj_d", "does_not_exist"]
 
+        check graph[0].pkg.projectName == "ws_testtraverse"
+        check graph[0].ondisk.string.endsWith("ws_testtraverse")
+        check graph[1].ondisk.string.endsWith("ws_testtraverse/buildGraph/proj_a")
+        check graph[2].ondisk.string.endsWith("ws_testtraverse/buildGraph/proj_b")
+        check graph[3].ondisk.string.endsWith("ws_testtraverse/buildGraph/proj_c")
+        check graph[4].ondisk.string.endsWith("ws_testtraverse/buildGraph/proj_d")
+
+        check graph[1].versions[0].commit == "05446e3b3c8a043704bd1321fc75459c701840b1"
+        check graph[1].versions[1].commit == "f2796032bf264fde834a141f0372f60eba17a90d"
+        check graph[2].versions[0].commit == "88d262ecb41d6613692c89640230e27d09939266"
+        check graph[2].versions[1].commit == "d9ea0bbae7a707331fc2049cf6e6a6f0021dfefd"
+        check graph[3].versions[0].commit == "aa61b1d5eed8ba9d2ef0afcf05bb7de1f9cede5d"
+        # check graph[3].versions[1].commit == "5cfac43f580c103e79005f21b25c82ee34707e54"
+        check graph[4].versions[0].commit == "f351cd520bdbe59d13babef63613d8e7fd11e667"
+        check graph[4].versions[1].commit == "6809134018d7b61fdbef1becd9e3c077a3be1c68"
+
         echo "\nGRAPH:POST:"
         dumpJson graph
 
