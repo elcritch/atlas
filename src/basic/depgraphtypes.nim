@@ -100,7 +100,8 @@ type
 
 proc pkgUrlToDirname*(g: var DepGraph; d: Dependency): (Path, PackageAction) =
   # XXX implement namespace support here
-  var dest = Path g.ondisk.getOrDefault(d.pkg.url)
+  # var dest = Path g.ondisk.getOrDefault(d.pkg.url)
+  var dest = Path ""
   if dest.string.len == 0:
     if d.isTopLevel:
       dest = context().workspace
