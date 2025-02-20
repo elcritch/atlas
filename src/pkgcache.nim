@@ -60,6 +60,6 @@ proc collectNimbleVersions*(nc: NimbleContext; dep: Dependency): seq[Commit] =
   trace "collectNimbleVersions", "dep: " & dep.pkg.projectName & " at: " & $dep.ondisk
   result = @[]
   if nimbleFiles.len() == 1:
-    result = collectFileCommits(dir, nimbleFiles[0])
+    result = collectFileCommits(dir, nimbleFiles[0], ignoreError = true)
     result.reverse()
     trace "collectNimbleVersions", "result: " & $result

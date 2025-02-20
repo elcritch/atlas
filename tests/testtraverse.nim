@@ -71,19 +71,19 @@ suite "basic repo tests":
         check graph.nodes.mapIt(it.pkg.projectName) == @["ws_testtraverse", "proj_a", "proj_b", "proj_c", "proj_d"]
 
         when true:
-          context().verbosity = 3
+          context().verbosity = 0
           defer: context().verbosity = 3
-          for i in 0..<graph.nodes.len():
-            let nv = collectNimbleVersions(nc, graph[i])
-            echo "collectNimbleVersions(nc, graph[$1]) == " % [$i], nv
-          echo "\n"
+          # for i in 0..<graph.nodes.len():
+          #   let nv = collectNimbleVersions(nc, graph[i])
+          #   echo "check collectNimbleVersions(nc, graph[$1]) == " % [$i], nv
+          # echo "\n"
 
           # These will change if atlas-tests is regnerated!
           check collectNimbleVersions(nc, graph[0]) == newSeq[Commit]()
-          check collectNimbleVersions(nc, graph[1]) == @[Commit(h: "f2796032bf264fde834a141f0372f60eba17a90d"), Commit(h: "05446e3b3c8a043704bd1321fc75459c701840b1")]
-          check collectNimbleVersions(nc, graph[2]) == @[Commit(h: "d9ea0bbae7a707331fc2049cf6e6a6f0021dfefd"), Commit(h: "88d262ecb41d6613692c89640230e27d09939266")]
-          check collectNimbleVersions(nc, graph[3]) == @[Commit(h: "5cfac43f580c103e79005f21b25c82ee34707e54"), Commit(h: "aa61b1d5eed8ba9d2ef0afcf05bb7de1f9cede5d")]
-          check collectNimbleVersions(nc, graph[4]) == @[Commit(h: "6809134018d7b61fdbef1becd9e3c077a3be1c68"), Commit(h: "f351cd520bdbe59d13babef63613d8e7fd11e667")]
+          check collectNimbleVersions(nc, graph[1]) == @[Commit(h: "c2bd74420ee22f5bf6bfe647b94d86223a1ab6e4"), Commit(h: "78d95ce89be7bf724a975f21ddb709ac2f735f9b"), Commit(h: "34511493b0416904fe8cde9bec96e55ba2a81e88")]
+          check collectNimbleVersions(nc, graph[2]) == @[Commit(h: "561acc4524ad5450e9a891db90aec203ec9f8f82"), Commit(h: "0147e2a5e43a4415bfdc4cc94cda1803951e255a"), Commit(h: "c9ca3f58577ee53481d9171ebb6cfec5e512fd39")]
+          check collectNimbleVersions(nc, graph[3]) == @[Commit(h: "4dce809c6daead19a9e182519670db7bc29ce89e"), Commit(h: "216d32097a406f7c938bb719b63cc9a6d4ee2aa6")]
+          check collectNimbleVersions(nc, graph[4]) == @[Commit(h: "4af5e36a3a77b61ad5ff8122a284b65f37de62f7"), Commit(h: "a5363208fcda8a56fc4138a41d32920245dc03a8")]
 
         check graph.nodes.mapIt(it.pkg.projectName) == @["ws_testtraverse", "proj_a", "proj_b", "proj_c", "proj_d"]
 
