@@ -96,13 +96,11 @@ suite "basic repo tests":
         context().origDepsDir = paths.getCurrentDir() / Path"buildGraph"
         context().flags = {UsesOverrides, KeepWorkspace, ListVersions, FullClones}
         context().defaultAlgo = SemVer
-        discard context().overrides.addPattern("$+", "file://./buildGraph/$#")
-        # {"overrides":{"s":[{"0":"(code: @[(opc: Capture1UntilEnd, arg1: 0, arg2: 0)], usedMatches: 1, error: \"\")","1":"file://./source/$#"}],"t":{},"strings":[]},
-        # "defaultAlgo":"SemVer","plugins":{"builderPatterns":[]},"overridesFile":"url.rules","pluginsFile":"","proxy":{"scheme":"","username":"","password":"","hostname":"","port":"","path":"","query":"","anchor":"","opaque":false,"isIpv6":false},"dumbProxy":false,"verbosity":2,"noColors":false,"assertOnError":true,"warnings":0,"errors":0,"messages":[]}
+        discard context().overrides.addPattern("$+", "file://buildGraph/$#")
 
         let deps = setupGraph()
         var nc = NimbleContext()
-        var graph = createGraph(createUrlSkipPatterns(ospaths2.getCurrentDir() / "buildGraph/proj_a"))
+        var graph = createGraph(createUrlSkipPatterns(ospaths2.getCurrentDir() ))
         graph[0].ondisk = paths.getCurrentDir()
         graph[0].state = Found
 
@@ -110,11 +108,16 @@ suite "basic repo tests":
 
         var i = 0
         while i < graph.nodes.len:
-          echo "GRAPH: IDX: ", i
+          echo "GRAPH: IDX: ", i, " depsdir: ", context().depsDir
           for dep in graph.nodes.mitems():
+            echo "GRAPH: dep: ", dep.pkg.projectName, " ondisk: ", dep.ondisk
             if dep.state == NotInitialized:
               let (dest, _) = pkgUrlToDirname(graph, dep)
               dep.ondisk = dest
+              dep.state = Found
+              echo "GRAPH: dep: ", dep.ondisk
+              echo "GRAPH: dep.ondisk: ", dest
+          echo "GRAPH: IDX:DONE: ", i
 
           traverseDependency(nc, graph, i, TraversalMode.AllReleases)
           inc i

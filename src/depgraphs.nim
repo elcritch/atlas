@@ -114,7 +114,7 @@ proc traverseRelease(nimbleCtx: NimbleContext; graph: var DepGraph; idx: int;
           graph.packageToDependency[dep] = depIdx
           # graph.nodes.add Dependency(pkg: dep, versions: @[], isRoot: idx == 0, activeVersion: -1)
           infoNow "traverseRelease", "depIdx: " & $depIdx & " adding dep: " & $dep
-          graph.nodes.add Dependency(pkg: dep, versions: @[], isRoot: idx == 0, activeVersion: -1)
+          graph.nodes.add Dependency(pkg: dep, versions: @[], isRoot: depIdx == 0, activeVersion: -1)
           enrichVersionsViaExplicitHash graph[depIdx].versions, interval
         else:
           graph[depIdx].isRoot = graph[depIdx].isRoot or idx == 0
