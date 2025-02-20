@@ -44,10 +44,16 @@ proc `%`*(v: VarId): JsonNode {.borrow.}
 proc `%`*(v: Path): JsonNode {.borrow.}
 proc `%`*(v: (PkgUrl, VersionInterval)): JsonNode =
   %* {"url": v[0], "interval": v[1]}
-proc `%`*[K,V](t: Table[K, V]): JsonNode =
+
+proc `%`*(t: Table[PkgUrl, int]): JsonNode =
   result = newJObject()
   for k, v in t: result[$k] = % v
-  
+
+proc `%`*(t: Table[Requirements, int]): JsonNode =
+  result = newJArray()
+  for k, v in t:
+    result.add(%* {"req": % k, "idx": % v })
+
 proc dumpJson*(graph: var DepGraph) =
   echo $(%* graph)
 
