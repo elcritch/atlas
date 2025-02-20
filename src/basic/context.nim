@@ -46,6 +46,7 @@ type
     flags*: set[Flag]
     #urlMapping*: Table[string, Package] # name -> url mapping
     dumpGraphs*: bool = true # TODO: debugging, plumb cli option later
+    dumpFormular*: bool = false # TODO: debugging, plumb cli option later
     overrides*: Patterns
     defaultAlgo*: ResolutionAlgorithm
     plugins*: PluginInfo

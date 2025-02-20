@@ -333,7 +333,8 @@ proc solve*(graph: var DepGraph; form: Form) =
   if context().dumpGraphs:
     dumpJson(graph, "graph-solve-input.json")
   var solution = createSolution(maxVar)
-  debugFormular graph, form, solution
+  if context().dumpFormular:
+    debugFormular graph, form, solution
 
   if satisfiable(form.formula, solution):
     for node in mitems graph.nodes:
