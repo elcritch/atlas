@@ -63,7 +63,7 @@ iterator releases(path: Path,
 
 proc traverseRelease(nimbleCtx: NimbleContext; graph: var DepGraph; idx: int;
                      origin: CommitOrigin; release: Commit; lastNimbleContents: var string) =
-  trace "traverseRelease", "name: " & graph[idx].pkg.projectName & " origin: " & $origin & " release: " & $release
+  debug "traverseRelease", "name: " & graph[idx].pkg.projectName & " origin: " & $origin & " release: " & $release
   let nimbleFiles = findNimbleFile(graph[idx])
   var packageVer = DependencyVersion(
     version: release.v,
@@ -101,15 +101,13 @@ proc traverseRelease(nimbleCtx: NimbleContext; graph: var DepGraph; idx: int;
       lastNimbleContents = ensureMove nimbleContents
 
     if graph.reqs[packageVer.req].status == Normal:
-      infoNow "GRAPH:REQS: ", "greqs: " & $graph.reqs[packageVer.req]
       for dep, interval in items(graph.reqs[packageVer.req].deps):
         var depIdx = graph.packageToDependency.getOrDefault(dep, -1)
-        infoNow "traverseRelease", "depIdx: " & $depIdx
         if depIdx == -1:
           depIdx = graph.nodes.len
           graph.packageToDependency[dep] = depIdx
           # graph.nodes.add Dependency(pkg: dep, versions: @[], isRoot: idx == 0, activeVersion: -1)
-          infoNow "traverseRelease", "depIdx: " & $depIdx & " adding dep: " & $dep
+          debug "traverseRelease", "depIdx: " & $depIdx & " adding dep: " & $dep
           graph.nodes.add Dependency(pkg: dep, versions: @[], isRoot: depIdx == 0, activeVersion: -1)
           enrichVersionsViaExplicitHash graph[depIdx].versions, interval
         else:

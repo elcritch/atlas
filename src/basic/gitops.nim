@@ -62,13 +62,13 @@ proc exec*(gitCmd: Command;
            ): (string, ResultCode) =
   let cmd = $gitCmd % ["DIR", $path]
   #if execDir.len == 0: $cmd else: $(cmd) % [execDir]
-  debug "gitops", "Running Git command `$1`" % [ join(@[cmd] & @args, " ")]
   if isGitDir(path):
     result = silentExec(cmd, args)
   else:
     result = ("not a git repository", ResultCode(1))
   if not ignoreError and result[1] != Ok:
-    error "gitops", "Git command failed `$1` failed with code: $2" % [$gitCmd, $result[1]]
+    error "gitops", "Git command failed `$1` failed with code: $2" % [$gitCmd, $int(result[1])]
+    trace "gitops", "Running Git command `$1`" % [ join(@[cmd] & @args, " ")]
 
 proc checkGitDiffStatus*(path: Path): string =
   let (outp, status) = exec(GitDiff, path, [])
@@ -157,7 +157,7 @@ proc checkoutGitCommit*(path: Path, commit: string): ResultCode =
   if statusB != Ok:
     error($path, "could not checkout commit " & commit)
   else:
-    info($path, "updated package to " & commit)
+    debug($path, "updated package to " & commit)
 
 proc checkoutGitCommitFull*(path: Path, commit: string; fullClones: bool) =
   var smExtraArgs: seq[string] = @[]
@@ -186,7 +186,7 @@ proc checkoutGitCommitFull*(path: Path, commit: string; fullClones: bool) =
   if status != Ok:
     error($path, "could not checkout commit " & commit)
   else:
-    info($path, "updated package to " & commit)
+    debug($path, "updated package to " & commit)
 
   let (_, subModStatus) = exec(GitSubModUpdate, path, smExtraArgs)
   if subModstatus != Ok:
