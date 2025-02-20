@@ -32,7 +32,7 @@ task buildRelease, "Build release":
 
 task testReposSetup, "Setup atlas-tests from a cached zip":
   if not dirExists("atlas-tests"):
-    let version = "v0.1.1"
+    let version = "v0.1.2"
     let repo = "https://github.com/nim-lang/atlas-tests/"
     let file = "atlas-tests.zip"
     let url = fmt"{repo}/releases/download/{version}/{file}"
