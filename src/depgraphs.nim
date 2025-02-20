@@ -25,7 +25,8 @@ iterator releases(path: Path,
                   nimbleCommits: seq[string]): (CommitOrigin, Commit) =
   let currentCommit = currentGitCommit(path)
   debug "depgraphs:releases", "currentCommit: " & $currentCommit
-  if currentCommit.len() == 40:
+  debug "depgraphs:releases", "nimbleCommits: " & $nimbleCommits
+  if currentCommit.len() == 0:
     yield (FromHead, Commit(h: "", v: Version"#head"))
   else:
     case mode
@@ -62,6 +63,7 @@ iterator releases(path: Path,
 
 proc traverseRelease(nimbleCtx: NimbleContext; graph: var DepGraph; idx: int;
                      origin: CommitOrigin; release: Commit; lastNimbleContents: var string) =
+  trace "traverseRelease", "name: " & graph[idx].pkg.projectName & " origin: " & $origin & " release: " & $release
   let nimbleFiles = findNimbleFile(graph[idx])
   var packageVer = DependencyVersion(
     version: release.v,

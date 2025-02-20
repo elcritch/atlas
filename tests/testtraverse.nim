@@ -77,6 +77,9 @@ suite "basic repo tests":
         for i in 0..<graph.nodes.len():
           traverseDependency(nc, graph, i, TraversalMode.AllReleases)
 
+        check graph[0].versions.len() == 1
+        check graph[1].versions.len() == 2
+
         echo "\nGRAPH:POST:"
         dumpJson graph
 
