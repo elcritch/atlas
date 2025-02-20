@@ -26,7 +26,7 @@ type
     errors*: int
     messages: seq[(MsgKind, string, string)] # delayed output
 
-var atlasReporter*: Reporter
+var atlasReporter* = Reporter(verbosity: Info)
 
 proc setAtlasVerbosity*(verbosity: MsgKind) =
   atlasReporter.verbosity = verbosity
