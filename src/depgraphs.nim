@@ -24,8 +24,8 @@ iterator releases(path: Path,
                   mode: TraversalMode; versions: seq[DependencyVersion];
                   nimbleCommits: seq[string]): (CommitOrigin, Commit) =
   let currentCommit = currentGitCommit(path)
-  debug "depgraphs:releases", "currentCommit: " & $currentCommit
-  debug "depgraphs:releases", "nimbleCommits: " & $nimbleCommits
+  trace "depgraphs:releases", "currentCommit: " & $currentCommit
+  trace "depgraphs:releases", "nimbleCommits: " & $nimbleCommits
   if currentCommit.len() == 0:
     yield (FromHead, Commit(h: "", v: Version"#head"))
   else:
