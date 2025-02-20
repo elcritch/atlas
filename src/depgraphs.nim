@@ -88,7 +88,7 @@ proc traverseRelease(nimbleCtx: NimbleContext; graph: var DepGraph; idx: int;
       packageVer.req = graph[idx].versions[^1].req
     else:
       let reqResult = parseNimbleFile(nimbleCtx, nimbleFile, context().overrides)
-      if origin == FromNimbleFile and packageVer.version == Version"":
+      if origin == FromNimbleFile and packageVer.version == Version"" and reqResult.version != Version"":
         packageVer.version = reqResult.version
         debug "traverseRelease", "set version: " & $reqResult.version
 

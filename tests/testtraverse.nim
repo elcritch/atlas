@@ -89,6 +89,8 @@ suite "basic repo tests":
 
   test "ws_testtraverse traverseDependency":
       withDir "tests/ws_testtraverse":
+        context().workspace = paths.getCurrentDir()
+        context().origDepsDir = paths.getCurrentDir() / Path"buildGraph"
         context().flags = {UsesOverrides, KeepWorkspace, ListVersions, FullClones}
         context().defaultAlgo = SemVer
         discard context().overrides.addPattern("$+", "file://./buildGraph/$#")
@@ -101,16 +103,32 @@ suite "basic repo tests":
         graph[0].ondisk = paths.getCurrentDir()
         graph[0].state = Found
 
+        for dep in deps[0..0]:
+          let url = createUrlSkipPatterns(dep)
+          graph.nodes.add Dependency(
+            pkg: url, versions: @[], isRoot: false, isTopLevel: false, activeVersion: -1,
+            ondisk: Path(dep),
+            state: Found
+          )
+
         dumpJson graph
 
         var i = 0
         while i < graph.nodes.len:
+          echo "GRAPH: IDX: ", i
+          for dep in graph.nodes.mitems():
+            if dep.state == NotInitialized:
+              let (dest, _) = pkgUrlToDirname(graph, dep)
+              dep.ondisk = dest
+
           traverseDependency(nc, graph, i, TraversalMode.AllReleases)
           inc i
 
+        dumpJson graph
+
         check graph[0].versions.len() == 1
-        # check graph[1].versions.len() == 2
-        check graph.nodes.mapIt(it.pkg.projectName) == @["ws_testtraverse", "proj_a", "proj_b", "proj_c", "proj_d"]
+        check graph[1].versions.len() == 2
+        check graph.nodes.mapIt(it.pkg.projectName) == @["ws_testtraverse", "proj_a", "proj_b", "proj_c", "proj_d", "does_not_exist"]
 
         echo "\nGRAPH:POST:"
         dumpJson graph
