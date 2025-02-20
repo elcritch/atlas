@@ -1,4 +1,4 @@
-import std/strformat
+import std/[strformat, strutils]
 
 task build, "Build local atlas":
   exec "nim c -d:debug -o:./atlas src/atlas.nim"
@@ -31,15 +31,30 @@ task buildRelease, "Build release":
       exec "nim c -d:release -o:./atlas src/atlas.nim"
 
 task testReposSetup, "Setup atlas-tests from a cached zip":
+  let version = "0.1.3"
+  let repo = "https://github.com/nim-lang/atlas-tests/"
+  let file = "atlas-tests.zip"
+  let url = fmt"{repo}/releases/download/v{version}/{file}"
   if not dirExists("atlas-tests"):
-    let version = "v0.1.2"
-    let repo = "https://github.com/nim-lang/atlas-tests/"
-    let file = "atlas-tests.zip"
-    let url = fmt"{repo}/releases/download/{version}/{file}"
     echo "Downloading Test Repos zip"
     exec(fmt"curl -L -o {file} {url}")
     echo "Unzipping Test Repos"
     exec(fmt"unzip -o {file}")
+  else:
+    let actualver =
+      if fileExists("atlas-tests/atlas_tests.nimble"):
+        readFile("atlas-tests/atlas_tests.nimble").split("=")[^1].replace("\"","").strip()
+      else:
+        "0.0.0"
+    echo "Atlas Tests: got version: ", actualver , " expected: ", version
+    if version notin actualver:
+      echo fmt"Atlas Tests Outdated; Updating..."
+      echo "Downloading Test Repos zip"
+      exec(fmt"curl -L -o {file} {url}")
+      echo "Deleting Atlas Test Repos"
+      exec(fmt"mv atlas-tests atlas-tests-old-{actualver}")
+      echo "Unzipping Test Repos"
+      exec(fmt"unzip -o {file}")
 
 task runGitHttpServer, "Run test http server":
   testReposSetupTask()
