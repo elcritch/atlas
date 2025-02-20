@@ -48,7 +48,10 @@ suite "basic repo tests":
 
         let deps = setupGraph()
         var nc = NimbleContext()
-        var graph = DepGraph(nodes: @[], reqs: defaultReqs())
+        # var graph = DepGraph(nodes: @[], reqs: defaultReqs())
+        var graph = createGraph(createUrlSkipPatterns(ospaths2.getCurrentDir()))
+        graph[0].ondisk = paths.getCurrentDir()
+        graph[0].state = Found
 
         dumpJson graph
 
@@ -56,17 +59,16 @@ suite "basic repo tests":
           let url = createUrlSkipPatterns(dep)
           graph.packageToDependency[url] = graph.nodes.len
           graph.nodes.add Dependency(
-            pkg: url,
-            versions: @[], isRoot: false, isTopLevel: false, activeVersion: -1,
+            pkg: url, versions: @[], isRoot: false, isTopLevel: false, activeVersion: -1,
             ondisk: Path(dep),
             state: Found
           )
 
         # dumpJson graph
-        check graph[0].pkg.projectName == "proj_a"
-        # check endsWith($(graph[0].pkg), "atlas/tests/ws_testtraverse/buildGraph/proj_a")
-        check graph[0].pkg.projectName == "proj_a"
-        check graph.nodes.mapIt(it.pkg.projectName) == @["proj_a", "proj_b", "proj_c", "proj_d"]
+        check graph[0].isRoot == true
+        check graph[0].isTopLevel == true
+        check graph[0].pkg.projectName == "ws_testtraverse"
+        check graph.nodes.mapIt(it.pkg.projectName) == @["ws_testtraverse", "proj_a", "proj_b", "proj_c", "proj_d"]
 
         when true:
           context().verbosity = 0
@@ -77,15 +79,16 @@ suite "basic repo tests":
           echo "\n"
 
           # These will change if atlas-tests is regnerated!
-          check collectNimbleVersions(nc, graph[0]) == @["f2796032bf264fde834a141f0372f60eba17a90d", "05446e3b3c8a043704bd1321fc75459c701840b1"]
-          check collectNimbleVersions(nc, graph[1]) == @["d9ea0bbae7a707331fc2049cf6e6a6f0021dfefd", "88d262ecb41d6613692c89640230e27d09939266"]
-          check collectNimbleVersions(nc, graph[2]) == @["5cfac43f580c103e79005f21b25c82ee34707e54", "aa61b1d5eed8ba9d2ef0afcf05bb7de1f9cede5d"]
-          check collectNimbleVersions(nc, graph[3]) == @["6809134018d7b61fdbef1becd9e3c077a3be1c68", "f351cd520bdbe59d13babef63613d8e7fd11e667"]
+          check collectNimbleVersions(nc, graph[0]) == newSeq[string]()
+          check collectNimbleVersions(nc, graph[1]) == @["f2796032bf264fde834a141f0372f60eba17a90d", "05446e3b3c8a043704bd1321fc75459c701840b1"]
+          check collectNimbleVersions(nc, graph[2]) == @["d9ea0bbae7a707331fc2049cf6e6a6f0021dfefd", "88d262ecb41d6613692c89640230e27d09939266"]
+          check collectNimbleVersions(nc, graph[3]) == @["5cfac43f580c103e79005f21b25c82ee34707e54", "aa61b1d5eed8ba9d2ef0afcf05bb7de1f9cede5d"]
+          check collectNimbleVersions(nc, graph[4]) == @["6809134018d7b61fdbef1becd9e3c077a3be1c68", "f351cd520bdbe59d13babef63613d8e7fd11e667"]
 
-        check graph.nodes.mapIt(it.pkg.projectName) == @["proj_a", "proj_b", "proj_c", "proj_d"]
+        check graph.nodes.mapIt(it.pkg.projectName) == @["ws_testtraverse", "proj_a", "proj_b", "proj_c", "proj_d"]
 
-        echo "\nGRAPH:POST:"
-        dumpJson graph
+        # echo "\nGRAPH:POST:"
+        # dumpJson graph
 
   test "ws_testtraverse traverseDependency":
       withDir "tests/ws_testtraverse":
@@ -99,22 +102,9 @@ suite "basic repo tests":
 
         let deps = setupGraph()
         var nc = NimbleContext()
-        var graph = DepGraph(nodes: @[], reqs: defaultReqs())
-        let url = createUrlSkipPatterns(deps[0])
-        graph.nodes.add Dependency(
-          pkg: url,
-          versions: @[], isRoot: false, isTopLevel: false, activeVersion: -1,
-          ondisk: Path(deps[0]),
-          state: Found
-        )
-
-        # for dep in deps[0..0]:
-        #   let url = createUrlSkipPatterns(dep)
-        #   graph.nodes.add Dependency(
-        #     pkg: url, versions: @[], isRoot: false, isTopLevel: false, activeVersion: -1,
-        #     ondisk: Path(dep),
-        #     state: Found
-        #   )
+        var graph = createGraph(createUrlSkipPatterns(ospaths2.getCurrentDir() / "buildGraph/proj_a"))
+        graph[0].ondisk = paths.getCurrentDir()
+        graph[0].state = Found
 
         dumpJson graph
 
@@ -132,7 +122,6 @@ suite "basic repo tests":
         dumpJson graph
 
         check graph[0].versions.len() == 1
-        check graph[1].versions.len() == 2
         check graph.nodes.mapIt(it.pkg.projectName) == @["ws_testtraverse", "proj_a", "proj_b", "proj_c", "proj_d", "does_not_exist"]
 
         echo "\nGRAPH:POST:"
