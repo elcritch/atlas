@@ -37,7 +37,7 @@ proc setupGraphNoGitTags*(): seq[string] =
 
 suite "basic repo tests":
   setup:
-    context().verbosity = 3
+    context().verbosity = 2
   test "ws_testtraverse collect nimbles":
       withDir "tests/ws_testtraverse":
         context().flags = {UsesOverrides, KeepWorkspace, ListVersions, FullClones}
@@ -53,7 +53,7 @@ suite "basic repo tests":
         graph[0].ondisk = paths.getCurrentDir()
         graph[0].state = Found
 
-        dumpJson graph
+        dumpJson graph, "graph-ws_testtraverse-collectnimbles.json"
 
         for dep in deps:
           let url = createUrlSkipPatterns(dep)
@@ -104,25 +104,20 @@ suite "basic repo tests":
         graph[0].ondisk = paths.getCurrentDir()
         graph[0].state = Found
 
-        dumpJson graph
+        dumpJson graph, "graph-ws_testtraverse-traverseDependency.json"
 
         var i = 0
         while i < graph.nodes.len:
-          echo "GRAPH: IDX: ", i, " depsdir: ", context().depsDir
           for dep in graph.nodes.mitems():
-            echo "GRAPH: dep: ", dep.pkg.projectName, " ondisk: ", dep.ondisk
             if dep.state == NotInitialized:
               let (dest, _) = pkgUrlToDirname(graph, dep)
               dep.ondisk = dest
               dep.state = Found
-              echo "GRAPH: dep: ", dep.ondisk
-              echo "GRAPH: dep.ondisk: ", dest
-          echo "GRAPH: IDX:DONE: ", i
 
           traverseDependency(nc, graph, i, TraversalMode.AllReleases)
           inc i
 
-        dumpJson graph
+        dumpJson graph, "graph-ws_testtraverse-traverseDependency-post.json"
 
         check graph[0].versions.len() == 1
         check graph.nodes.mapIt(it.pkg.projectName) == @["ws_testtraverse", "proj_a", "proj_b", "proj_c", "proj_d", "does_not_exist"]
@@ -142,9 +137,6 @@ suite "basic repo tests":
         # check graph[3].versions[1].commit == "5cfac43f580c103e79005f21b25c82ee34707e54" # no tag
         check graph[4].versions[0].commit == "f351cd520bdbe59d13babef63613d8e7fd11e667"
         check graph[4].versions[1].commit == "6809134018d7b61fdbef1becd9e3c077a3be1c68"
-
-        echo "\nGRAPH:POST:"
-        dumpJson graph
 
   test "ws_testtraverse collectNimble no git tags":
     when false:

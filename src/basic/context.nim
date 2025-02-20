@@ -45,6 +45,7 @@ type
     projectDir*, workspace*, origDepsDir*, currentDir*: Path
     flags*: set[Flag]
     #urlMapping*: Table[string, Package] # name -> url mapping
+    dumpGraphs*: bool = true # TODO: debugging, plumb cli option later
     overrides*: Patterns
     defaultAlgo*: ResolutionAlgorithm
     plugins*: PluginInfo

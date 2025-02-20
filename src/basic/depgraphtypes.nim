@@ -31,7 +31,6 @@ type
     nodes*: seq[Dependency]
     reqs*: seq[Requirements]
     packageToDependency*: Table[PkgUrl, int]
-    ondisk*: OrderedTable[string, Path] # URL -> dirname mapping
     reqsByDeps*: Table[Requirements, int]
 
 const
@@ -54,10 +53,6 @@ proc `%`*(t: Table[Requirements, int]): JsonNode =
   for k, v in t:
     result.add(%* {"req": % k, "idx": % v })
 
-proc dumpJson*(graph: var DepGraph) =
-  echo $(%* graph)
-
-
 proc `[]`*(g: DepGraph, idx: int): Dependency =
   g.nodes[idx]
 
@@ -67,10 +62,20 @@ proc `[]`*(g: var DepGraph, idx: int): var Dependency =
 proc defaultReqs*(): seq[Requirements] =
   @[Requirements(deps: @[], v: NoVar), Requirements(status: HasUnknownNimbleFile, v: NoVar)]
 
-proc toJson*(d: DepGraph): JsonNode =
+proc toJson*(d: DepGraph, full = false): JsonNode =
   result = newJObject()
   result["nodes"] = toJson(d.nodes)
   result["reqs"] = toJson(d.reqs)
+  if full:
+    result["packageToDependency"] = %(d.packageToDependency)
+    result["reqsByDeps"] = %(d.reqsByDeps)
+
+proc dumpJson*(d: DepGraph, filename: string, full = true, pretty = true) =
+  let jn = d.toJson(full=full)
+  if pretty:
+    writeFile(filename, pretty(jn))
+  else:
+    writeFile(filename, $(jn))
 
 proc findNimbleFile*(nimbleFile: Path): seq[Path] =
   if fileExists(nimbleFile):
@@ -94,7 +99,7 @@ type
 
 proc pkgUrlToDirname*(g: var DepGraph; d: Dependency): (Path, PackageAction) =
   # XXX implement namespace support here
-  var dest = Path g.ondisk.getOrDefault(d.pkg.url)
+  var dest = Path d.pkg.url
   if dest.string.len == 0:
     if d.isTopLevel:
       dest = context().workspace
@@ -165,7 +170,7 @@ proc readOnDisk(result: var DepGraph) =
     if n.isNil: return
     let nodes = jsonTo(n, typeof(result.nodes))
     for n in nodes:
-      result.ondisk[n.pkg.url] = n.ondisk
+      # result.ondisk[n.pkg.url] = n.ondisk
       if dirExists(n.ondisk):
         if n.isRoot:
           if not result.packageToDependency.hasKey(n.pkg):

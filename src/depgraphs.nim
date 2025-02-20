@@ -108,7 +108,6 @@ proc traverseRelease(nimbleCtx: NimbleContext; graph: var DepGraph; idx: int;
         if depIdx == -1:
           depIdx = graph.nodes.len
           graph.packageToDependency[dep] = depIdx
-          # graph.nodes.add Dependency(pkg: dep, versions: @[], isRoot: idx == 0, activeVersion: -1)
           infoNow "traverseRelease", "depIdx: " & $depIdx & " adding dep: " & $dep
           graph.nodes.add Dependency(pkg: dep, versions: @[], isRoot: depIdx == 0, activeVersion: -1)
           enrichVersionsViaExplicitHash graph[depIdx].versions, interval
@@ -144,8 +143,8 @@ proc traverseDependency*(nimbleCtx: NimbleContext;
 proc expand*(graph: var DepGraph; nimbleCtx: NimbleContext; mode: TraversalMode) =
   ## Expand the graph by adding all dependencies.
   # trace "expand", "nodes: " & $graph.nodes
-  echo "EXPAND:GRAPH:"
-  dumpJson(graph)
+  if context().dumpGraphs:
+    dumpJson(graph, "graph-expand-input.json")
   var processed = initHashSet[PkgUrl]()
   var i = 0
   while i < graph.nodes.len:
@@ -178,6 +177,8 @@ proc expand*(graph: var DepGraph; nimbleCtx: NimbleContext; mode: TraversalMode)
       if graph[i].state == Found:
         traverseDependency(nimbleCtx, graph, i, mode)
     inc i
+  if context().dumpGraphs:
+    dumpJson(graph, "graph-expanded.json")
 
 iterator mvalidVersions*(pkg: var Dependency; graph: var DepGraph): var DependencyVersion =
   for ver in mitems pkg.versions:
@@ -330,8 +331,8 @@ proc debugFormular(graph: var DepGraph; form: Form; solution: Solution) =
 
 proc solve*(graph: var DepGraph; form: Form) =
   let maxVar = form.idgen
-  echo "SOLVE:GRAPH:"
-  dumpJson(graph)
+  if context().dumpGraphs:
+    dumpJson(graph, "graph-solve-input.json")
   var solution = createSolution(maxVar)
   debugFormular graph, form, solution
 
@@ -381,6 +382,9 @@ proc solve*(graph: var DepGraph; form: Form) =
         for ver in mvalidVersions(pkg, graph):
           if solution.isTrue(ver.v):
             error pkg.pkg.projectName, string(ver.version) & " required"
+
+  if context().dumpGraphs:
+    dumpJson(graph, "graph-solved.json")
 
 proc traverseLoop*(nc: var NimbleContext; g: var DepGraph): seq[CfgPath] =
   result = @[]
