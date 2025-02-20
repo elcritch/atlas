@@ -113,7 +113,7 @@ proc gitDescribeRefTag*(path: Path, commit: string): string =
   result = if status == Ok: strutils.strip(lt) else: ""
 
 proc collectTaggedVersions*(path: Path): seq[Commit] =
-  let (outp, status) = exec(GitTags, path, [])
+  let (outp, status) = exec(GitTags, path, [], ignoreError=true)
   if status == Ok:
     result = parseTaggedVersions(outp)
   else:

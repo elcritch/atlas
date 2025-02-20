@@ -79,10 +79,6 @@ proc traverseRelease(nimbleCtx: NimbleContext; graph: var DepGraph; idx: int;
       var nimbleContents = readFile($nimbleFile)
     else:
       let nimbleContents = readFile($nimbleFile)
-    debug "traverseRelease", "nimble: " & $nimbleFile
-    debug "traverseRelease", "nimble contents: "
-    for line in nimbleContents.splitLines():
-      debug "...", line
     if lastNimbleContents == nimbleContents:
       debug "traverseRelease", "req same as last"
       packageVer.req = graph[idx].versions[^1].req

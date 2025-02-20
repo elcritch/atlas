@@ -429,7 +429,6 @@ proc mainRun() =
     var nimbleFiles = findNimbleFile(context().workspace, currDirName)
     var nc = createNimbleContext(context().depsDir)
 
-    echo "USE:foundNimble: ", $nimbleFiles
     if nimbleFiles.len() == 0:
       let nimbleFile = context().workspace / Path(extractProjectName($context().workspace) & ".nimble")
       trace "use", "USE:nimbleFile:set: " & $nimbleFile
