@@ -1,7 +1,7 @@
 # Small program that runs the test cases
 
 import std / [strutils, os, osproc, tables, sequtils, strformat, unittest]
-import basic/[sattypes, context, gitops, reporters, nimbleparser, pkgurls, versions]
+import basic/[sattypes, context, gitops, reporters, nimbleparser, pkgurls, compiledpatterns, versions]
 import basic/depgraphtypes
 import depgraphs
 import pkgcache
@@ -40,6 +40,12 @@ suite "basic repo tests":
     context().verbosity = 3
   test "tests/ws_testtraverse":
       withDir "tests/ws_testtraverse":
+        context().flags = {UsesOverrides, KeepWorkspace, ListVersions, FullClones}
+        context().defaultAlgo = SemVer
+        discard context().overrides.addPattern("$+", "file://./source/$#")
+        # {"overrides":{"s":[{"0":"(code: @[(opc: Capture1UntilEnd, arg1: 0, arg2: 0)], usedMatches: 1, error: \"\")","1":"file://./source/$#"}],"t":{},"strings":[]},
+        # "defaultAlgo":"SemVer","plugins":{"builderPatterns":[]},"overridesFile":"url.rules","pluginsFile":"","proxy":{"scheme":"","username":"","password":"","hostname":"","port":"","path":"","query":"","anchor":"","opaque":false,"isIpv6":false},"dumbProxy":false,"verbosity":2,"noColors":false,"assertOnError":true,"warnings":0,"errors":0,"messages":[]}
+
         let deps = setupGraph()
         var nc = NimbleContext()
         var graph = createGraph(createUrlSkipPatterns(ospaths2.getCurrentDir()))
