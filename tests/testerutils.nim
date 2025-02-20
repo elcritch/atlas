@@ -4,6 +4,8 @@ from std/private/gitutils import diffFiles
 export diffFiles
 import githttpserver
 
+let atlasExe* = absolutePath("bin" / "atlas".addFileExt(ExeExt))
+
 proc exec*(cmd: string) =
   if execShellCmd(cmd) != 0:
     quit "FAILURE RUNNING: " & cmd
