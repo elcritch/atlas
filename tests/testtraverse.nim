@@ -79,11 +79,13 @@ suite "basic repo tests":
           # echo "\n"
 
           # These will change if atlas-tests is regnerated!
+          # To update run and use commits not adding a proj_x.nim file
+          #    curl http://localhost:4242/buildGraph/ws_generated-logs.txt
           check collectNimbleVersions(nc, graph[0]) == newSeq[Commit]()
-          check collectNimbleVersions(nc, graph[1]) == @[Commit(h: "c2bd74420ee22f5bf6bfe647b94d86223a1ab6e4"), Commit(h: "78d95ce89be7bf724a975f21ddb709ac2f735f9b"), Commit(h: "34511493b0416904fe8cde9bec96e55ba2a81e88")]
-          check collectNimbleVersions(nc, graph[2]) == @[Commit(h: "561acc4524ad5450e9a891db90aec203ec9f8f82"), Commit(h: "0147e2a5e43a4415bfdc4cc94cda1803951e255a"), Commit(h: "c9ca3f58577ee53481d9171ebb6cfec5e512fd39")]
-          check collectNimbleVersions(nc, graph[3]) == @[Commit(h: "4dce809c6daead19a9e182519670db7bc29ce89e"), Commit(h: "216d32097a406f7c938bb719b63cc9a6d4ee2aa6")]
-          check collectNimbleVersions(nc, graph[4]) == @[Commit(h: "4af5e36a3a77b61ad5ff8122a284b65f37de62f7"), Commit(h: "a5363208fcda8a56fc4138a41d32920245dc03a8")]
+          check collectNimbleVersions(nc, graph[1]) == @[Commit(h: "e479b438015e734bea67a9c63d783e78cab5746e"), Commit(h: "7ca5581cd5355f6b5461a23f9683f19378bd268a"), Commit(h: "fb3804df03c3c414d98d1f57deeb44c8a223ba44")]
+          check collectNimbleVersions(nc, graph[2]) == @[Commit(h: "af4275109d60caaeacf2912a37c2339aca40a922"), Commit(h: "cd3ad76043e5f983f704be6bf61e57d187fe070f"), Commit(h: "ee875baecee161ed053b87b583b2f08526838bd6")]
+          check collectNimbleVersions(nc, graph[3]) == @[Commit(h: "c7540297c01dc57a98cb1fce7660ab6f2a0cee5f"), Commit(h: "9331e14f3fa20ed75b7d5c0ab93aa5fb0293192f")]
+          check collectNimbleVersions(nc, graph[4]) == @[Commit(h: "0dec9c9733129919972416f04e73b1fb2cbf3bd3"), Commit(h: "dd98f775ae33d450dc7f936f850e247e820e31ad")]
 
         check graph.nodes.mapIt(it.pkg.projectName) == @["ws_testtraverse", "proj_a", "proj_b", "proj_c", "proj_d"]
 
@@ -129,18 +131,10 @@ suite "basic repo tests":
         check graph[3].ondisk.string.endsWith("ws_testtraverse/buildGraph/proj_c")
         check graph[4].ondisk.string.endsWith("ws_testtraverse/buildGraph/proj_d")
 
-        check graph[1].versions[0].commit == "34511493b0416904fe8cde9bec96e55ba2a81e88"
-        check graph[1].versions[1].commit == "c2bd74420ee22f5bf6bfe647b94d86223a1ab6e4"
-        check graph[1].versions.len() == 2
-        check graph[2].versions[0].commit == "c9ca3f58577ee53481d9171ebb6cfec5e512fd39"
-        check graph[2].versions[1].commit == "561acc4524ad5450e9a891db90aec203ec9f8f82"
-        check graph[2].versions.len() == 2
-        check graph[3].versions[0].commit == "216d32097a406f7c938bb719b63cc9a6d4ee2aa6"
-        # check graph[3].versions[1].commit == "5cfac43f580c103e79005f21b25c82ee34707e54" # no tag
-        check graph[3].versions.len() == 1
-        check graph[4].versions[0].commit == "a5363208fcda8a56fc4138a41d32920245dc03a8"
-        check graph[4].versions[1].commit == "4af5e36a3a77b61ad5ff8122a284b65f37de62f7"
-        check graph[4].versions.len() == 2
+        check collectNimbleVersions(nc, graph[1]) == @[Commit(h: "e479b438015e734bea67a9c63d783e78cab5746e"), Commit(h: "7ca5581cd5355f6b5461a23f9683f19378bd268a"), Commit(h: "fb3804df03c3c414d98d1f57deeb44c8a223ba44")]
+        check collectNimbleVersions(nc, graph[2]) == @[Commit(h: "af4275109d60caaeacf2912a37c2339aca40a922"), Commit(h: "cd3ad76043e5f983f704be6bf61e57d187fe070f"), Commit(h: "ee875baecee161ed053b87b583b2f08526838bd6")]
+        check collectNimbleVersions(nc, graph[3]) == @[Commit(h: "c7540297c01dc57a98cb1fce7660ab6f2a0cee5f"), Commit(h: "9331e14f3fa20ed75b7d5c0ab93aa5fb0293192f")]
+        check collectNimbleVersions(nc, graph[4]) == @[Commit(h: "0dec9c9733129919972416f04e73b1fb2cbf3bd3"), Commit(h: "dd98f775ae33d450dc7f936f850e247e820e31ad")]
 
         echo "\nGRAPH:POST:"
         dumpJson graph, "graph-ws_testtraverse-traverseDependency-post.json"
