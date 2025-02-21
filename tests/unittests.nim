@@ -138,22 +138,31 @@ suite "versions":
 
     let tags = parseTaggedVersions(lines)
     let query = p">= 1.2 & < 1.4"
-    assert selectBestCommitMinVer(tags, query) == "a8a4725850c443158f9cab38eae3e54a78a523fb"
+    let queryStr = $(query)
+    check queryStr == ">= 1.2 & < 1.4"
+    echo "QUERY STR: ", queryStr
+    check selectBestCommitMinVer(tags, query) == "a8a4725850c443158f9cab38eae3e54a78a523fb"
 
     let query2 = p">= 1.2 & < 1.4"
-    assert selectBestCommitMaxVer(tags, query2) == "1420d508dc4a3e51137647926d4db2f3fa62f43c"
+    let queryStr2 = $(query2)
+    check queryStr2 == ">= 1.2 & < 1.4"
+    check selectBestCommitMaxVer(tags, query2) == "1420d508dc4a3e51137647926d4db2f3fa62f43c"
 
     let query3 = p">= 0.20.0"
-    assert selectBestCommitSemVer(tags, query3) == "a202715d182ce6c47e19b3202e0c4011bece65d8"
+    let queryStr3 = $(query3)
+    check queryStr3 == ">= 0.20.0"
+    check selectBestCommitSemVer(tags, query3) == "a202715d182ce6c47e19b3202e0c4011bece65d8"
 
     let query4 = p"#head"
-    assert selectBestCommitSemVer(tags, query4) == "24870f48c40da2146ce12ff1e675e6e7b9748355"
+    let queryStr4 = $(query4)
+    check queryStr4 == "#head"
+    check selectBestCommitSemVer(tags, query4) == "24870f48c40da2146ce12ff1e675e6e7b9748355"
 
   test "lastPathComponent":
-    assert lastPathComponent("/a/bc///") == "bc"
-    assert lastPathComponent("a/b") == "b"
-    assert lastPathComponent("meh/longer/here/") == "here"
-    assert lastPathComponent("meh/longer/here") == "here"
+    check lastPathComponent("/a/bc///") == "bc"
+    check lastPathComponent("a/b") == "b"
+    check lastPathComponent("meh/longer/here/") == "here"
+    check lastPathComponent("meh/longer/here") == "here"
 
   test "onlyCommits with parseTaggedVersions":
     let tags = parseTaggedVersions(onlyCommits, false)

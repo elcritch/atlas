@@ -322,3 +322,51 @@ proc toSemVer*(i: VersionInterval): VersionInterval =
 
 proc selectBestCommitSemVer*(data: openArray[Commit]; elem: VersionInterval): string =
   result = selectBestCommitMaxVer(data, elem.toSemVer)
+
+proc `$`*(i: VersionInterval): string =
+  ## Returns a string representation of a version interval
+  ## that matches the parser's format.
+  if i.isInterval:
+    # Handle interval case like ">= 1.2 & < 1.4"
+    result = case i.a.r
+      of verGe: ">="
+      of verGt: ">"
+      of verLe: "<="
+      of verLt: "<"
+      of verEq: "=="
+      of verAny: "*"
+      of verSpecial: "#"
+    result &= " " & $i.a.v
+    result &= " & "
+    case i.b.r
+    of verGe: result &= ">="
+    of verGt: result &= ">"
+    of verLe: result &= "<="
+    of verLt: result &= "<"
+    of verEq: result &= "=="
+    of verAny: result &= "*"
+    of verSpecial: result &= "#"
+    result &= " " & $i.b.v
+  else:
+    # Handle single version requirement
+    case i.a.r
+    of verAny:
+      if i.a.v.string == "#head":
+        result = "#head"
+      else:
+        result = "*"
+    of verEq:
+      if i.a.v.isSpecial:
+        result = $i.a.v
+      else:
+        result = $i.a.v
+    of verGe:
+      result = ">= " & $i.a.v
+    of verGt:
+      result = "> " & $i.a.v
+    of verLe:
+      result = "<= " & $i.a.v
+    of verLt:
+      result = "< " & $i.a.v
+    of verSpecial:
+      result = $i.a.v
