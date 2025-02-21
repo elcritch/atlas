@@ -132,6 +132,9 @@ proc trace*(c: var Reporter; p: Path, arg: string) =
 proc debug*(c: var Reporter; p: Path, arg: string) =
   debug(c, $p, arg)
 
+proc message*(k: MsgKind; p, arg: string) =
+  message(atlasReporter, k, p, arg)
+
 proc warn*(p: Path | string, arg: string) =
   warn(atlasReporter, $p, arg)
 

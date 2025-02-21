@@ -58,7 +58,7 @@ proc extractVersion*(s: string): string =
 proc exec*(gitCmd: Command;
            path: Path;
            args: openArray[string],
-           ignoreError = false,
+           errorReportLevel: MsgKind = Error,
            ): (string, ResultCode) =
   let cmd = $gitCmd % ["DIR", $path]
   #if execDir.len == 0: $cmd else: $(cmd) % [execDir]
@@ -66,8 +66,8 @@ proc exec*(gitCmd: Command;
     result = silentExec(cmd, args)
   else:
     result = ("not a git repository", ResultCode(1))
-  if not ignoreError and result[1] != Ok:
-    error "gitops", "Git command failed `$1` failed with code: $2" % [$gitCmd, $int(result[1])]
+  if result[1] != Ok:
+    message errorReportLevel, "gitops", "Git command failed `$1` failed with code: $2" % [$gitCmd, $int(result[1])]
     trace "gitops", "Running Git command `$1`" % [ join(@[cmd] & @args, " ")]
 
 proc checkGitDiffStatus*(path: Path): string =
@@ -113,14 +113,14 @@ proc gitDescribeRefTag*(path: Path, commit: string): string =
   result = if status == Ok: strutils.strip(lt) else: ""
 
 proc collectTaggedVersions*(path: Path): seq[Commit] =
-  let (outp, status) = exec(GitTags, path, [], ignoreError=true)
+  let (outp, status) = exec(GitTags, path, [], Trace)
   if status == Ok:
     result = parseTaggedVersions(outp)
   else:
     result = @[]
 
 proc collectFileCommits*(path, file: Path, ignoreError = false): seq[Commit] =
-  let (outp, status) = exec(GitLog, path, [$file], ignoreError=ignoreError)
+  let (outp, status) = exec(GitLog, path, [$file], Trace)
   if status == Ok:
     result = parseTaggedVersions(outp, requireVersions = false)
 
@@ -146,7 +146,7 @@ proc listFiles*(path: Path): seq[string] =
     result = @[]
 
 proc currentGitCommit*(path: Path, ignoreError = false): string =
-  let (currentCommit, status) = exec(GitCurrentCommit, path, [], ignoreError = ignoreError)
+  let (currentCommit, status) = exec(GitCurrentCommit, path, [], Info)
   if status == Ok:
     return currentCommit.strip()
   else:
@@ -157,7 +157,7 @@ proc checkoutGitCommit*(path: Path, commit: string): ResultCode =
   if currentCommit.len() == 40 and currentCommit == commit:
     return
 
-  let (_, statusB) = exec(GitCheckout, path, [commit])
+  let (_, statusB) = exec(GitCheckout, path, [commit], Warning)
   result = statusB
   if statusB != Ok:
     error($path, "could not checkout commit " & commit)
