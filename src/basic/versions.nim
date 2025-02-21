@@ -6,7 +6,7 @@
 #    distribution, for details about the copyright.
 #
 
-import std / [strutils, parseutils, algorithm, hashes]
+import std / [strutils, parseutils, algorithm, jsonutils, hashes]
 import std / json
 
 type
@@ -370,3 +370,6 @@ proc `$`*(i: VersionInterval): string =
       result = "< " & $i.a.v
     of verSpecial:
       result = $i.a.v
+
+proc toJsonHook*(v: VersionInterval): JsonNode = toJson($(v))
+proc toJsonHook*(v: Version): JsonNode = toJson($v)

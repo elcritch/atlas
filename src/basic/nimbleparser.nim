@@ -6,7 +6,7 @@
 #    distribution, for details about the copyright.
 #
 
-import std / [os, paths, strutils, tables, unicode, hashes]
+import std / [os, paths, strutils, tables, unicode, hashes, json, jsonutils]
 import sattypes, versions, context, reporters, gitops, parse_requires, pkgurls, compiledpatterns
 
 type
@@ -26,6 +26,16 @@ type
   NimbleContext* = object
     hasPackageList*: bool
     nameToUrl*: Table[string, string]
+
+# proc toJsonHook*(ss: seq[(PkgUrl, VersionInterval)]): JsonNode =
+#   result = newJArray()
+#   for v in ss:
+#     result.add(% {"url": % v[0], "version": % v[1]} )
+
+proc toJsonHook*(v: (PkgUrl, VersionInterval)): JsonNode =
+  result = newJObject()
+  result["url"] = toJsonHook(v[0])
+  result["version"] = toJsonHook(v[1])
 
 proc hash*(r: Requirements): Hash =
   var h: Hash = 0

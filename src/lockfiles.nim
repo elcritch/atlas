@@ -86,7 +86,7 @@ proc newNimbleLockFile(): NimbleLockFile =
                           packages: tbl)
 
 proc write(lock: NimbleLockFile; lockFilePath: string) =
-  writeFile lockFilePath, toJson(lock).pretty
+  writeFile lockFilePath, pretty(toJson(lock))
 
 proc genLockEntry(
                   lf: var NimbleLockFile;

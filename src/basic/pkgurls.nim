@@ -6,7 +6,7 @@
 #    distribution, for details about the copyright.
 #
 
-import std / [hashes, paths, strutils]
+import std / [hashes, paths, strutils, json]
 from std / os import `/`, dirExists
 import compiledpatterns, gitops, reporters
 
@@ -34,6 +34,7 @@ proc extractProjectName*(s: string): string =
     result.setLen result.len - len(GitSuffix)
 
 proc `$`*(u: PkgUrl): string = u.u
+proc toJsonHook*(v: PkgUrl): JsonNode = %($(v))
 
 proc createUrlSkipPatterns*(x: string): PkgUrl =
   if "://" notin x:
