@@ -187,7 +187,7 @@ proc checkoutGitCommitFull*(path: Path, commit: string; fullClones: bool) =
     else:
       trace($path, "fetched package updates ")
 
-  let (_, status) = exec(GitCheckout, path, [commit])
+  let (_, status) = exec(GitCheckout, path, [commit], Warning)
   if status != Ok:
     error($path, "could not checkout commit " & commit)
   else:
