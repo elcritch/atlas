@@ -157,12 +157,12 @@ proc checkoutGitCommit*(path: Path, commit: string): ResultCode =
   if currentCommit.len() == 40 and currentCommit == commit:
     return
 
-  let (_, statusB) = exec(GitCheckout, path, [commit], Warning)
-  result = statusB
-  if statusB != Ok:
-    error($path, "could not checkout commit " & commit)
-  else:
-    debug($path, "updated package to " & commit)
+  # let (_, statusB) = exec(GitCheckout, path, [commit], Warning)
+  # result = statusB
+  # if statusB != Ok:
+  #   error($path, "could not checkout commit " & commit)
+  # else:
+  #   debug($path, "updated package to " & commit)
 
 proc checkoutGitCommitFull*(path: Path, commit: string; fullClones: bool) =
   var smExtraArgs: seq[string] = @[]
@@ -188,10 +188,10 @@ proc checkoutGitCommitFull*(path: Path, commit: string; fullClones: bool) =
       trace($path, "fetched package updates ")
 
   let (_, status) = exec(GitCheckout, path, [commit], Warning)
-  if status != Ok:
-    error($path, "could not checkout commit " & commit)
-  else:
-    debug($path, "updated package to " & commit)
+  # if status != Ok:
+  #   error($path, "could not checkout commit " & commit)
+  # else:
+  #   debug($path, "updated package to " & commit)
 
   let (_, subModStatus) = exec(GitSubModUpdate, path, smExtraArgs)
   if subModstatus != Ok:
