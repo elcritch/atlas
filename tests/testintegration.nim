@@ -15,6 +15,9 @@ proc integrationTest() =
   let cmd = atlasExe & " --proxy=http://localhost:4242/ --dumbproxy --full --verbosity:trace --keepWorkspace use https://github.com/zedeus/nitter"
   let res = execShellCmd cmd
   # exec atlasExe & " --verbosity:trace --keepWorkspace use https://github.com/zedeus/nitter"
+  block:
+    let cmd = atlasExe & " --proxy=http://localhost:4242/ --dumbproxy --full --verbosity:trace --keepWorkspace pin"
+    let res = execShellCmd cmd
 
   sameDirContents("expected", ".")
 
