@@ -9,7 +9,7 @@
 ## Configuration handling.
 
 import std / [strutils, os, streams, json]
-import basic/[versions, context, reporters, compiledpatterns, parserequires]
+import basic/[versions, context, reporters, compiledpatterns, parse_requires]
 
 proc parseOverridesFile(filename: Path) =
   const Separator = " -> "

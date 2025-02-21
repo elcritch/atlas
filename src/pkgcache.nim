@@ -7,7 +7,7 @@
 #
 
 import std / [os, strutils, tables, unicode, sequtils, sets, json, hashes, algorithm]
-import basic/[context, depgraphtypes, versions, osutils, nimbleparser, packageinfos, reporters, gitops, parserequires, pkgurls, compiledpatterns]
+import basic/[context, depgraphtypes, versions, osutils, nimbleparser, packageinfos, reporters, gitops, parse_requires, pkgurls, compiledpatterns]
 
 const
   DefaultPackagesSubDir* = Path "packages"

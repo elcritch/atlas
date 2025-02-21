@@ -7,7 +7,7 @@
 #
 
 import std / [os, uri, paths]
-import versions, parserequires, compiledpatterns, reporters
+import versions, parse_requires, compiledpatterns, reporters
 
 export reporters
 

@@ -7,7 +7,7 @@
 #
 
 import std / [os, paths, strutils, tables, unicode, hashes]
-import sattypes, versions, context, reporters, gitops, parserequires, pkgurls, compiledpatterns
+import sattypes, versions, context, reporters, gitops, parse_requires, pkgurls, compiledpatterns
 
 type
   DependencyStatus* = enum
