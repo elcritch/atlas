@@ -1,7 +1,7 @@
 import std/[strformat, strutils]
 
 task build, "Build local atlas":
-  exec "nim c -d:debug -o:./atlas src/atlas.nim"
+  exec "nim c -d:debug -o:bin/atlas src/atlas.nim"
 
 task unitTests, "Runs unit tests":
   exec "nim c -d:debug -r tests/unittests.nim"
