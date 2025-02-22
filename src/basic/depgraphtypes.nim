@@ -222,7 +222,7 @@ proc loadDependency*(
         for version in versions:
           if version.version == Version"" and not version.commit.isEmpty and not uniqueCommits.containsOrIncl(version.commit):
             let status = checkoutGitCommit(path, version.commit)
-            if status == ResOk:
+            if status == RES_OK:
               yield (FromDep, VersionTag(h: version.commit, v: Version""))
               inc produced
         let tags = collectTaggedVersions(path)

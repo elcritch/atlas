@@ -62,6 +62,8 @@ proc initCommitHash*(raw: string, origin: CommitOrigin): CommitHash =
 proc commit*(vt: VersionTag): CommitHash = vt.c
 proc version*(vt: VersionTag): Version = vt.v
 
+proc `$`*(c: CommitHash): string = c.h
+
 proc isEmpty*(c: CommitHash): bool =
   c.h.len() == 0
 proc isFull*(c: CommitHash): bool =
