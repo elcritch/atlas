@@ -73,10 +73,6 @@ suite "basic repo tests":
         when true:
           setAtlasVerbosity(Error)
           defer: setAtlasVerbosity(Trace)
-          # for i in 0..<graph.nodes.len():
-          #   let nv = collectNimbleVersions(nc, graph[i])
-          #   echo "check collectNimbleVersions(nc, graph[$1]) == " % [$i], nv
-          # echo "\n"
 
           # These will change if atlas-tests is regnerated!
           # To update run and use commits not adding a proj_x.nim file
@@ -131,10 +127,22 @@ suite "basic repo tests":
         check graph[3].ondisk.string.endsWith("ws_testtraverse/buildGraph/proj_c")
         check graph[4].ondisk.string.endsWith("ws_testtraverse/buildGraph/proj_d")
 
-        check collectNimbleVersions(nc, graph[1]) == @[Commit(h: "e479b438015e734bea67a9c63d783e78cab5746e"), Commit(h: "7ca5581cd5355f6b5461a23f9683f19378bd268a"), Commit(h: "fb3804df03c3c414d98d1f57deeb44c8a223ba44")]
-        check collectNimbleVersions(nc, graph[2]) == @[Commit(h: "af4275109d60caaeacf2912a37c2339aca40a922"), Commit(h: "cd3ad76043e5f983f704be6bf61e57d187fe070f"), Commit(h: "ee875baecee161ed053b87b583b2f08526838bd6")]
-        check collectNimbleVersions(nc, graph[3]) == @[Commit(h: "c7540297c01dc57a98cb1fce7660ab6f2a0cee5f"), Commit(h: "9331e14f3fa20ed75b7d5c0ab93aa5fb0293192f")]
-        check collectNimbleVersions(nc, graph[4]) == @[Commit(h: "0dec9c9733129919972416f04e73b1fb2cbf3bd3"), Commit(h: "dd98f775ae33d450dc7f936f850e247e820e31ad")]
+        check graph[1].versions.mapIt(($it.version, it.commit)) == @[
+            ("1.1.0", "fb3804df03c3c414d98d1f57deeb44c8a223ba44"),
+            ("1.0.0", "e479b438015e734bea67a9c63d783e78cab5746e"),
+        ]
+        check graph[2].versions.mapIt(($it.version, it.commit)) == @[
+            ("1.1.0", "ee875baecee161ed053b87b583b2f08526838bd6"),
+            ("1.0.0", "af4275109d60caaeacf2912a37c2339aca40a922"),
+        ]
+        check graph[3].versions.mapIt(($it.version, it.commit)) == @[
+            ("1.2.0", "9331e14f3fa20ed75b7d5c0ab93aa5fb0293192f"),
+            # ("1.0.0", "c7540297c01dc57a98cb1fce7660ab6f2a0cee5f"), # not tagged
+        ]
+        check graph[4].versions.mapIt(($it.version, it.commit)) == @[
+            ("2.0.0", "dd98f775ae33d450dc7f936f850e247e820e31ad"),
+            ("1.0.0", "0dec9c9733129919972416f04e73b1fb2cbf3bd3"),
+        ]
 
         dumpJson graph, "graph-ws_testtraverse-traverseDependency-post.json"
 
@@ -160,21 +168,6 @@ suite "basic repo tests":
         check endsWith($(graph[0].pkg), "atlas/tests/ws_testtraverse")
         check graph[0].isRoot == true
         check graph[0].isTopLevel == true
-
-        block:
-          context().verbosity = 0
-          defer: context().verbosity = 3
-          for i in 0..<graph.nodes.len():
-            let nv = collectNimbleVersions(nc, graph[i])
-            echo "collectNimbleVersions(nc, graph[$1]) == " % [$i], nv
-          echo "\n"
-
-          # These will change if atlas-tests is regnerated!
-          check collectNimbleVersions(nc, graph[0]) == newSeq[string]()
-          check collectNimbleVersions(nc, graph[1]) == @["edbf202081d43bc3d4bbc36847437a40cb0690b9", "06430815095a38ece2ec7653283dd1c00bebed1a"]
-          check collectNimbleVersions(nc, graph[2]) == @["a5b4f36f98dafd94fe77571727d4fc4406748f89", "13dcd8b5345f4f3b6f58af49b989958967621266"]
-          check collectNimbleVersions(nc, graph[3]) == @["a5b4f36f98dafd94fe77571727d4fc4406748f89", "13dcd8b5345f4f3b6f58af49b989958967621266"]
-          check collectNimbleVersions(nc, graph[4]) == @["061b5103bd11cbea1c0b09d17cf1db0bf4402104", "e81373b111eb569d456cd2284fc7222b09224110"]
 
         for i in 0..<graph.nodes.len():
           traverseDependency(nc, graph, i, TraversalMode.AllReleases)

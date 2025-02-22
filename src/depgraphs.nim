@@ -328,6 +328,13 @@ proc debugFormular(graph: var DepGraph; form: Form; solution: Solution) =
     if solution.isTrue(VarId(varIdx)):
       echo "v", varIdx, ": T"
 
+proc toPretty*(v: uint64): string = 
+  if v == DontCare: "X"
+  elif v == SetToTrue: "T"
+  elif v == SetToFalse: "F"
+  elif v == IsInvalid: "!"
+  else: ""
+
 proc solve*(graph: var DepGraph; form: Form) =
   let maxVar = form.idgen
   if context().dumpGraphs:
@@ -340,6 +347,11 @@ proc solve*(graph: var DepGraph; form: Form) =
     for node in mitems graph.nodes:
       if node.isRoot: node.active = true
     for varIdx in 0 ..< maxVar:
+      let vid = VarId varIdx
+      if vid in form.mapping:
+        let mapInfo = form.mapping[vid]
+        info mapInfo.pkg.projectName, "v" & $varIdx & " sat var: " & $solution.getVar(vid).toPretty()
+
       if solution.isTrue(VarId(varIdx)) and form.mapping.hasKey(VarId varIdx):
         let mapInfo = form.mapping[VarId varIdx]
         let i = findDependencyForDep(graph, mapInfo.pkg)
