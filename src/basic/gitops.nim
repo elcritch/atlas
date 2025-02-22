@@ -145,16 +145,16 @@ proc listFiles*(path: Path): seq[string] =
   else:
     result = @[]
 
-proc currentGitCommit*(path: Path, ignoreError = false): string =
+proc currentGitCommit*(path: Path, ignoreError = false): CommitHash =
   let (currentCommit, status) = exec(GitCurrentCommit, path, [], Info)
   if status == Ok:
-    return currentCommit.strip()
+    return initCommitHash(currentCommit.strip(), FromGitTag)
   else:
-    return ""
+    return initCommitHash("", FromGitTag)
 
-proc checkoutGitCommit*(path: Path, commit: string): ResultCode =
+proc checkoutGitCommit*(path: Path, commit: CommitHash): ResultCode =
   let currentCommit = currentGitCommit(path)
-  if currentCommit.len() == 40 and currentCommit == commit:
+  if currentCommit.isFull() and currentCommit == commit:
     return
 
   # let (_, statusB) = exec(GitCheckout, path, [commit], Warning)
