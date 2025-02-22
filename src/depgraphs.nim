@@ -1,6 +1,6 @@
 import std / [sets, paths, dirs, files, tables, os, strutils, streams, json, jsonutils, algorithm]
 
-import basic/[depgraphtypes, osutils, context, gitops, reporters, nimbleparser, pkgurls, versions]
+import basic/[dependencies, depgraphtypes, osutils, context, gitops, reporters, nimbleparser, pkgurls, versions]
 import runners, cloner, pkgcache 
 
 import std/[json, jsonutils]
@@ -21,12 +21,12 @@ type
     FromHead, FromGitTag, FromDep, FromNimbleFile
 
 proc releases*(path: Path,
-               mode: TraversalMode; versions: seq[DependencyVersion];
+               mode: TraversalMode; versions: seq[DepVersion];
                nimbleCommits: seq[VersionTag]): seq[(CommitOrigin, VersionTag)] =
   let currentCommit = currentGitCommit(path, ignoreError = true)
   trace "depgraphs:releases", "currentCommit: " & $currentCommit
   if currentCommit.len() == 0:
-    yield (FromHead, VersionTag(h: "", v: Version"#head"))
+    result.add (FromHead, VersionTag(h: "", v: Version"#head"))
   else:
     case mode
     of AllReleases:
@@ -64,7 +64,7 @@ proc traverseRelease(nimbleCtx: NimbleContext; graph: var DepGraph; idx: int;
                      origin: CommitOrigin; release: VersionTag; lastNimbleContents: var string) =
   debug "traverseRelease", "name: " & graph[idx].pkg.projectName & " origin: " & $origin & " release: " & $release
   let nimbleFiles = findNimbleFile(graph[idx])
-  var packageVer = DependencyVersion(
+  var packageVer = DepVersion(
     version: release.v,
     commit: release.h,
     req: EmptyReqs,
@@ -176,7 +176,7 @@ proc expand*(graph: var DepGraph; nimbleCtx: NimbleContext; mode: TraversalMode)
   if context().dumpGraphs:
     dumpJson(graph, "graph-expanded.json")
 
-iterator mvalidVersions*(pkg: var Dependency; graph: var DepGraph): var DependencyVersion =
+iterator mvalidVersions*(pkg: var Dependency; graph: var DepGraph): var DepVersion =
   for ver in mitems pkg.versions:
     if graph.reqs[ver.req].status == Normal: yield ver
 

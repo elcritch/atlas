@@ -35,10 +35,14 @@ type
 
   CommitHash* = object
     h*: string
+    orig*: CommitOrigin
 
   VersionTag* = object
     c*: CommitHash
     v*: Version
+
+  CommitOrigin = enum
+    FromHead, FromGitTag, FromDep, FromNimbleFile
 
 const
   InvalidCommit* = "#head" #"<invalid commit>"
@@ -51,8 +55,8 @@ proc isLowerAlphaNum*(s: string): bool =
       return false
   return true
 
-proc initCommitHash*(raw: string): CommitHash = 
-  result = CommitHash(h: raw.toLower())
+proc initCommitHash*(raw: string, origin: CommitOrigin): CommitHash = 
+  result = CommitHash(h: raw.toLower(), orig: origin)
   doAssert result.h.isLowerAlphaNum(), "hash must hexdecimal"
 
 proc commit*(vt: VersionTag): CommitHash = vt.c
@@ -265,7 +269,7 @@ proc parseTaggedVersions*(outp: string, requireVersions = true): seq[VersionTag]
       while i < line.len and line[i] in Whitespace: inc i
       while i < line.len and line[i] notin Digits: inc i
       let v = parseVersion(line, i)
-      let c = initCommitHash(line.substr(0, commitEnd-1))
+      let c = initCommitHash(line.substr(0, commitEnd-1), FromGitTag)
       if c.isEmpty():
         continue
       if v != Version("") or not requireVersions:
@@ -309,9 +313,9 @@ const
 
 proc extractSpecificCommit*(pattern: VersionInterval): CommitHash =
   if not pattern.isInterval and pattern.a.r == verEq and pattern.a.v.isSpecial and pattern.a.v.string.len >= MinCommitLen:
-    result = initCommitHash(pattern.a.v.string.substr(1))
+    result = initCommitHash(pattern.a.v.string.substr(1), FromNimbleFile)
   else:
-    result = initCommitHash("")
+    result = initCommitHash("", FromNimbleFile)
 
 proc matches*(pattern: VersionInterval; x: VersionTag): bool =
   if pattern.isInterval:
