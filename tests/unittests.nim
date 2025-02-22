@@ -141,22 +141,22 @@ suite "versions":
     let queryStr = $(query)
     check queryStr == ">= 1.2 & < 1.4"
     echo "QUERY STR: ", queryStr
-    check selectBestCommitMinVer(tags, query) == "a8a4725850c443158f9cab38eae3e54a78a523fb"
+    check selectBestCommitMinVer(tags, query).h == "a8a4725850c443158f9cab38eae3e54a78a523fb"
 
     let query2 = p">= 1.2 & < 1.4"
     let queryStr2 = $(query2)
     check queryStr2 == ">= 1.2 & < 1.4"
-    check selectBestCommitMaxVer(tags, query2) == "1420d508dc4a3e51137647926d4db2f3fa62f43c"
+    check selectBestCommitMaxVer(tags, query2).h == "1420d508dc4a3e51137647926d4db2f3fa62f43c"
 
     let query3 = p">= 0.20.0"
     let queryStr3 = $(query3)
     check queryStr3 == ">= 0.20.0"
-    check selectBestCommitSemVer(tags, query3) == "a202715d182ce6c47e19b3202e0c4011bece65d8"
+    check selectBestCommitSemVer(tags, query3).h == "a202715d182ce6c47e19b3202e0c4011bece65d8"
 
     let query4 = p"#head"
     let queryStr4 = $(query4)
     check queryStr4 == "#head"
-    check selectBestCommitSemVer(tags, query4) == "24870f48c40da2146ce12ff1e675e6e7b9748355"
+    check selectBestCommitSemVer(tags, query4).h == "24870f48c40da2146ce12ff1e675e6e7b9748355"
 
   test "lastPathComponent":
     check lastPathComponent("/a/bc///") == "bc"
@@ -168,6 +168,6 @@ suite "versions":
     let tags = parseTaggedVersions(onlyCommits, false)
     echo "TAGS: ", $tags
     check tags.len() == 3
-    check tags[0].h == "24870f48c40da2146ce12ff1e675e6e7b9748355"
-    check tags[1].h == "b54236aaee2fc90200cb3a4e7070820ced9ce605"
-    check tags[2].h == "f06dc8ee3baf8f64cce67a28a6e6e8a8cd9bf04b"
+    check tags[0].c.h == "24870f48c40da2146ce12ff1e675e6e7b9748355"
+    check tags[1].c.h == "b54236aaee2fc90200cb3a4e7070820ced9ce605"
+    check tags[2].c.h == "f06dc8ee3baf8f64cce67a28a6e6e8a8cd9bf04b"
