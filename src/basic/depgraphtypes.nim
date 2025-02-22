@@ -1,7 +1,7 @@
 
 import std / [sets, paths, files, dirs, tables, os, strutils, streams, json, jsonutils, algorithm]
 
-import sattypes, context, gitops, reporters, nimbleparser, pkgurls, versions
+import sattypes, context, dependencies, gitops, reporters, nimbleparser, pkgurls, versions
 
 
 type
@@ -17,10 +17,10 @@ const
   UnknownReqs* = 1
   FileWorkspace* = "file://./"
 
-proc `[]`*(g: DepGraph, idx: int): Dependency =
+proc `[]`*(g: DepGraph, idx: int): DepConstraint =
   g.nodes[idx]
 
-proc `[]`*(g: var DepGraph, idx: int): var Dependency =
+proc `[]`*(g: var DepGraph, idx: int): var DepConstraint =
   g.nodes[idx]
 
 proc toJsonHook*(vid: VarId): JsonNode = toJson($(int(vid)))
@@ -66,8 +66,8 @@ proc findNimbleFile*(dir: Path, projectName: string): seq[Path] =
   debug "findNimbleFile:search:", " name: " & projectName & " found: " & $result
 
 proc findNimbleFile*(dep: Dependency): seq[Path] =
-  doAssert(dep.ondisk.string != "", "Package ondisk must be set before findNimbleFile can be called! Package: " & $(dep))
-  result = findNimbleFile(dep.ondisk, dep.pkg.projectName & ".nimble")
+  doAssert(dep.info.ondisk.string != "", "Package ondisk must be set before findNimbleFile can be called! Package: " & $(dep))
+  result = findNimbleFile(dep.info.ondisk, dep.pkg.projectName & ".nimble")
 
 type
   PackageAction* = enum
@@ -78,24 +78,24 @@ proc pkgUrlToDirname*(g: var DepGraph; d: Dependency): (Path, PackageAction) =
   # var dest = Path g.ondisk.getOrDefault(d.pkg.url)
   var dest = Path ""
   if dest.string.len == 0:
-    if d.isTopLevel:
+    if d.info.isTopLevel:
       dest = context().workspace
     else:
       let depsDir =
-        if d.isRoot: context().workspace
+        if d.info.isRoot: context().workspace
         else: context().depsDir
       dest = depsDir / Path d.pkg.projectName
   result = (dest, if dirExists(dest): DoNothing else: DoClone)
 
 proc toDestDir*(g: DepGraph; d: Dependency): Path =
-  result = d.ondisk
+  result = d.info.ondisk
 
-proc enrichVersionsViaExplicitHash*(versions: var seq[DependencyVersion]; x: VersionInterval) =
+proc enrichVersionsViaExplicitHash*(versions: var seq[DepVersion]; x: VersionInterval) =
   let commit = extractSpecificCommit(x)
   if commit.len > 0:
     for ver in versions:
-      if ver.commit == commit: return
-    versions.add DependencyVersion(version: Version"",
+      if ver.vtag.commit() == commit: return
+    versions.add DepVersion(version: Version"",
       commit: commit, req: EmptyReqs, vid: NoVar)
 
 iterator allNodes*(g: DepGraph): lent Dependency =

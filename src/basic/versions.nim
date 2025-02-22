@@ -43,6 +43,33 @@ type
 const
   InvalidCommit* = "#head" #"<invalid commit>"
 
+const ValidChars = {'a'..'f', '0'..'9'}
+
+proc isLowerAlphaNum*(s: string): bool =
+  for c in s:
+    if c notin ValidChars:
+      return false
+  return true
+
+proc initCommitHash*(raw: string): CommitHash = 
+  result = CommitHash(h: raw.toLower())
+  doAssert result.h.isLowerAlphaNum(), "hash must hexdecimal"
+
+proc commit*(vt: VersionTag): CommitHash = vt.c
+proc version*(vt: VersionTag): Version = vt.v
+
+proc isEmpty*(c: CommitHash): bool =
+  c.h.len() == 0
+proc isFull*(c: CommitHash): bool =
+  c.h.len() == 40
+proc short*(c: CommitHash): string =
+  if c.h.len() == 40:
+    c.h[0..7]
+  elif c.h.len() == 0:
+    ""
+  else:
+    "!"&c.h[0..<c.h.len()]
+
 template versionKey*(i: VersionInterval): string = i.a.v.string
 
 proc createQueryEq*(v: Version): VersionInterval =
@@ -227,30 +254,6 @@ proc parseVersionInterval*(s: string; start: int; err: var bool): VersionInterva
       err = true
   else:
     result = VersionInterval(a: VersionReq(r: verAny, v: Version"#head"))
-
-const ValidChars = {'a'..'f', '0'..'9'}
-
-proc isLowerAlphaNum*(s: string): bool =
-  for c in s:
-    if c notin ValidChars:
-      return false
-  return true
-
-proc initCommitHash*(raw: string): CommitHash = 
-  result = CommitHash(h: raw.toLower())
-  doAssert result.h.isLowerAlphaNum(), "hash must hexdecimal"
-
-proc isEmpty*(c: CommitHash): bool =
-  c.h.len() == 0
-proc isFull*(c: CommitHash): bool =
-  c.h.len() == 40
-proc short*(c: CommitHash): string =
-  if c.h.len() == 40:
-    c.h[0..7]
-  elif c.h.len() == 0:
-    ""
-  else:
-    "!"&c.h[0..<c.h.len()]
 
 proc parseTaggedVersions*(outp: string, requireVersions = true): seq[VersionTag] =
   result = @[]
