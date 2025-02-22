@@ -67,7 +67,8 @@ proc traverseRelease(nimbleCtx: NimbleContext; graph: var DepGraph; idx: int;
   var packageVer = DependencyVersion(
     version: release.v,
     commit: release.h,
-    req: EmptyReqs, v: NoVar)
+    req: EmptyReqs,
+    vid: NoVar)
   var badNimbleFile = false
   if nimbleFiles.len() != 1:
     trace "traverseRelease", "skipping: nimble file not found or unique"
@@ -209,8 +210,8 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
 
     var verIdx = 0
     for ver in mitems pkg.versions:
-      ver.v = VarId(result.idgen)
-      result.mapping[ver.v] = SatVarInfo(pkg: pkg.pkg, commit: ver.commit, version: ver.version, index: verIdx)
+      ver.vid = VarId(result.idgen)
+      result.mapping[ver.vid] = SatVarInfo(pkg: pkg.pkg, commit: ver.commit, version: ver.version, index: verIdx)
       inc result.idgen
       inc verIdx
 
@@ -218,23 +219,23 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
 
     if pkg.state == Error:
       builder.openOpr(AndForm)
-      for ver in mitems pkg.versions: builder.addNegated ver.v
+      for ver in mitems pkg.versions: builder.addNegated ver.vid
       builder.closeOpr # AndForm
     elif pkg.isRoot:
       builder.openOpr(ExactlyOneOfForm)
-      for ver in mitems pkg.versions: builder.add ver.v
+      for ver in mitems pkg.versions: builder.add ver.vid
       builder.closeOpr # ExactlyOneOfForm
     else:
       builder.openOpr(ZeroOrOneOfForm)
-      for ver in mitems pkg.versions: builder.add ver.v
+      for ver in mitems pkg.versions: builder.add ver.vid
       builder.closeOpr # ExactlyOneOfForm
 
   for pkg in mitems(graph.nodes):
     for ver in mvalidVersions(pkg, graph):
-      if isValid(graph.reqs[ver.req].v):
+      if isValid(graph.reqs[ver.req].vid):
         continue
       let eqVar = VarId(result.idgen)
-      graph.reqs[ver.req].v = eqVar
+      graph.reqs[ver.req].vid = eqVar
       inc result.idgen
 
       if graph.reqs[ver.req].deps.len == 0: continue
@@ -259,18 +260,18 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
         if commit.len > 0:
           for verIdx in countup(0, availVer.versions.len-1):
             if queryVer.matches(availVer.versions[verIdx].version) or commit == availVer.versions[verIdx].commit:
-              builder.add availVer.versions[verIdx].v
+              builder.add availVer.versions[verIdx].vid
               inc matchCount
               break
         elif algo == MinVer:
           for verIdx in countup(0, availVer.versions.len-1):
             if queryVer.matches(availVer.versions[verIdx].version):
-              builder.add availVer.versions[verIdx].v
+              builder.add availVer.versions[verIdx].vid
               inc matchCount
         else:
           for verIdx in countdown(availVer.versions.len-1, 0):
             if queryVer.matches(availVer.versions[verIdx].version):
-              builder.add availVer.versions[verIdx].v
+              builder.add availVer.versions[verIdx].vid
               inc matchCount
         builder.closeOpr # ExactlyOneOfForm
         if matchCount == 0:
@@ -286,8 +287,8 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
     for ver in mvalidVersions(pkg, graph):
       if graph.reqs[ver.req].deps.len > 0:
         builder.openOpr(OrForm)
-        builder.addNegated ver.v
-        builder.add graph.reqs[ver.req].v
+        builder.addNegated ver.vid
+        builder.add graph.reqs[ver.req].vid
         builder.closeOpr # OrForm
 
   builder.closeOpr # AndForm
@@ -358,8 +359,8 @@ proc solve*(graph: var DepGraph; form: Form) =
       for node in items graph.nodes:
         if not node.isTopLevel:
           for ver in items(node.versions):
-            let item = form.mapping[ver.v]
-            if solution.isTrue(ver.v):
+            let item = form.mapping[ver.vid]
+            if solution.isTrue(ver.vid):
               info item.pkg.projectName, "[x] " & toString item
             else:
               info item.pkg.projectName, "[ ] " & toString item
@@ -376,16 +377,16 @@ proc solve*(graph: var DepGraph; form: Form) =
     for pkg in mitems(graph.nodes):
       var usedVersionCount = 0
       for ver in mvalidVersions(pkg, graph):
-        if solution.isTrue(ver.v): inc usedVersionCount
+        if solution.isTrue(ver.vid): inc usedVersionCount
       if usedVersionCount > 1:
         for ver in mvalidVersions(pkg, graph):
-          if solution.isTrue(ver.v):
+          if solution.isTrue(ver.vid):
             error pkg.pkg.projectName, string(ver.version) & " required"
 
-proc traverseLoop*(nc: var NimbleContext; g: var DepGraph): seq[CfgPath] =
+proc traverseLoop*(nc: var NimbleContext; graph: var DepGraph): seq[CfgPath] =
   result = @[]
-  expand(g, nc, TraversalMode.AllReleases)
-  let f = toFormular(g, context().defaultAlgo)
-  solve(g, f)
-  for w in allActiveNodes(g):
-    result.add CfgPath(toDestDir(g, w) / getCfgPath(g, w).Path)
+  expand(graph, nc, TraversalMode.AllReleases)
+  let form = toFormular(graph, context().defaultAlgo)
+  solve(graph, form)
+  for dep in allActiveNodes(graph):
+    result.add CfgPath(toDestDir(graph, dep) / getCfgPath(graph, dep).Path)

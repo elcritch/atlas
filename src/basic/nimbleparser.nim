@@ -19,7 +19,7 @@ type
     srcDir*: Path
     version*: Version
     nimVersion*: Version
-    v*: VarId
+    vid*: VarId
     status*: DependencyStatus
     err*: string
 
@@ -46,8 +46,9 @@ proc toJsonHook*(r: Requirements, opt: ToJsonOptions): JsonNode =
     result["srcDir"] = toJson(r.srcDir, opt)
   if r.version != Version"":
     result["version"] = toJson(r.version, opt)
-  result["varId"] = toJson(r.v, opt)
-  result["status"] = toJson(r.v, opt)
+  if r.vid != NoVar:
+    result["varId"] = toJson(r.vid, opt)
+  result["status"] = toJson(r.status, opt)
 
 proc hash*(r: Requirements): Hash =
   var h: Hash = 0
@@ -77,7 +78,7 @@ proc parseNimbleFile*(nc: NimbleContext; nimbleFile: Path; p: Patterns): Require
     hasInstallHooks: nimbleInfo.hasInstallHooks,
     srcDir: nimbleInfo.srcDir,
     status: if nimbleInfo.hasErrors: HasBrokenNimbleFile else: Normal,
-    v: NoVar,
+    vid: NoVar,
     version: parseExplicitVersion(nimbleInfo.version)
   )
   for r in nimbleInfo.requires:

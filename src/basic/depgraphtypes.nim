@@ -8,7 +8,7 @@ type
     version*: Version
     commit*: string
     req*: int # index into graph.reqs so that it can be shared between versions
-    v*: VarId
+    vid*: VarId
 
   DependencyState* = enum
     NotInitialized
@@ -45,8 +45,8 @@ proc `[]`*(g: DepGraph, idx: int): Dependency =
 proc `[]`*(g: var DepGraph, idx: int): var Dependency =
   g.nodes[idx]
 
-proc toJsonHook*(v: VarId): JsonNode = toJson($(int(v)))
-proc toJsonHook*(v: Path): JsonNode = toJson($(v))
+proc toJsonHook*(vid: VarId): JsonNode = toJson($(int(vid)))
+proc toJsonHook*(p: Path): JsonNode = toJson($(p))
 
 proc toJsonHook*(t: Table[PkgUrl, int]): JsonNode =
   result = newJObject()
@@ -62,7 +62,7 @@ proc toJsonHook*(r: Requirements, opt: ToJsonOptions): JsonNode =
   result = newJObject()
 
 proc defaultReqs*(): seq[Requirements] =
-  @[Requirements(deps: @[], v: NoVar), Requirements(status: HasUnknownNimbleFile, v: NoVar)]
+  @[Requirements(deps: @[], vid: NoVar), Requirements(status: HasUnknownNimbleFile, vid: NoVar)]
 
 proc toJsonHook*(d: DepGraph, opt: ToJsonOptions): JsonNode =
   result = newJObject()
@@ -118,10 +118,10 @@ proc toDestDir*(g: DepGraph; d: Dependency): Path =
 proc enrichVersionsViaExplicitHash*(versions: var seq[DependencyVersion]; x: VersionInterval) =
   let commit = extractSpecificCommit(x)
   if commit.len > 0:
-    for v in versions:
-      if v.commit == commit: return
+    for ver in versions:
+      if ver.commit == commit: return
     versions.add DependencyVersion(version: Version"",
-      commit: commit, req: EmptyReqs, v: NoVar)
+      commit: commit, req: EmptyReqs, vid: NoVar)
 
 iterator allNodes*(g: DepGraph): lent Dependency =
   for i in 0 ..< g.nodes.len: yield g.nodes[i]
