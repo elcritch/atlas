@@ -12,7 +12,7 @@ type
 type
   ResultCode* = distinct int
 const
-  Ok* = ResultCode(0)
+  RES_OK* = ResultCode(0)
 
 proc `==`*(a,b: ResultCode): bool {.borrow.}
 proc `$`*(a: ResultCode): string =

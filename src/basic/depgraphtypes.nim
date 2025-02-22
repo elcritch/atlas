@@ -211,7 +211,7 @@ proc loadDependency*(
 ): Dependency =
   let currentCommit = currentGitCommit(path, ignoreError = true)
   trace "depgraphs:releases", "currentCommit: " & $currentCommit
-  if currentCommit.len() == 0:
+  if currentCommit.isEmpty():
     result.versions.add VersionTag(v: Version"#head", c: initCommitHash("", FromHead))
   else:
     case mode
@@ -222,7 +222,7 @@ proc loadDependency*(
         for version in versions:
           if version.version == Version"" and not version.commit.isEmpty and not uniqueCommits.containsOrIncl(version.commit):
             let status = checkoutGitCommit(path, version.commit)
-            if status == Ok:
+            if status == ResOk:
               yield (FromDep, VersionTag(h: version.commit, v: Version""))
               inc produced
         let tags = collectTaggedVersions(path)
