@@ -32,10 +32,22 @@ type
 #   for v in ss:
 #     result.add(% {"url": % v[0], "version": % v[1]} )
 
-proc toJsonHook*(v: (PkgUrl, VersionInterval)): JsonNode =
+proc toJsonHook*(v: (PkgUrl, VersionInterval), opt: ToJsonOptions): JsonNode =
   result = newJObject()
   result["url"] = toJsonHook(v[0])
   result["version"] = toJsonHook(v[1])
+
+proc toJsonHook*(r: Requirements, opt: ToJsonOptions): JsonNode =
+  result = newJObject()
+  result["deps"] = toJson(r.deps, opt)
+  if r.hasInstallHooks:
+    result["deps"] = toJson(r.hasInstallHooks, opt)
+  if r.srcDir != Path "":
+    result["srcDir"] = toJson(r.srcDir, opt)
+  if r.version != Version"":
+    result["version"] = toJson(r.version, opt)
+  result["varId"] = toJson(r.v, opt)
+  result["status"] = toJson(r.v, opt)
 
 proc hash*(r: Requirements): Hash =
   var h: Hash = 0

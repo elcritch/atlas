@@ -39,6 +39,12 @@ const
   UnknownReqs* = 1
   FileWorkspace* = "file://./"
 
+proc `[]`*(g: DepGraph, idx: int): Dependency =
+  g.nodes[idx]
+
+proc `[]`*(g: var DepGraph, idx: int): var Dependency =
+  g.nodes[idx]
+
 proc toJsonHook*(v: VarId): JsonNode = toJson($(int(v)))
 proc toJsonHook*(v: Path): JsonNode = toJson($(v))
 
@@ -46,30 +52,27 @@ proc toJsonHook*(t: Table[PkgUrl, int]): JsonNode =
   result = newJObject()
   for k, v in t: result[$k] = % v
 
-proc toJsonHook*(t: Table[Requirements, int]): JsonNode =
+proc toJsonHook*(t: Table[Requirements, int], opt: ToJsonOptions): JsonNode =
   result = newJArray()
   for k, v in t:
-    result.add(toJson {"req": toJson(k), "idx": toJson(v) })
+    # result.add(%* {"req": toJson(k), "idx": toJson(v) })
+    result.add(%* [toJson(k, opt), toJson(v, opt)] )
 
-proc `[]`*(g: DepGraph, idx: int): Dependency =
-  g.nodes[idx]
-
-proc `[]`*(g: var DepGraph, idx: int): var Dependency =
-  g.nodes[idx]
+proc toJsonHook*(r: Requirements, opt: ToJsonOptions): JsonNode =
+  result = newJObject()
 
 proc defaultReqs*(): seq[Requirements] =
   @[Requirements(deps: @[], v: NoVar), Requirements(status: HasUnknownNimbleFile, v: NoVar)]
 
-proc dumpJson*(d: DepGraph, full = false): JsonNode =
+proc toJsonHook*(d: DepGraph, opt: ToJsonOptions): JsonNode =
   result = newJObject()
-  result["nodes"] = toJson(d.nodes)
-  result["reqs"] = toJson(d.reqs)
-  if full:
-    result["packageToDependency"] = toJson(d.packageToDependency)
-    result["reqsByDeps"] = toJson(d.reqsByDeps)
+  result["nodes"] = toJson(d.nodes, opt)
+  result["reqs"] = toJson(d.reqs, opt)
+  result["packageToDependency"] = toJson(d.packageToDependency, opt)
+    # result["reqsByDeps"] = toJson(d.reqsByDeps)
 
 proc dumpJson*(d: DepGraph, filename: string, full = true, pretty = true) =
-  let jn = dumpJson(d, full=full)
+  let jn = toJson(d, ToJsonOptions(enumMode: joptEnumString))
   if pretty:
     writeFile(filename, pretty(jn))
   else:
