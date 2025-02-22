@@ -63,7 +63,7 @@ proc findNimbleFile*(dir: Path, projectName: string): seq[Path] =
       result.add Path(file)
   debug "findNimbleFile:search:", " name: " & projectName & " found: " & $result
 
-proc findNimbleFile*(dep: DepConstraint): seq[Path] =
+proc findNimbleFile*(dep: DepConstraint | Dependency): seq[Path] =
   doAssert(dep.info.ondisk.string != "", "Package ondisk must be set before findNimbleFile can be called! Package: " & $(dep))
   result = findNimbleFile(dep.info.ondisk, dep.pkg.projectName & ".nimble")
 

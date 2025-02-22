@@ -7,7 +7,7 @@
 #
 
 import std / [os, strutils, tables, unicode, sequtils, sets, json, hashes, algorithm]
-import basic/[context, depgraphtypes, versions, osutils, nimbleparser, packageinfos, reporters, gitops, parse_requires, pkgurls, compiledpatterns]
+import basic/[context, dependencies, depgraphtypes, versions, osutils, nimbleparser, packageinfos, reporters, gitops, parse_requires, pkgurls, compiledpatterns]
 
 const
   DefaultPackagesSubDir* = Path "packages"
@@ -55,10 +55,10 @@ proc createNimbleContext*(depsdir: Path): NimbleContext =
 
 proc collectNimbleVersions*(nc: NimbleContext; dep: Dependency): seq[VersionTag] =
   let nimbleFiles = findNimbleFile(dep)
-  let dir = dep.ondisk
-  doAssert(dep.ondisk.string != "", "Package ondisk must be set before collectNimbleVersions can be called! Package: " & $(dep))
+  let dir = dep.info.ondisk
+  doAssert(dep.info.ondisk.string != "", "Package ondisk must be set before collectNimbleVersions can be called! Package: " & $(dep))
   result = @[]
   if nimbleFiles.len() == 1:
     result = collectFileCommits(dir, nimbleFiles[0], ignoreError = true)
     result.reverse()
-    trace "collectNimbleVersions", "commits: " & $mapIt(result, it.shortHash())
+    trace "collectNimbleVersions", "commits: " & $mapIt(result, it.c.short())
