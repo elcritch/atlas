@@ -382,6 +382,8 @@ proc solve*(graph: var DepGraph; form: Form) =
         for ver in mvalidVersions(pkg, graph):
           if solution.isTrue(ver.vid):
             error pkg.pkg.projectName, string(ver.version) & " required"
+  if context().dumpGraphs:
+    dumpJson(graph, "graph-solved.json")
 
 proc traverseLoop*(nc: var NimbleContext; graph: var DepGraph): seq[CfgPath] =
   result = @[]

@@ -9,9 +9,9 @@ if execShellCmd("nim c -o:$# -d:release src/atlas.nim" % [atlasExe]) != 0:
 
 ensureGitHttpServer()
 
-template testSemVer2(expected: string) =
-  createDir "semproject"
-  withDir "semproject":
+template testSemVer2(name, expected: string) =
+  createDir name
+  withDir name:
     let cmd = atlasExe & " --full --keepWorkspace --resolver=SemVer --colors:off --list use proj_a"
     let (outp, status) = execCmdEx(cmd)
     if status == 0:
@@ -30,9 +30,9 @@ template testSemVer2(expected: string) =
       echo ">>>>>>>>>>>>>>>> failed\n"
       check status == 0
 
-template testMinVer(expected: string) =
-  createDir "minproject"
-  withDir "minproject":
+template testMinVer(name, expected: string) =
+  createDir name
+  withDir name:
     let cmd = atlasExe & " --keepWorkspace --resolver=MinVer --list use proj_a"
     let (outp, status) = execCmdEx(atlasExe & " --keepWorkspace --resolver=MinVer --list use proj_a")
     if status == 0:
@@ -44,17 +44,18 @@ template testMinVer(expected: string) =
     else:
       echo "\n\n"
       echo "<<<<<<<<<<<<<<<< Failed Exec "
-      echo "testSemVer2:command: ", cmd
-      echo "testSemVer2:pwd: ", ospaths2.getCurrentDir()
-      echo "testSemVer2:failed command:"
+      echo "tesMinVer2:command: ", cmd
+      echo "tesMinVer2:pwd: ", ospaths2.getCurrentDir()
+      echo "tesMinVer2:failed command:"
       echo "================ Output:\n\t" & outp.replace("\n", "\n\t")
       echo ">>>>>>>>>>>>>>>> failed\n"
       check status == 0
 
-template removeDirs() =
+template removeDirs(projDir: string) =
+  removeDir projDir
   removeDir "does_not_exist"
-  removeDir "semproject"
-  removeDir "minproject"
+  # removeDir "semproject"
+  # removeDir "minproject"
   removeDir "source"
   removeDir "proj_a"
   removeDir "proj_b"
@@ -82,7 +83,7 @@ proc setupGraphNoGitTags* =
 suite "basic repo tests":
   test "tests/ws_semver2":
       withDir "tests/ws_semver2":
-        removeDirs()
+        removeDirs("semproject1")
         setupGraph()
         let semVerExpectedResult = dedent"""
         [Info] (../resolve) selected:
@@ -95,11 +96,11 @@ suite "basic repo tests":
         [Info] (proj_d) [x] (proj_d, 1.0.0)
         [Info] (../resolve) end of selection
         """
-        testSemVer2(semVerExpectedResult)
+        testSemVer2("semproject1", semVerExpectedResult)
 
   test "tests/ws_semver2":
       withDir "tests/ws_semver2":
-        removeDirs()
+        removeDirs("semproject2")
         setupGraphNoGitTags()
         let semVerExpectedResultNoGitTags = dedent"""
         [Info] (../resolve) selected:
@@ -118,11 +119,11 @@ suite "basic repo tests":
         [Info] (../resolve) end of selection
         """
         
-        testSemVer2(semVerExpectedResultNoGitTags)
+        testSemVer2("semproject2", semVerExpectedResultNoGitTags)
 
   test "tests/ws_semver2":
       withDir "tests/ws_semver2":
-        removeDirs()
+        removeDirs("minproject")
         setupGraph()
         let minVerExpectedResult = dedent"""
         [Info] (../resolve) selected:
@@ -135,4 +136,4 @@ suite "basic repo tests":
         [Info] (proj_d) [x] (proj_d, 1.0.0)
         [Info] (../resolve) end of selection
         """
-        testMinVer(minVerExpectedResult)
+        testMinVer("minproject", minVerExpectedResult)
