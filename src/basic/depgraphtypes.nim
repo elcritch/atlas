@@ -13,8 +13,6 @@ type
     reqsByDeps*: Table[Requirements, int]
 
 const
-  EmptyReqs* = 0
-  UnknownReqs* = 1
   FileWorkspace* = "file://./"
 
 proc `[]`*(g: DepGraph, idx: int): DepConstraint =
@@ -65,7 +63,7 @@ proc findNimbleFile*(dir: Path, projectName: string): seq[Path] =
       result.add Path(file)
   debug "findNimbleFile:search:", " name: " & projectName & " found: " & $result
 
-proc findNimbleFile*(dep: Dependency): seq[Path] =
+proc findNimbleFile*(dep: DepConstraint): seq[Path] =
   doAssert(dep.info.ondisk.string != "", "Package ondisk must be set before findNimbleFile can be called! Package: " & $(dep))
   result = findNimbleFile(dep.info.ondisk, dep.pkg.projectName & ".nimble")
 
@@ -73,7 +71,7 @@ type
   PackageAction* = enum
     DoNothing, DoClone
 
-proc pkgUrlToDirname*(g: var DepGraph; d: Dependency): (Path, PackageAction) =
+proc pkgUrlToDirname*(g: var DepGraph; d: DepConstraint): (Path, PackageAction) =
   # XXX implement namespace support here
   # var dest = Path g.ondisk.getOrDefault(d.pkg.url)
   var dest = Path ""
@@ -87,46 +85,42 @@ proc pkgUrlToDirname*(g: var DepGraph; d: Dependency): (Path, PackageAction) =
       dest = depsDir / Path d.pkg.projectName
   result = (dest, if dirExists(dest): DoNothing else: DoClone)
 
-proc toDestDir*(g: DepGraph; d: Dependency): Path =
+proc toDestDir*(g: DepGraph; d: DepConstraint): Path =
   result = d.info.ondisk
 
 proc enrichVersionsViaExplicitHash*(versions: var seq[DepVersion]; x: VersionInterval) =
   let commit = extractSpecificCommit(x)
-  if commit.len > 0:
+  if not commit.isEmpty():
     for ver in versions:
-      if ver.vtag.commit() == commit: return
-    versions.add DepVersion(version: Version"",
-      commit: commit, req: EmptyReqs, vid: NoVar)
+      if ver.vtag.commit() == commit:
+        return
+    versions.add initDepVersion(Version"", commit) 
 
-iterator allNodes*(g: DepGraph): lent Dependency =
+iterator allNodes*(g: DepGraph): lent DepConstraint =
   for i in 0 ..< g.nodes.len: yield g.nodes[i]
 
-iterator allActiveNodes*(g: DepGraph): lent Dependency =
+iterator allActiveNodes*(g: DepGraph): lent DepConstraint =
   for i in 0 ..< g.nodes.len:
     if g.nodes[i].active:
       yield g.nodes[i]
 
-iterator toposorted*(g: DepGraph): lent Dependency =
-  for i in countdown(g.nodes.len-1, 0): yield g.nodes[i]
+iterator toposorted*(g: DepGraph): lent DepConstraint =
+  for i in countdown(g.nodes.len-1, 0):
+    yield g.nodes[i]
 
 proc findDependencyForDep*(g: DepGraph; dep: PkgUrl): int {.inline.} =
   assert g.packageToDependency.hasKey(dep), $(dep, g.packageToDependency)
   result = g.packageToDependency.getOrDefault(dep)
 
-iterator directDependencies*(g: DepGraph; d: Dependency): lent Dependency =
+iterator directDependencies*(g: DepGraph; d: DepConstraint): lent DepConstraint =
   if d.activeVersion >= 0 and d.activeVersion < d.versions.len:
     let deps {.cursor.} = g.reqs[d.versions[d.activeVersion].req].deps
     for dep in deps:
       let idx = findDependencyForDep(g, dep[0])
       yield g.nodes[idx]
 
-proc getCfgPath*(g: DepGraph; d: Dependency): lent CfgPath =
+proc getCfgPath*(g: DepGraph; d: DepConstraint): lent CfgPath =
   result = CfgPath g.reqs[d.versions[d.activeVersion].req].srcDir
-
-proc commit*(d: Dependency): string =
-  result =
-    if d.activeVersion >= 0 and d.activeVersion < d.versions.len: d.versions[d.activeVersion].commit
-    else: ""
 
 proc bestNimVersion*(g: DepGraph): Version =
   result = Version""
@@ -148,11 +142,12 @@ proc readOnDisk(result: var DepGraph) =
     let nodes = jsonTo(n, typeof(result.nodes))
     for n in nodes:
       # result.ondisk[n.pkg.url] = n.ondisk
-      if dirExists(n.ondisk):
-        if n.isRoot:
+      if dirExists(n.info.ondisk):
+        if n.info.isRoot:
           if not result.packageToDependency.hasKey(n.pkg):
             result.packageToDependency[n.pkg] = result.nodes.len
-            result.nodes.add Dependency(pkg: n.pkg, isRoot: true, isTopLevel: n.isTopLevel, activeVersion: -1)
+            let info = DependencyInfo(isRoot: true, isTopLevel: n.info.isTopLevel)
+            result.nodes.add DepConstraint(pkg: n.pkg, info: info, activeVersion: -1)
   except:
     warn configFile, "couldn't load graph from: " & $configFile
 
@@ -160,7 +155,8 @@ proc createGraph*(s: PkgUrl): DepGraph =
   result = DepGraph(nodes: @[],
     reqs: defaultReqs())
   result.packageToDependency[s] = result.nodes.len
-  result.nodes.add Dependency(pkg: s, versions: @[], isRoot: true, isTopLevel: true, activeVersion: -1)
+  let info = DependencyInfo(isRoot: true, isTopLevel: true)
+  result.nodes.add DepConstraint(pkg: s, versions: @[], info: info, activeVersion: -1)
   readOnDisk(result)
 
 proc createGraphFromWorkspace*(): DepGraph =
@@ -183,7 +179,7 @@ proc createGraphFromWorkspace*(): DepGraph =
   except:
     warn configFile, "couldn't load graph from: " & $configFile
 
-proc copyFromDisk*(w: Dependency; destDir: Path): (CloneStatus, string) =
+proc copyFromDisk*(w: DepConstraint; destDir: Path): (CloneStatus, string) =
   var dir = w.pkg.url
   if dir.startsWith(FileWorkspace):
     dir = $context().workspace / dir.substr(FileWorkspace.len)
@@ -191,7 +187,7 @@ proc copyFromDisk*(w: Dependency; destDir: Path): (CloneStatus, string) =
   #  if dirExists(a): a else: b
 
   #let dir = selectDir(u & "@" & w.commit, u)
-  if w.isTopLevel:
+  if w.info.isTopLevel:
     result = (Ok, "")
   elif dirExists(dir):
     info destDir, "cloning: " & dir
