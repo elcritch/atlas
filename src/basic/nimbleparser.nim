@@ -7,7 +7,7 @@
 #
 
 import std / [os, paths, strutils, tables, unicode, hashes, json, jsonutils]
-import sattypes, versions, context, reporters, gitops, parse_requires, pkgurls, compiledpatterns
+import sattypes, dependencies, versions, context, reporters, gitops, parse_requires, pkgurls, compiledpatterns
 
 type
 

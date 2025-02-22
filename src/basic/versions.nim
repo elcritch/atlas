@@ -33,6 +33,13 @@ type
   ResolutionAlgorithm* = enum
     MinVer, SemVer, MaxVer
 
+  CommitHash* = object
+    h*: string
+
+  VersionTag* = object
+    c*: CommitHash
+    v*: Version
+
 const
   InvalidCommit* = "#head" #"<invalid commit>"
 
@@ -228,14 +235,6 @@ proc isLowerAlphaNum*(s: string): bool =
     if c notin ValidChars:
       return false
   return true
-
-type
-  CommitHash* = object
-    h*: string
-
-  VersionTag* = object
-    c*: CommitHash
-    v*: Version
 
 proc initCommitHash*(raw: string): CommitHash = 
   result = CommitHash(h: raw.toLower())

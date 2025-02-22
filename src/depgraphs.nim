@@ -200,10 +200,7 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
   for pkg in mitems(graph.nodes):
     if pkg.versions.len == 0: continue
 
-    pkg.versions.sort proc (a, b: DependencyVersion): int =
-      (if a.version < b.version: 1
-      elif a.version == b.version: 0
-      else: -1)
+    pkg.versions.sort(sortDepVersions)
 
     var verIdx = 0
     for ver in mitems pkg.versions:

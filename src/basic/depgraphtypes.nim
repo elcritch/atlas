@@ -6,7 +6,7 @@ import sattypes, context, gitops, reporters, nimbleparser, pkgurls, versions
 
 type
   DepGraph* = object
-    nodes*: seq[Dependency]
+    nodes*: seq[DepConstraint]
     reqs*: seq[Requirements]
     packageToDependency*: Table[PkgUrl, int]
     ondisk*: OrderedTable[string, Path] # URL -> dirname mapping
@@ -35,9 +35,6 @@ proc toJsonHook*(t: Table[Requirements, int], opt: ToJsonOptions): JsonNode =
   for k, v in t:
     # result.add(%* {"req": toJson(k), "idx": toJson(v) })
     result.add(%* [toJson(k, opt), toJson(v, opt)] )
-
-proc toJsonHook*(r: Requirements, opt: ToJsonOptions): JsonNode =
-  result = newJObject()
 
 proc defaultReqs*(): seq[Requirements] =
   @[Requirements(deps: @[], vid: NoVar), Requirements(status: HasUnknownNimbleFile, vid: NoVar)]

@@ -124,7 +124,7 @@ proc collectFileCommits*(path, file: Path, ignoreError = false): seq[VersionTag]
   if status == Ok:
     result = parseTaggedVersions(outp, requireVersions = false)
 
-proc versionToCommit*(path: Path, algo: ResolutionAlgorithm; query: VersionInterval): string =
+proc versionToCommit*(path: Path, algo: ResolutionAlgorithm; query: VersionInterval): CommitHash =
   let allVersions = collectTaggedVersions(path)
   case algo
   of MinVer:
