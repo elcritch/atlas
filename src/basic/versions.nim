@@ -307,11 +307,11 @@ proc matches*(pattern: VersionInterval; v: Version): bool =
 const
   MinCommitLen = len("#baca3")
 
-proc extractSpecificCommit*(pattern: VersionInterval): string =
+proc extractSpecificCommit*(pattern: VersionInterval): CommitHash =
   if not pattern.isInterval and pattern.a.r == verEq and pattern.a.v.isSpecial and pattern.a.v.string.len >= MinCommitLen:
-    result = pattern.a.v.string.substr(1)
+    result = initCommitHash(pattern.a.v.string.substr(1))
   else:
-    result = ""
+    result = initCommitHash("")
 
 proc matches*(pattern: VersionInterval; x: VersionTag): bool =
   if pattern.isInterval:
