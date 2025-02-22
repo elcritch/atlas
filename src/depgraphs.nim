@@ -20,13 +20,13 @@ type
   CommitOrigin = enum
     FromHead, FromGitTag, FromDep, FromNimbleFile
 
-iterator releases(path: Path,
-                  mode: TraversalMode; versions: seq[DependencyVersion];
-                  nimbleCommits: seq[Commit]): (CommitOrigin, Commit) =
+proc releases*(path: Path,
+               mode: TraversalMode; versions: seq[DependencyVersion];
+               nimbleCommits: seq[VersionTag]): seq[(CommitOrigin, VersionTag)] =
   let currentCommit = currentGitCommit(path, ignoreError = true)
   trace "depgraphs:releases", "currentCommit: " & $currentCommit
   if currentCommit.len() == 0:
-    yield (FromHead, Commit(h: "", v: Version"#head"))
+    yield (FromHead, VersionTag(h: "", v: Version"#head"))
   else:
     case mode
     of AllReleases:
@@ -37,7 +37,7 @@ iterator releases(path: Path,
           if version.version == Version"" and version.commit.len > 0 and not uniqueCommits.containsOrIncl(version.commit):
             let status = checkoutGitCommit(path, version.commit)
             if status == Ok:
-              yield (FromDep, Commit(h: version.commit, v: Version""))
+              yield (FromDep, VersionTag(h: version.commit, v: Version""))
               inc produced
         let tags = collectTaggedVersions(path)
         for tag in tags:
@@ -53,15 +53,15 @@ iterator releases(path: Path,
               yield (FromNimbleFile, commit)
 
         if produced == 0:
-          yield (FromHead, Commit(h: "", v: Version"#head"))
+          yield (FromHead, VersionTag(h: "", v: Version"#head"))
 
       finally:
         discard exec(GitCheckout, path, [currentCommit])
     of CurrentCommit:
-      yield (FromHead, Commit(h: "", v: Version"#head"))
+      yield (FromHead, VersionTag(h: "", v: Version"#head"))
 
 proc traverseRelease(nimbleCtx: NimbleContext; graph: var DepGraph; idx: int;
-                     origin: CommitOrigin; release: Commit; lastNimbleContents: var string) =
+                     origin: CommitOrigin; release: VersionTag; lastNimbleContents: var string) =
   debug "traverseRelease", "name: " & graph[idx].pkg.projectName & " origin: " & $origin & " release: " & $release
   let nimbleFiles = findNimbleFile(graph[idx])
   var packageVer = DependencyVersion(
@@ -129,15 +129,12 @@ proc traverseDependency*(nimbleCtx: NimbleContext;
   let nimbleVersions = collectNimbleVersions(nimbleCtx, graph[idx])
   debug "traverseDependency", "nimble versions: " & $nimbleVersions
 
-  if graph[idx].isRoot:
-    let (origin, release) = (FromHead, Commit(h: "", v: Version"#head"))
-    traverseRelease(nimbleCtx, graph, idx, origin, release, lastNimbleContents)
-    graph[idx].state = Processed
-  else:
-    for (origin, release) in releases(graph[idx].ondisk, mode, versions, nimbleVersions):
-      traverseRelease(nimbleCtx, graph, idx, origin, release, lastNimbleContents)
+  let mode = if graph[idx].isRoot: CurrentCommit else: mode
 
-    graph[idx].state = Processed
+  for (origin, release) in releases(graph[idx].ondisk, mode, versions, nimbleVersions):
+    traverseRelease(nimbleCtx, graph, idx, origin, release, lastNimbleContents)
+
+  graph[idx].state = Processed
 
 proc expand*(graph: var DepGraph; nimbleCtx: NimbleContext; mode: TraversalMode) =
   ## Expand the graph by adding all dependencies.

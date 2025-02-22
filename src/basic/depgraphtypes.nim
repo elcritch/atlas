@@ -3,30 +3,8 @@ import std / [sets, paths, files, dirs, tables, os, strutils, streams, json, jso
 
 import sattypes, context, gitops, reporters, nimbleparser, pkgurls, versions
 
+
 type
-  DependencyVersion* = object  # Represents a specific version of a project.
-    version*: Version
-    commit*: string
-    req*: int # index into graph.reqs so that it can be shared between versions
-    vid*: VarId
-
-  DependencyState* = enum
-    NotInitialized
-    Found
-    Processed
-    Error
-
-  Dependency* = object
-    pkg*: PkgUrl
-    versions*: seq[DependencyVersion]
-    isRoot*: bool
-    isTopLevel*: bool
-    activeVersion*: int
-    state*: DependencyState
-    active*: bool
-    ondisk*: Path
-    errors*: seq[string]
-
   DepGraph* = object
     nodes*: seq[Dependency]
     reqs*: seq[Requirements]

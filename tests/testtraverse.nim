@@ -38,6 +38,7 @@ proc setupGraphNoGitTags*(): seq[string] =
 suite "basic repo tests":
   setup:
     setAtlasVerbosity(Info)
+
   test "ws_testtraverse collect nimbles":
       withDir "tests/ws_testtraverse":
         context().flags = {UsesOverrides, KeepWorkspace, ListVersions, FullClones}
@@ -77,18 +78,39 @@ suite "basic repo tests":
           # These will change if atlas-tests is regnerated!
           # To update run and use commits not adding a proj_x.nim file
           #    curl http://localhost:4242/buildGraph/ws_generated-logs.txt
-          check collectNimbleVersions(nc, graph[0]) == newSeq[Commit]()
-          check collectNimbleVersions(nc, graph[1]) == @[Commit(h: "e479b438015e734bea67a9c63d783e78cab5746e"), Commit(h: "7ca5581cd5355f6b5461a23f9683f19378bd268a"), Commit(h: "fb3804df03c3c414d98d1f57deeb44c8a223ba44")]
-          check collectNimbleVersions(nc, graph[2]) == @[Commit(h: "af4275109d60caaeacf2912a37c2339aca40a922"), Commit(h: "cd3ad76043e5f983f704be6bf61e57d187fe070f"), Commit(h: "ee875baecee161ed053b87b583b2f08526838bd6")]
-          check collectNimbleVersions(nc, graph[3]) == @[Commit(h: "c7540297c01dc57a98cb1fce7660ab6f2a0cee5f"), Commit(h: "9331e14f3fa20ed75b7d5c0ab93aa5fb0293192f")]
-          check collectNimbleVersions(nc, graph[4]) == @[Commit(h: "0dec9c9733129919972416f04e73b1fb2cbf3bd3"), Commit(h: "dd98f775ae33d450dc7f936f850e247e820e31ad")]
+          check collectNimbleVersions(nc, graph[0]) == newSeq[VersionTag]()
+          check collectNimbleVersions(nc, graph[1]) == @[VersionTag(h: "e479b438015e734bea67a9c63d783e78cab5746e"), VersionTag(h: "7ca5581cd5355f6b5461a23f9683f19378bd268a"), VersionTag(h: "fb3804df03c3c414d98d1f57deeb44c8a223ba44")]
+          check collectNimbleVersions(nc, graph[2]) == @[VersionTag(h: "af4275109d60caaeacf2912a37c2339aca40a922"), VersionTag(h: "cd3ad76043e5f983f704be6bf61e57d187fe070f"), VersionTag(h: "ee875baecee161ed053b87b583b2f08526838bd6")]
+          check collectNimbleVersions(nc, graph[3]) == @[VersionTag(h: "c7540297c01dc57a98cb1fce7660ab6f2a0cee5f"), VersionTag(h: "9331e14f3fa20ed75b7d5c0ab93aa5fb0293192f")]
+          check collectNimbleVersions(nc, graph[4]) == @[VersionTag(h: "0dec9c9733129919972416f04e73b1fb2cbf3bd3"), VersionTag(h: "dd98f775ae33d450dc7f936f850e247e820e31ad")]
 
         check graph.nodes.mapIt(it.pkg.projectName) == @["ws_testtraverse", "proj_a", "proj_b", "proj_c", "proj_d"]
 
         # echo "\nGRAPH:POST:"
         # dumpJson graph
 
+  test "ws_testtraverse releases":
+      setAtlasVerbosity(Debug)
+      withDir "tests/ws_testtraverse":
+        context().flags = {UsesOverrides, KeepWorkspace, ListVersions, FullClones}
+        context().defaultAlgo = SemVer
+
+        var nc = NimbleContext()
+        let deps = setupGraph()
+        for dep in deps[0..0]:
+          let name = dep.splitPath.tail
+          echo "dep: ", name, " path: ", dep
+          var versions: seq[DependencyVersion]
+          let pkgDep = Dependency(pkg: createUrlSkipPatterns(dep), ondisk: Path dep)
+          let nimbleVersions = collectNimbleVersions(nc, pkgDep)
+
+          let rels = toSeq(releases(Path dep, AllReleases, versions, nimbleVersions))
+          for rel in rels:
+            echo "release: ", rel
+
+
   test "ws_testtraverse traverseDependency":
+      # setAtlasVerbosity(Debug)
       withDir "tests/ws_testtraverse":
         context().workspace = paths.getCurrentDir()
         context().origDepsDir = paths.getCurrentDir() / Path"buildGraph"

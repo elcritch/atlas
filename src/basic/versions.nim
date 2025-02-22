@@ -221,20 +221,39 @@ proc parseVersionInterval*(s: string; start: int; err: var bool): VersionInterva
   else:
     result = VersionInterval(a: VersionReq(r: verAny, v: Version"#head"))
 
+const ValidChars = {'a'..'f', '0'..'9'}
+
+proc isLowerAlphaNum*(s: string): bool =
+  for c in s:
+    if c notin ValidChars:
+      return false
+  return true
+
 type
-  Commit* = object
+  CommitHash* = object
     h*: string
+
+  VersionTag* = object
+    c*: CommitHash
     v*: Version
 
-proc shortHash*(c: Commit): string =
+proc initCommitHash*(raw: string): CommitHash = 
+  result = CommitHash(h: raw.toLower())
+  doAssert result.h.isLowerAlphaNum(), "hash must hexdecimal"
+
+proc isEmpty*(c: CommitHash): bool =
+  c.h.len() == 0
+proc isFull*(c: CommitHash): bool =
+  c.h.len() == 40
+proc short*(c: CommitHash): string =
   if c.h.len() == 40:
     c.h[0..7]
   elif c.h.len() == 0:
     ""
   else:
-    "err:"&c.h
+    "!"&c.h[0..<c.h.len()]
 
-proc parseTaggedVersions*(outp: string, requireVersions = true): seq[Commit] =
+proc parseTaggedVersions*(outp: string, requireVersions = true): seq[VersionTag] =
   result = @[]
   for line in splitLines(outp):
     if not line.endsWith("^{}"):
@@ -244,12 +263,12 @@ proc parseTaggedVersions*(outp: string, requireVersions = true): seq[Commit] =
       while i < line.len and line[i] in Whitespace: inc i
       while i < line.len and line[i] notin Digits: inc i
       let v = parseVersion(line, i)
-      let h = line.substr(0, commitEnd-1)
-      if h == "":
+      let c = initCommitHash(line.substr(0, commitEnd-1))
+      if c.isEmpty():
         continue
       if v != Version("") or not requireVersions:
-        result.add Commit(h: h, v: v)
-  result.sort proc (a, b: Commit): int =
+        result.add VersionTag(c: c, v: v)
+  result.sort proc (a, b: VersionTag): int =
     (if a.v < b.v: 1
     elif a.v == b.v: 0
     else: -1)
@@ -292,24 +311,24 @@ proc extractSpecificCommit*(pattern: VersionInterval): string =
   else:
     result = ""
 
-proc matches*(pattern: VersionInterval; x: Commit): bool =
+proc matches*(pattern: VersionInterval; x: VersionTag): bool =
   if pattern.isInterval:
     result = matches(pattern.a, x.v) and matches(pattern.b, x.v)
   elif pattern.a.r == verEq and pattern.a.v.isSpecial and pattern.a.v.string.len >= MinCommitLen:
-    result = x.h.startsWith(pattern.a.v.string.substr(1))
+    result = x.c.h.startsWith(pattern.a.v.string.substr(1))
   else:
     result = matches(pattern.a, x.v)
 
-proc selectBestCommitMinVer*(data: openArray[Commit]; elem: VersionInterval): string =
+proc selectBestCommitMinVer*(data: openArray[VersionTag]; elem: VersionInterval): CommitHash =
   for i in countdown(data.len-1, 0):
     if elem.matches(data[i]):
-      return data[i].h
-  return ""
+      return data[i].c
+  return CommitHash(h: "")
 
-proc selectBestCommitMaxVer*(data: openArray[Commit]; elem: VersionInterval): string =
+proc selectBestCommitMaxVer*(data: openArray[VersionTag]; elem: VersionInterval): CommitHash =
   for i in countup(0, data.len-1):
-    if elem.matches(data[i]): return data[i].h
-  return ""
+    if elem.matches(data[i]): return data[i].c
+  return CommitHash(h: "")
 
 proc toSemVer*(i: VersionInterval): VersionInterval =
   result = i
@@ -320,7 +339,7 @@ proc toSemVer*(i: VersionInterval): VersionInterval =
       result.isInterval = true
       result.b = VersionReq(r: verLt, v: Version($(major+1)))
 
-proc selectBestCommitSemVer*(data: openArray[Commit]; elem: VersionInterval): string =
+proc selectBestCommitSemVer*(data: openArray[VersionTag]; elem: VersionInterval): CommitHash =
   result = selectBestCommitMaxVer(data, elem.toSemVer)
 
 proc `$`*(i: VersionInterval): string =

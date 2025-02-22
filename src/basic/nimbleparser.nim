@@ -10,18 +10,6 @@ import std / [os, paths, strutils, tables, unicode, hashes, json, jsonutils]
 import sattypes, versions, context, reporters, gitops, parse_requires, pkgurls, compiledpatterns
 
 type
-  DependencyStatus* = enum
-    Normal, HasBrokenNimbleFile, HasUnknownNimbleFile, HasBrokenDep
-
-  Requirements* = object
-    deps*: seq[(PkgUrl, VersionInterval)]
-    hasInstallHooks*: bool
-    srcDir*: Path
-    version*: Version
-    nimVersion*: Version
-    vid*: VarId
-    status*: DependencyStatus
-    err*: string
 
   NimbleContext* = object
     hasPackageList*: bool

@@ -53,7 +53,7 @@ proc createNimbleContext*(depsdir: Path): NimbleContext =
   result = NimbleContext()
   fillPackageLookupTable(result, depsdir)
 
-proc collectNimbleVersions*(nc: NimbleContext; dep: Dependency): seq[Commit] =
+proc collectNimbleVersions*(nc: NimbleContext; dep: Dependency): seq[VersionTag] =
   let nimbleFiles = findNimbleFile(dep)
   let dir = dep.ondisk
   doAssert(dep.ondisk.string != "", "Package ondisk must be set before collectNimbleVersions can be called! Package: " & $(dep))

@@ -112,14 +112,14 @@ proc gitDescribeRefTag*(path: Path, commit: string): string =
   let (lt, status) = exec(GitDescribe, path, ["--tags", commit])
   result = if status == Ok: strutils.strip(lt) else: ""
 
-proc collectTaggedVersions*(path: Path): seq[Commit] =
+proc collectTaggedVersions*(path: Path): seq[VersionTag] =
   let (outp, status) = exec(GitTags, path, [], Trace)
   if status == Ok:
     result = parseTaggedVersions(outp)
   else:
     result = @[]
 
-proc collectFileCommits*(path, file: Path, ignoreError = false): seq[Commit] =
+proc collectFileCommits*(path, file: Path, ignoreError = false): seq[VersionTag] =
   let (outp, status) = exec(GitLog, path, [$file], Trace)
   if status == Ok:
     result = parseTaggedVersions(outp, requireVersions = false)
