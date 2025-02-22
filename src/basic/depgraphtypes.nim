@@ -179,7 +179,7 @@ proc readOnDisk(result: var DepGraph) =
             result.packageToDependency[n.pkg] = result.nodes.len
             result.nodes.add Dependency(pkg: n.pkg, isRoot: true, isTopLevel: n.isTopLevel, activeVersion: -1)
   except:
-    error configFile, "cannot read: " & $configFile
+    warn configFile, "couldn't load graph from: " & $configFile
 
 proc createGraph*(s: PkgUrl): DepGraph =
   result = DepGraph(nodes: @[],
@@ -206,7 +206,7 @@ proc createGraphFromWorkspace*(): DepGraph =
     for i, n in mpairs(result.nodes):
       result.packageToDependency[n.pkg] = i
   except:
-    error configFile, "cannot read: " & $configFile
+    warn configFile, "couldn't load graph from: " & $configFile
 
 proc copyFromDisk*(w: Dependency; destDir: Path): (CloneStatus, string) =
   var dir = w.pkg.url
