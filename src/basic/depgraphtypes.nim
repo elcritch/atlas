@@ -203,58 +203,9 @@ proc copyFromDisk*(w: DepConstraint; destDir: Path): (CloneStatus, string) =
   #writeFile destDir / ThisVersion, w.commit
   #echo "WRITTEN ", destDir / ThisVersion
 
-proc loadDependency*(
-    path: Path,
-    mode: TraversalMode;
-    versions: seq[VersionTag];
-    nimbleCommits: seq[VersionTag]
-): Dependency =
-  let currentCommit = currentGitCommit(path, Error)
-  trace "depgraphs:releases", "currentCommit: " & $currentCommit
-  if currentCommit.isEmpty():
-    warn "loadDependency", "unable to find git current version at " & $path
-    result.versions.add VersionTag(v: Version"#head", c: initCommitHash("", FromHead))
-  else:
-    case mode
-    of AllReleases:
-      try:
-        var uniqueCommits = initHashSet[CommitHash]()
-        for version in versions:
-          if version.version == Version"" and
-              not version.commit.isEmpty() and
-              not uniqueCommits.containsOrIncl(version.commit):
-            if checkoutGitCommit(path, version.commit):
-              result.versions.add VersionTag(v: Version"", c: version.commit)
-              assert version.commit.orig == FromDep, "maybe this needs to be overriden like before"
-        let tags = collectTaggedVersions(path)
-        for tag in tags:
-          if not uniqueCommits.containsOrIncl(tag.c):
-            if checkoutGitCommit(path, tag.c):
-              result.versions.add tag
-              assert tag.commit.orig == FromGitTag, "maybe this needs to be overriden like before"
-            else:
-              error "loadDependency", "missing tag version " & $tag & " at " & $path
-        for tag in nimbleCommits:
-          if not uniqueCommits.containsOrIncl(tag.c):
-            if checkoutGitCommit(path, tag.c):
-              result.versions.add VersionTag(v: Version"", c: tag.c)
-              assert tag.commit.orig == FromNimbleFile, "maybe this needs to be overriden like before"
-            else:
-              error "loadDependency", "missing nimble tag version " & $tag & " at " & $path
-
-        if result.versions.len() == 0:
-          info "loadDependency", "no versions found, using default #head" & " at " & $path
-          result.versions.add VersionTag(v: Version"", c: initCommitHash("", FromHead))
-
-      finally:
-        if not checkoutGitCommit(path, currentCommit, Warning):
-          info "loadDependency", "error loading commit: " & $ currentCommit
-    of CurrentCommit:
-      trace "loadDependency", "only loading current commit"
-      result.versions.add VersionTag(v: Version"#head", c: initCommitHash("", FromHead))
-
-proc traverseRelease(nimbleCtx: NimbleContext; graph: var DepGraph; idx: int;
-                     origin: CommitOrigin; release: VersionTag; lastNimbleContents: var string) =
+proc traverseRelease(dep: var Dependency, nimbleCtx: NimbleContext;
+                     origin: CommitOrigin; release: VersionTag;
+                     lastNimbleContents: var string):  SecureHash =
   debug "traverseRelease", "name: " & graph[idx].pkg.projectName & " origin: " & $origin & " release: " & $release
   let nimbleFiles = findNimbleFile(graph[idx])
   var packageVer = DepVersion(vtag: release, req: EmptyReqs, vid: NoVar)
@@ -310,6 +261,56 @@ proc traverseRelease(nimbleCtx: NimbleContext; graph: var DepGraph; idx: int;
   else:
     graph[idx].versions.add ensureMove packageVer
 
+proc loadDependency*(
+    path: Path,
+    mode: TraversalMode;
+    versions: seq[VersionTag];
+    nimbleCommits: seq[VersionTag]
+): Dependency =
+  let currentCommit = currentGitCommit(path, Error)
+  trace "depgraphs:releases", "currentCommit: " & $currentCommit
+  if currentCommit.isEmpty():
+    warn "loadDependency", "unable to find git current version at " & $path
+    result.versions.add VersionTag(v: Version"#head", c: initCommitHash("", FromHead))
+  else:
+    case mode
+    of AllReleases:
+      try:
+        var uniqueCommits = initHashSet[CommitHash]()
+        for version in versions:
+          if version.version == Version"" and
+              not version.commit.isEmpty() and
+              not uniqueCommits.containsOrIncl(version.commit):
+            if checkoutGitCommit(path, version.commit):
+              result.versions.add VersionTag(v: Version"", c: version.commit)
+              assert version.commit.orig == FromDep, "maybe this needs to be overriden like before"
+        let tags = collectTaggedVersions(path)
+        for tag in tags:
+          if not uniqueCommits.containsOrIncl(tag.c):
+            if checkoutGitCommit(path, tag.c):
+              result.versions.add tag
+              assert tag.commit.orig == FromGitTag, "maybe this needs to be overriden like before"
+            else:
+              error "loadDependency", "missing tag version " & $tag & " at " & $path
+        for tag in nimbleCommits:
+          if not uniqueCommits.containsOrIncl(tag.c):
+            if checkoutGitCommit(path, tag.c):
+              result.versions.add VersionTag(v: Version"", c: tag.c)
+              assert tag.commit.orig == FromNimbleFile, "maybe this needs to be overriden like before"
+            else:
+              error "loadDependency", "missing nimble tag version " & $tag & " at " & $path
+
+        if result.versions.len() == 0:
+          info "loadDependency", "no versions found, using default #head" & " at " & $path
+          result.versions.add VersionTag(v: Version"", c: initCommitHash("", FromHead))
+
+      finally:
+        if not checkoutGitCommit(path, currentCommit, Warning):
+          info "loadDependency", "error loading commit: " & $ currentCommit
+    of CurrentCommit:
+      trace "loadDependency", "only loading current commit"
+      result.versions.add VersionTag(v: Version"#head", c: initCommitHash("", FromHead))
+
 proc traverseDependency*(nimbleCtx: NimbleContext;
                          graph: var DepGraph, idx: int, mode: TraversalMode) =
   var lastNimbleContents = "<invalid content>"
@@ -320,7 +321,6 @@ proc traverseDependency*(nimbleCtx: NimbleContext;
 
   let mode = if graph[idx].isRoot: CurrentCommit else: mode
 
-  for (origin, release) in releases(graph[idx].ondisk, mode, versions, nimbleVersions):
-    traverseRelease(nimbleCtx, graph, idx, origin, release, lastNimbleContents)
-
+  # for (origin, release) in releases(graph[idx].ondisk, mode, versions, nimbleVersions):
+  #   traverseRelease(nimbleCtx, graph, idx, origin, release, lastNimbleContents)
   graph[idx].state = Processed
