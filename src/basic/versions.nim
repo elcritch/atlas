@@ -61,6 +61,10 @@ proc initCommitHash*(raw: string, origin: CommitOrigin): CommitHash =
   result = CommitHash(h: raw.toLower(), orig: origin)
   doAssert result.h.isLowerAlphaNum(), "hash must hexdecimal"
 
+proc initCommitHash*(c: CommitHash, origin: CommitOrigin): CommitHash = 
+  result = c
+  result.orig = origin
+
 proc isEmpty*(c: CommitHash): bool =
   c.h.len() == 0
 proc isFull*(c: CommitHash): bool =
