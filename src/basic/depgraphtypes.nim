@@ -205,38 +205,25 @@ proc copyFromDisk*(w: DepConstraint; destDir: Path): (CloneStatus, string) =
 
 proc traverseRelease(dep: var Dependency, nimbleCtx: NimbleContext;
                      origin: CommitOrigin; release: VersionTag;
-                     lastNimbleReqs: Requirements): SecureHash =
+                     prevNimbleReqs: Requirements): SecureHash =
   debug "traverseRelease", "name: " & dep.pkg.projectName & " origin: " & $origin & " release: " & $release
   let nimbleFiles = findNimbleFile(dep)
-  var reqs = EmptyReqs
   var badNimbleFile = false
   if nimbleFiles.len() != 1:
-    trace "traverseRelease", "skipping: nimble file not found or unique"
-    packageVer.req = UnknownReqs
+    warn "traverseRelease", "skipping: nimble file not found or not unique " & $release
+    # packageVer.req = UnknownReqs
   else:
     let nimbleFile = nimbleFiles[0]
     let nimbleHash = secureHashFile($nimbleFile)
     result = nimbleHash
-    if lastNimble.nimbleHash == nimbleHash:
+    if prevNimbleReqs.nimbleHash == nimbleHash:
       debug "traverseRelease", "req same as last"
-      reqs = lastNimbleReqs
+      dep.versions[release] = prevNimbleReqs
     else:
-      let reqResult = parseNimbleFile(nimbleCtx, nimbleFile, context().overrides)
+      let nimbleReqs = parseNimbleFile(nimbleCtx, nimbleFile, context().overrides)
       if origin == FromNimbleFile and packageVer.version == Version"" and reqResult.version != Version"":
         packageVer.version = reqResult.version
         debug "traverseRelease", "set version: " & $reqResult.version
-
-      let reqIdx = graph.reqsByDeps.getOrDefault(reqResult, -1)
-      if reqIdx == -1:
-        packageVer.req = graph.reqs.len
-        graph.reqsByDeps[reqResult] = packageVer.req
-        graph.reqs.add reqResult
-        debug "traverseRelease", "add req: " & $reqResult
-      else:
-        debug "traverseRelease", "set reqIdx: " & $reqIdx
-        packageVer.req = reqIdx
-
-      lastNimbleContents = ensureMove nimbleContents
 
     if graph.reqs[packageVer.req].status == Normal:
       for dep, interval in items(graph.reqs[packageVer.req].deps):
@@ -311,7 +298,7 @@ proc loadDependency*(
 
 proc traverseDependency*(nimbleCtx: NimbleContext;
                          graph: var DepGraph, idx: int, mode: TraversalMode) =
-  var lastNimbleContents = "<invalid content>"
+  var prevNimbleContents = "<invalid content>"
 
   let versions = move dep.versions
   let nimbleVersions = collectNimbleVersions(nimbleCtx, dep)
@@ -320,5 +307,5 @@ proc traverseDependency*(nimbleCtx: NimbleContext;
   let mode = if dep.isRoot: CurrentCommit else: mode
 
   # for (origin, release) in releases(dep.ondisk, mode, versions, nimbleVersions):
-  #   traverseRelease(nimbleCtx, graph, idx, origin, release, lastNimbleContents)
+  #   traverseRelease(nimbleCtx, graph, idx, origin, release, prevNimbleContents)
   dep.state = Processed

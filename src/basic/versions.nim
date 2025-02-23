@@ -47,6 +47,8 @@ type
 const
   InvalidCommit* = "#head" #"<invalid commit>"
 
+proc `$`*(v: Version): string {.borrow.}
+proc `$`*(c: CommitHash): string = c.h
 const ValidChars = {'a'..'f', '0'..'9'}
 
 proc isLowerAlphaNum*(s: string): bool =
@@ -59,22 +61,22 @@ proc initCommitHash*(raw: string, origin: CommitOrigin): CommitHash =
   result = CommitHash(h: raw.toLower(), orig: origin)
   doAssert result.h.isLowerAlphaNum(), "hash must hexdecimal"
 
-proc commit*(vt: VersionTag): CommitHash = vt.c
-proc version*(vt: VersionTag): Version = vt.v
-
-proc `$`*(c: CommitHash): string = c.h
-
 proc isEmpty*(c: CommitHash): bool =
   c.h.len() == 0
 proc isFull*(c: CommitHash): bool =
   c.h.len() == 40
 proc short*(c: CommitHash): string =
-  if c.h.len() == 40:
-    c.h[0..7]
-  elif c.h.len() == 0:
-    ""
-  else:
-    "!"&c.h[0..<c.h.len()]
+  if c.h.len() == 40: c.h[0..7]
+  elif c.h.len() == 0: ""
+  else: "!"&c.h[0..<c.h.len()]
+proc `$`*(vt: VersionTag): string =
+  if vt.v.string == "": result = $vt.v
+  else: result = "-" 
+  result &= "@" & vt.c.short()
+
+
+proc commit*(vt: VersionTag): CommitHash = vt.c
+proc version*(vt: VersionTag): Version = vt.v
 
 template versionKey*(i: VersionInterval): string = i.a.v.string
 
@@ -86,8 +88,6 @@ proc extractGeQuery*(i: VersionInterval): Version =
     result = i.a.v
   else:
     result = Version""
-
-proc `$`*(v: Version): string {.borrow.}
 
 proc isSpecial(v: Version): bool {.inline.} =
   result = v.string.len > 0 and v.string[0] == '#'
