@@ -209,52 +209,55 @@ proc loadDependency*(
     versions: seq[VersionTag];
     nimbleCommits: seq[VersionTag]
 ): Dependency =
-  let currentCommit = currentGitCommit(path, ignoreError = true)
+  let currentCommit = currentGitCommit(path, Error)
   trace "depgraphs:releases", "currentCommit: " & $currentCommit
   if currentCommit.isEmpty():
+    warn "loadDependency", "unable to find git current version at " & $path
     result.versions.add VersionTag(v: Version"#head", c: initCommitHash("", FromHead))
   else:
     case mode
     of AllReleases:
       try:
-        var produced = 0
         var uniqueCommits = initHashSet[CommitHash]()
         for version in versions:
-          if version.version == Version"" and not version.commit.isEmpty and not uniqueCommits.containsOrIncl(version.commit):
-            let status = checkoutGitCommit(path, version.commit)
-            if status == RES_OK:
-              yield (FromDep, VersionTag(h: version.commit, v: Version""))
-              inc produced
+          if version.version == Version"" and
+              not version.commit.isEmpty() and
+              not uniqueCommits.containsOrIncl(version.commit):
+            if checkoutGitCommit(path, version.commit):
+              result.versions.add VersionTag(v: Version"", c: version.commit)
+              assert version.commit.orig == FromDep, "maybe this needs to be overriden like before"
         let tags = collectTaggedVersions(path)
         for tag in tags:
-          if not uniqueCommits.containsOrIncl(tag.h):
-            let status = checkoutGitCommit(path, tag.h)
-            if status == Ok:
-              yield (FromGitTag, tag)
-              inc produced
-        for commit in nimbleCommits:
-          if not uniqueCommits.containsOrIncl(commit.h):
-            let status = checkoutGitCommit(path, commit.h)
-            if status == Ok:
-              yield (FromNimbleFile, commit)
+          if not uniqueCommits.containsOrIncl(tag.c):
+            if checkoutGitCommit(path, tag.c):
+              result.versions.add tag
+              assert tag.commit.orig == FromGitTag, "maybe this needs to be overriden like before"
+            else:
+              error "loadDependency", "missing tag version " & $tag & " at " & $path
+        for tag in nimbleCommits:
+          if not uniqueCommits.containsOrIncl(tag.c):
+            if checkoutGitCommit(path, tag.c):
+              result.versions.add VersionTag(v: Version"", c: tag.c)
+              assert tag.commit.orig == FromNimbleFile, "maybe this needs to be overriden like before"
+            else:
+              error "loadDependency", "missing nimble tag version " & $tag & " at " & $path
 
-        if produced == 0:
-          yield (FromHead, VersionTag(h: "", v: Version"#head"))
+        if result.versions.len() == 0:
+          info "loadDependency", "no versions found, using default #head" & " at " & $path
+          result.versions.add VersionTag(v: Version"", c: initCommitHash("", FromHead))
 
       finally:
-        discard exec(GitCheckout, path, [currentCommit])
+        if not checkoutGitCommit(path, currentCommit, Warning):
+          info "loadDependency", "error loading commit: " & $ currentCommit
     of CurrentCommit:
-      yield (FromHead, VersionTag(h: "", v: Version"#head"))
+      trace "loadDependency", "only loading current commit"
+      result.versions.add VersionTag(v: Version"#head", c: initCommitHash("", FromHead))
 
 proc traverseRelease(nimbleCtx: NimbleContext; graph: var DepGraph; idx: int;
                      origin: CommitOrigin; release: VersionTag; lastNimbleContents: var string) =
   debug "traverseRelease", "name: " & graph[idx].pkg.projectName & " origin: " & $origin & " release: " & $release
   let nimbleFiles = findNimbleFile(graph[idx])
-  var packageVer = DepVersion(
-    version: release.v,
-    commit: release.h,
-    req: EmptyReqs,
-    vid: NoVar)
+  var packageVer = DepVersion(vtag: release, req: EmptyReqs, vid: NoVar)
   var badNimbleFile = false
   if nimbleFiles.len() != 1:
     trace "traverseRelease", "skipping: nimble file not found or unique"
