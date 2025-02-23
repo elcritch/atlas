@@ -205,23 +205,21 @@ proc copyFromDisk*(w: DepConstraint; destDir: Path): (CloneStatus, string) =
 
 proc traverseRelease(dep: var Dependency, nimbleCtx: NimbleContext;
                      origin: CommitOrigin; release: VersionTag;
-                     lastNimbleContents: var string):  SecureHash =
-  debug "traverseRelease", "name: " & graph[idx].pkg.projectName & " origin: " & $origin & " release: " & $release
-  let nimbleFiles = findNimbleFile(graph[idx])
-  var packageVer = DepVersion(vtag: release, req: EmptyReqs, vid: NoVar)
+                     lastNimbleReqs: Requirements): SecureHash =
+  debug "traverseRelease", "name: " & dep.pkg.projectName & " origin: " & $origin & " release: " & $release
+  let nimbleFiles = findNimbleFile(dep)
+  var reqs = EmptyReqs
   var badNimbleFile = false
   if nimbleFiles.len() != 1:
     trace "traverseRelease", "skipping: nimble file not found or unique"
     packageVer.req = UnknownReqs
   else:
     let nimbleFile = nimbleFiles[0]
-    when (NimMajor, NimMinor, NimPatch) == (2, 0, 0):
-      var nimbleContents = readFile($nimbleFile)
-    else:
-      let nimbleContents = readFile($nimbleFile)
-    if lastNimbleContents == nimbleContents:
+    let nimbleHash = secureHashFile($nimbleFile)
+    result = nimbleHash
+    if lastNimble.nimbleHash == nimbleHash:
       debug "traverseRelease", "req same as last"
-      packageVer.req = graph[idx].versions[^1].req
+      reqs = lastNimbleReqs
     else:
       let reqResult = parseNimbleFile(nimbleCtx, nimbleFile, context().overrides)
       if origin == FromNimbleFile and packageVer.version == Version"" and reqResult.version != Version"":
@@ -259,7 +257,7 @@ proc traverseRelease(dep: var Dependency, nimbleCtx: NimbleContext;
   if origin == FromNimbleFile and (packageVer.version == Version"" or badNimbleFile):
     discard "not a version we model in the dependency graph"
   else:
-    graph[idx].versions.add ensureMove packageVer
+    dep.versions.add ensureMove packageVer
 
 proc loadDependency*(
     path: Path,
@@ -315,12 +313,12 @@ proc traverseDependency*(nimbleCtx: NimbleContext;
                          graph: var DepGraph, idx: int, mode: TraversalMode) =
   var lastNimbleContents = "<invalid content>"
 
-  let versions = move graph[idx].versions
-  let nimbleVersions = collectNimbleVersions(nimbleCtx, graph[idx])
+  let versions = move dep.versions
+  let nimbleVersions = collectNimbleVersions(nimbleCtx, dep)
   debug "traverseDependency", "nimble versions: " & $nimbleVersions
 
-  let mode = if graph[idx].isRoot: CurrentCommit else: mode
+  let mode = if dep.isRoot: CurrentCommit else: mode
 
-  # for (origin, release) in releases(graph[idx].ondisk, mode, versions, nimbleVersions):
+  # for (origin, release) in releases(dep.ondisk, mode, versions, nimbleVersions):
   #   traverseRelease(nimbleCtx, graph, idx, origin, release, lastNimbleContents)
-  graph[idx].state = Processed
+  dep.state = Processed

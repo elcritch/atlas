@@ -6,7 +6,7 @@
 #    distribution, for details about the copyright.
 #
 
-import std / [os, paths, strutils, tables, unicode, hashes, json, jsonutils]
+import std / [os, sha1, paths, strutils, tables, unicode, hashes, json, jsonutils]
 import sattypes, dependencies, versions, context, reporters, gitops, parse_requires, pkgurls, compiledpatterns
 
 type
@@ -61,14 +61,17 @@ proc isUrl(s: string): bool {.inline.} = s.len > 5 and s.contains "://"
 
 proc parseNimbleFile*(nc: NimbleContext; nimbleFile: Path; p: Patterns): Requirements =
   let nimbleInfo = extractRequiresInfo(nimbleFile)
+  let nimbleHash = secureHashFile($nimbleFile)
 
   result = Requirements(
     hasInstallHooks: nimbleInfo.hasInstallHooks,
     srcDir: nimbleInfo.srcDir,
     status: if nimbleInfo.hasErrors: HasBrokenNimbleFile else: Normal,
     vid: NoVar,
+    nimbleHash: nimbleHash,
     version: parseExplicitVersion(nimbleInfo.version)
   )
+
   for r in nimbleInfo.requires:
     var i = 0
     while i < r.len and r[i] notin {'#', '<', '=', '>'} + Whitespace: inc i
