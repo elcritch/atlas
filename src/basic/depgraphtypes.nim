@@ -12,11 +12,6 @@ type
     ondisk*: OrderedTable[string, Path] # URL -> dirname mapping
     reqsByDeps*: Table[Requirements, int]
 
-type
-  TraversalMode* = enum
-    AllReleases,
-    CurrentCommit
-
 const
   FileWorkspace* = "file://./"
 
@@ -56,22 +51,6 @@ proc dumpJson*(d: DepGraph, filename: string, full = true, pretty = true) =
   else:
     writeFile(filename, $(jn))
 
-proc findNimbleFile*(nimbleFile: Path): seq[Path] =
-  if fileExists(nimbleFile):
-    result.add nimbleFile
-
-proc findNimbleFile*(dir: Path, projectName: string): seq[Path] =
-  var nimbleFile = dir / Path(projectName & ".nimble")
-  result = findNimbleFile(nimbleFile)
-  if result.len() == 0:
-    for file in walkFiles($dir / "*.nimble"):
-      result.add Path(file)
-  debug "findNimbleFile:search:", " name: " & projectName & " found: " & $result
-
-proc findNimbleFile*(dep: DepConstraint | Dependency): seq[Path] =
-  doAssert(dep.info.ondisk.string != "", "Package ondisk must be set before findNimbleFile can be called! Package: " & $(dep))
-  result = findNimbleFile(dep.info.ondisk, dep.pkg.projectName & ".nimble")
-
 type
   PackageAction* = enum
     DoNothing, DoClone
@@ -92,14 +71,6 @@ proc pkgUrlToDirname*(g: var DepGraph; d: DepConstraint): (Path, PackageAction) 
 
 proc toDestDir*(g: DepGraph; d: DepConstraint): Path =
   result = d.info.ondisk
-
-proc enrichVersionsViaExplicitHash*(versions: var seq[DepVersion]; x: VersionInterval) =
-  let commit = extractSpecificCommit(x)
-  if not commit.isEmpty():
-    for ver in versions:
-      if ver.vtag.commit() == commit:
-        return
-    versions.add initDepVersion(Version"", commit) 
 
 iterator allNodes*(g: DepGraph): lent DepConstraint =
   for i in 0 ..< g.nodes.len: yield g.nodes[i]
@@ -202,110 +173,3 @@ proc copyFromDisk*(w: DepConstraint; destDir: Path): (CloneStatus, string) =
     result = (NotFound, dir)
   #writeFile destDir / ThisVersion, w.commit
   #echo "WRITTEN ", destDir / ThisVersion
-
-proc traverseRelease(dep: var Dependency, nimbleCtx: NimbleContext;
-                     origin: CommitOrigin; release: VersionTag;
-                     prevNimbleReqs: Requirements): SecureHash =
-  debug "traverseRelease", "name: " & dep.pkg.projectName & " origin: " & $origin & " release: " & $release
-  let nimbleFiles = findNimbleFile(dep)
-  var badNimbleFile = false
-  if nimbleFiles.len() != 1:
-    warn "traverseRelease", "skipping: nimble file not found or not unique " & $release
-    # packageVer.req = UnknownReqs
-  else:
-    let nimbleFile = nimbleFiles[0]
-    let nimbleHash = secureHashFile($nimbleFile)
-    result = nimbleHash
-    if prevNimbleReqs.nimbleHash == nimbleHash:
-      debug "traverseRelease", "req same as last"
-      dep.versions[release] = prevNimbleReqs
-    else:
-      let nimbleReqs = parseNimbleFile(nimbleCtx, nimbleFile, context().overrides)
-      if origin == FromNimbleFile and packageVer.version == Version"" and reqResult.version != Version"":
-        packageVer.version = reqResult.version
-        debug "traverseRelease", "set version: " & $reqResult.version
-
-    if graph.reqs[packageVer.req].status == Normal:
-      for dep, interval in items(graph.reqs[packageVer.req].deps):
-        var depIdx = graph.packageToDependency.getOrDefault(dep, -1)
-        if depIdx == -1:
-          depIdx = graph.nodes.len
-          graph.packageToDependency[dep] = depIdx
-          # graph.nodes.add Dependency(pkg: dep, versions: @[], isRoot: idx == 0, activeVersion: -1)
-          debug "traverseRelease", "depIdx: " & $depIdx & " adding dep: " & $dep
-          graph.nodes.add Dependency(pkg: dep, versions: @[], isRoot: depIdx == 0, activeVersion: -1)
-          enrichVersionsViaExplicitHash graph[depIdx].versions, interval
-        else:
-          graph[depIdx].isRoot = graph[depIdx].isRoot or idx == 0
-          enrichVersionsViaExplicitHash graph[depIdx].versions, interval
-    else:
-      badNimbleFile = true
-
-  if origin == FromNimbleFile and (packageVer.version == Version"" or badNimbleFile):
-    discard "not a version we model in the dependency graph"
-  else:
-    dep.versions.add ensureMove packageVer
-
-proc loadDependency*(
-    path: Path,
-    mode: TraversalMode;
-    versions: seq[VersionTag];
-    nimbleCommits: seq[VersionTag]
-): Dependency =
-  let currentCommit = currentGitCommit(path, Error)
-  trace "depgraphs:releases", "currentCommit: " & $currentCommit
-  if currentCommit.isEmpty():
-    warn "loadDependency", "unable to find git current version at " & $path
-    result.versions.add VersionTag(v: Version"#head", c: initCommitHash("", FromHead))
-  else:
-    case mode
-    of AllReleases:
-      try:
-        var uniqueCommits = initHashSet[CommitHash]()
-        for version in versions:
-          if version.version == Version"" and
-              not version.commit.isEmpty() and
-              not uniqueCommits.containsOrIncl(version.commit):
-            if checkoutGitCommit(path, version.commit):
-              result.versions.add VersionTag(v: Version"", c: version.commit)
-              assert version.commit.orig == FromDep, "maybe this needs to be overriden like before"
-        let tags = collectTaggedVersions(path)
-        for tag in tags:
-          if not uniqueCommits.containsOrIncl(tag.c):
-            if checkoutGitCommit(path, tag.c):
-              result.versions.add tag
-              assert tag.commit.orig == FromGitTag, "maybe this needs to be overriden like before"
-            else:
-              error "loadDependency", "missing tag version " & $tag & " at " & $path
-        for tag in nimbleCommits:
-          if not uniqueCommits.containsOrIncl(tag.c):
-            if checkoutGitCommit(path, tag.c):
-              result.versions.add VersionTag(v: Version"", c: tag.c)
-              assert tag.commit.orig == FromNimbleFile, "maybe this needs to be overriden like before"
-            else:
-              error "loadDependency", "missing nimble tag version " & $tag & " at " & $path
-
-        if result.versions.len() == 0:
-          info "loadDependency", "no versions found, using default #head" & " at " & $path
-          result.versions.add VersionTag(v: Version"", c: initCommitHash("", FromHead))
-
-      finally:
-        if not checkoutGitCommit(path, currentCommit, Warning):
-          info "loadDependency", "error loading commit: " & $ currentCommit
-    of CurrentCommit:
-      trace "loadDependency", "only loading current commit"
-      result.versions.add VersionTag(v: Version"#head", c: initCommitHash("", FromHead))
-
-proc traverseDependency*(nimbleCtx: NimbleContext;
-                         graph: var DepGraph, idx: int, mode: TraversalMode) =
-  var prevNimbleContents = "<invalid content>"
-
-  let versions = move dep.versions
-  let nimbleVersions = collectNimbleVersions(nimbleCtx, dep)
-  debug "traverseDependency", "nimble versions: " & $nimbleVersions
-
-  let mode = if dep.isRoot: CurrentCommit else: mode
-
-  # for (origin, release) in releases(dep.ondisk, mode, versions, nimbleVersions):
-  #   traverseRelease(nimbleCtx, graph, idx, origin, release, prevNimbleContents)
-  dep.state = Processed

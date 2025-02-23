@@ -7,50 +7,7 @@
 #
 
 import std / [os, sha1, paths, strutils, tables, unicode, hashes, json, jsonutils]
-import sattypes, dependencies, versions, context, reporters, gitops, parse_requires, pkgurls, compiledpatterns
-
-type
-
-  NimbleContext* = object
-    hasPackageList*: bool
-    nameToUrl*: Table[string, string]
-
-# proc toJsonHook*(ss: seq[(PkgUrl, VersionInterval)]): JsonNode =
-#   result = newJArray()
-#   for v in ss:
-#     result.add(% {"url": % v[0], "version": % v[1]} )
-
-proc toJsonHook*(v: (PkgUrl, VersionInterval), opt: ToJsonOptions): JsonNode =
-  result = newJObject()
-  result["url"] = toJsonHook(v[0])
-  result["version"] = toJsonHook(v[1])
-
-proc toJsonHook*(r: Requirements, opt: ToJsonOptions): JsonNode =
-  result = newJObject()
-  result["deps"] = toJson(r.deps, opt)
-  if r.hasInstallHooks:
-    result["deps"] = toJson(r.hasInstallHooks, opt)
-  if r.srcDir != Path "":
-    result["srcDir"] = toJson(r.srcDir, opt)
-  if r.version != Version"":
-    result["version"] = toJson(r.version, opt)
-  if r.vid != NoVar:
-    result["varId"] = toJson(r.vid, opt)
-  result["status"] = toJson(r.status, opt)
-
-proc hash*(r: Requirements): Hash =
-  var h: Hash = 0
-  h = h !& hash(r.deps)
-  h = h !& hash(r.hasInstallHooks)
-  h = h !& hash($r.srcDir)
-  #h = h !& hash(r.version)
-  h = h !& hash(r.nimVersion)
-  result = !$h
-
-proc `==`*(a, b: Requirements): bool =
-  result = a.deps == b.deps and a.hasInstallHooks == b.hasInstallHooks and
-      a.srcDir == b.srcDir and a.nimVersion == b.nimVersion
-  #and a.version == b.version
+import sattypes, deptypes, versions, context, reporters, gitops, parse_requires, pkgurls, compiledpatterns
 
 proc addError*(err: var string; nimbleFile: string; msg: string) =
   if err.len > 0: err.add "\n"
