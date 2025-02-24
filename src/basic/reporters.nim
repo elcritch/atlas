@@ -15,8 +15,8 @@ type
     Error = "[Error] "
     Warning = "[Warning] ",
     Info = "[Info] ",
-    Trace = "[Trace] "
     Debug = "[Debug] "
+    Trace = "[Trace] "
 
   Reporter* = object of RootObj
     verbosity*: MsgKind
