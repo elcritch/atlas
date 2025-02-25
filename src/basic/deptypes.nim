@@ -1,5 +1,5 @@
-import std/[paths, sha1, tables, json, jsonutils, hashes]
-import sattypes, pkgurls, versions, context
+import std/[unicode, paths, sha1, tables, json, jsonutils, hashes]
+import sattypes, pkgurls, versions, context, compiledpatterns
 
 export sha1
 
@@ -51,18 +51,33 @@ type
   CommitOrigin = enum
     FromHead, FromGitTag, FromDep, FromNimbleFile
 
-  NimbleContext* = object
-    hasPackageList*: bool
-    nameToUrl*: Table[string, PkgUrl]
-
   DependencySpecs* = ref object
     packageToDependency*: Table[PkgUrl, Dependency]
     specs*: Table[Dependency, DependencySpec]
     nimbleCtx*: NimbleContext
 
+  NimbleContext* = object
+    patterns*: Patterns
+    hasPackageList*: bool
+    nameToUrl*: Table[string, PkgUrl]
+
 const
   EmptyReqs* = 0
   UnknownReqs* = 1
+
+proc createUrl*(nc: NimbleContext, name: string): PkgUrl =
+  ## primary point to createUrl's from a name or argument
+  ## TODO: add unit tests!
+  var didReplace = false
+  var name = substitute(nc.patterns, name, didReplace)
+  if name.isUrl():
+    result = createUrlSkipPatterns(name)
+  else:
+    let lname = unicode.toLower(name)
+    if lname in nc.nameToUrl:
+      result = nc.nameToUrl[lname]
+    else:
+      result = createUrlSkipPatterns(name)
 
 proc sortDepVersions*(a, b: DepVersion): int =
   (if a.vtag.v < b.vtag.v: 1

@@ -22,7 +22,7 @@ proc isSep(c: char): bool {.inline.} =
   when defined(windows): c == '/' or c == '\\' else: c == '/'
 
 proc isFileProtocol*(s: PkgUrl): bool = s.u.startsWith("file://")
-proc isUrl(s: string): bool {.inline.} = s.len > 5 and s.contains "://"
+proc isUrl*(s: string): bool {.inline.} = s.len > 5 and s.contains "://"
 
 proc extractProjectName*(s: string): string =
   var last = s.len - 1
@@ -50,19 +50,10 @@ proc createUrlSkipPatterns*(x: string): PkgUrl =
   else:
     result = PkgUrl(projectName: extractProjectName(x), u: x)
 
-proc createUrl*(u: string; p: Patterns): PkgUrl =
-  var didReplace = false
-  let x = substitute(p, u, didReplace)
-  if not didReplace:
-    result = createUrlSkipPatterns(x)
-  else:
-    result = PkgUrl(projectName: extractProjectName(x), u: x)
-
 template url*(p: PkgUrl): string = p.u
 
 proc `==`*(a, b: PkgUrl): bool {.inline.} = a.u == b.u
 proc hash*(a: PkgUrl): Hash {.inline.} = hash(a.u)
-
 
 
 proc dir*(s: PkgUrl): string =

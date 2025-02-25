@@ -34,19 +34,11 @@ proc parseNimbleFile*(nc: NimbleContext; nimbleFile: Path; p: Patterns): Require
     while i < r.len and r[i] notin {'#', '<', '=', '>'} + Whitespace: inc i
     let name = r.substr(0, i-1)
 
-    let pkgUrl = createUrl(name, p)
-    var didReplace = false
-    var u = substitute(p, name, didReplace)
-    if not didReplace:
-      u = (if name.isUrl: name else: nc.nameToUrl.getOrDefault(unicode.toLower name, createUrlSkipPatterns("")))
+    try:
+      let url = nc.createUrl(name)
 
-    if u.len == 0:
-      result.status = HasBrokenDep
-      result.err.addError $nimbleFile, "cannot resolve package name: " & name
-    else:
       var err = false
       let query = parseVersionInterval(r, i, err) # update err
-
       if err:
         if result.status != HasBrokenDep:
           result.status = HasBrokenNimbleFile
@@ -57,7 +49,11 @@ proc parseNimbleFile*(nc: NimbleContext; nimbleFile: Path; p: Patterns): Require
           if v != Version"":
             result.nimVersion = v
         else:
-          result.deps.add (createUrlSkipPatterns(u), query)
+          result.deps.add (url, query)
+    except ValueError, IOError, OSError:
+      result.status = HasBrokenDep
+      warn $nimbleFile, "cannot resolve dependency package name: " & name
+      result.err.addError $nimbleFile, "cannot resolve package name: " & name
 
 proc genRequiresLine(u: string): string = "requires \"$1\"\n" % u.escape("", "")
 
@@ -66,7 +62,13 @@ proc patchNimbleFile*(nc: var NimbleContext;
   var didReplace = false
   var u = substitute(p, name, didReplace)
   if not didReplace:
-    u = (if name.isUrl: name else: nc.nameToUrl.getOrDefault(unicode.toLower name, ""))
+    let ln = unicode.toLower(name) 
+    if name.isUrl:
+      u = name
+    elif ln in nc.nameToUrl:
+      u = $(nc.nameToUrl[ln])
+    else:
+      u = ""
 
   if u.len == 0:
     error name, "cannot resolve package name: " & name
