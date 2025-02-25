@@ -42,7 +42,7 @@ type
     IgnoreUrls
 
   AtlasContext* = object
-    projectDir*, workspace*, origDepsDir*, currentDir*: Path
+    workspace*, depsDir*: Path
     flags*: set[Flag]
     #urlMapping*: Table[string, Package] # name -> url mapping
     dumpGraphs*: bool = true # TODO: debugging, plumb cli option later
@@ -64,14 +64,6 @@ proc context*(): var AtlasContext =
 
 proc `==`*(a, b: CfgPath): bool {.borrow.}
 
-proc depsDir*(c: AtlasContext): Path =
-  if c.origDepsDir == Path "":
-    c.workspace
-  elif c.origDepsDir.isAbsolute:
-    c.origDepsDir
-  else:
-    (c.workspace / c.origDepsDir).absolutePath
-
 proc displayName(c: AtlasContext; p: string): string =
   if p == c.workspace.string:
     p.absolutePath
@@ -81,24 +73,3 @@ proc displayName(c: AtlasContext; p: string): string =
     p.relativePath($c.workspace)
   else:
     p
-
-proc projectFromCurrentDir*(): Path = context().currentDir.absolutePath
-
-# template withDir*(dir: string; body: untyped) =
-#   let oldDir = ospaths2.getCurrentDir()
-#   debug dir, "Current directory is now: " & dir
-#   try:
-#     setCurrentDir(dir)
-#     body
-#   finally:
-#     setCurrentDir(oldDir)
-
-# template tryWithDir*(dir: string; body: untyped) =
-#   let oldDir = ospaths2.getCurrentDir()
-#   try:
-#     if dirExists(dir):
-#       setCurrentDir(dir)
-#       debug dir, "Current directory is now: " & dir
-#       body
-#   finally:
-#     setCurrentDir(oldDir)

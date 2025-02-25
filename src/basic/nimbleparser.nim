@@ -34,10 +34,11 @@ proc parseNimbleFile*(nc: NimbleContext; nimbleFile: Path; p: Patterns): Require
     while i < r.len and r[i] notin {'#', '<', '=', '>'} + Whitespace: inc i
     let name = r.substr(0, i-1)
 
+    let pkgUrl = createUrl(name, p)
     var didReplace = false
     var u = substitute(p, name, didReplace)
     if not didReplace:
-      u = (if name.isUrl: name else: nc.nameToUrl.getOrDefault(unicode.toLower name, ""))
+      u = (if name.isUrl: name else: nc.nameToUrl.getOrDefault(unicode.toLower name, createUrlSkipPatterns("")))
 
     if u.len == 0:
       result.status = HasBrokenDep

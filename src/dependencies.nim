@@ -10,7 +10,7 @@ import std / [os, strutils, tables, unicode, sequtils, sets, json, hashes, algor
 import basic/[context, deptypes, versions, osutils, nimbleparser, packageinfos, reporters, gitops, parse_requires, pkgurls, compiledpatterns]
 
 const
-  DefaultPackagesSubDir* = Path "packages"
+  DefaultPackagesSubDir* = Path"packages"
 
 type
   TraversalMode* = enum
@@ -21,6 +21,9 @@ when defined(nimAtlasBootstrap):
   import ../dist/sat/src/sat/satvars
 else:
   import sat/satvars
+
+proc packagesDirectory*(): Path =
+  context().depsDir / DefaultPackagesSubDir
 
 proc findNimbleFile*(nimbleFile: Path): seq[Path] =
   if fileExists(nimbleFile):
@@ -34,70 +37,69 @@ proc findNimbleFile*(dir: Path, projectName: string): seq[Path] =
       result.add Path(file)
   debug "findNimbleFile:search:", " name: " & projectName & " found: " & $result
 
-proc findNimbleFile*(dep: DepConstraint | Dependency): seq[Path] =
-  doAssert(dep.info.ondisk.string != "", "Package ondisk must be set before findNimbleFile can be called! Package: " & $(dep.pkg))
-  result = findNimbleFile(dep.info.ondisk, dep.pkg.projectName & ".nimble")
+proc findNimbleFile*(info: Dependency): seq[Path] =
+  doAssert(info.ondisk.string != "", "Package ondisk must be set before findNimbleFile can be called! Package: " & $(info))
+  result = findNimbleFile(info.ondisk, info.projectName() & ".nimble")
 
-proc getPackageInfos*(depsDir: Path): seq[PackageInfo] =
+proc getPackageInfos*(pkgsDir = packagesDirectory()): seq[PackageInfo] =
   result = @[]
   var uniqueNames = initHashSet[string]()
   var jsonFiles = 0
-  for kind, path in walkDir($(depsDir / DefaultPackagesSubDir)):
-    if kind == pcFile and path.endsWith(".json"):
+  for kind, path in walkDir(pkgsDir):
+    if kind == pcFile and path.string.endsWith(".json"):
       inc jsonFiles
-      let packages = json.parseFile(path)
+      let packages = json.parseFile($path)
       for p in packages:
         let pkg = p.fromJson()
         if pkg != nil and not uniqueNames.containsOrIncl(pkg.name):
           result.add(pkg)
 
-proc updatePackages*(depsDir: Path) =
-  if dirExists($(depsDir / DefaultPackagesSubDir)):
-    withDir($(depsDir / DefaultPackagesSubDir)):
-      gitPull(depsDir / DefaultPackagesSubDir)
+proc updatePackages*(pkgsDir = packagesDirectory()) =
+  let pkgsDir = context().depsDir / DefaultPackagesSubDir
+  if dirExists(pkgsDir):
+    gitPull(pkgsDir)
   else:
-    withDir $depsDir:
-      let success = clone("https://github.com/nim-lang/packages", DefaultPackagesSubDir)
-      if not success:
-        error DefaultPackagesSubDir, "cannot clone packages repo"
+    if not clone("https://github.com/nim-lang/packages", pkgsDir):
+      error DefaultPackagesSubDir, "cannot clone packages repo"
 
-proc fillPackageLookupTable(c: var NimbleContext; depsdir: Path) =
+proc fillPackageLookupTable(c: var NimbleContext) =
+  let pkgsDir = packagesDirectory()
   if not c.hasPackageList:
     c.hasPackageList = true
-    if not fileExists($(depsDir / DefaultPackagesSubDir / Path "packages.json")):
-      updatePackages(depsdir)
-    let packages = getPackageInfos(depsDir)
+    if not fileExists(pkgsDir / Path"packages.json"):
+      updatePackages(pkgsDir)
+    let packages = getPackageInfos(pkgsDir)
     for entry in packages:
       c.nameToUrl[unicode.toLower entry.name] = entry.url
 
-proc createNimbleContext*(depsdir: Path): NimbleContext =
+proc createNimbleContext*(): NimbleContext =
   result = NimbleContext()
-  fillPackageLookupTable(result, depsdir)
+  fillPackageLookupTable(result)
 
-proc collectNimbleVersions*(nc: NimbleContext; dep: Dependency): seq[VersionTag] =
-  let nimbleFiles = findNimbleFile(dep)
-  let dir = dep.info.ondisk
-  doAssert(dep.info.ondisk.string != "", "Package ondisk must be set before collectNimbleVersions can be called! Package: " & $(dep.pkg))
+proc collectNimbleVersions*(nc: NimbleContext; info: Dependency): seq[VersionTag] =
+  let nimbleFiles = findNimbleFile(info)
+  let dir = info.ondisk
+  doAssert(info.ondisk.string != "", "Package ondisk must be set before collectNimbleVersions can be called! Package: " & $(info))
   result = @[]
   if nimbleFiles.len() == 1:
     result = collectFileCommits(dir, nimbleFiles[0], ignoreError = true)
     result.reverse()
     trace "collectNimbleVersions", "commits: " & $mapIt(result, it.c.short())
 
-proc loadRelease(dep: var Dependency, nc: var NimbleContext; release: VersionTag) =
-  debug "loadRelease", "name: " & dep.pkg.projectName & " release: " & $release
+proc loadRelease(dep: Dependency, specs: DependencySpecs; release: VersionTag): DependencieSpec =
+  debug "loadRelease", "name: " & dep.projectName() & " release: " & $release
 
   if release.version == Version"#head":
     trace "loadRelease", "using current commit"
   elif release.commit.isEmpty():
     error "loadRelease", "missing commit " & $release & " at " & $dep.info.ondisk
-    dep.versions[release] = Requirements(status: HasBrokenRelease, err: "no commit")
+    result.versions[release] = Requirements(status: HasBrokenRelease, err: "no commit")
     return
   elif not checkoutGitCommit(dep.info.ondisk, release.commit):
     dep.versions[release] = Requirements(status: HasBrokenRelease, err: "error checking out release")
     return
 
-  let nimbleFiles = findNimbleFile(dep)
+  let nimbleFiles = findNimbleFile(dep.info)
   var badNimbleFile = false
   if nimbleFiles.len() == 0:
     info "loadRelease", "skipping release: missing nimble file" & $release
@@ -114,32 +116,34 @@ proc loadRelease(dep: var Dependency, nc: var NimbleContext; release: VersionTag
     for pkgUrl, interval in items(nimbleReqs.deps):
       var pkgDep = nc.packageToDependency.getOrDefault(pkgUrl, nil)
       if pkgDep == nil:
-        pkgDep = Dependency(pkg: pkgUrl, state: NotInitialized)
+        pkgDep = DependencySpec(info: Dependency(pkg: pkgUrl), state: NotInitialized)
         nc.packageToDependency[pkgUrl] = pkgDep
         # TODO: enrich versions with hashes when added
         # enrichVersionsViaExplicitHash graph[depIdx].versions, interval
 
 
-proc loadDependency*(
-    nc: var NimbleContext;
-    pkgUrl: PkgUrl,
-    path: Path,
+proc traverseDependency*(
+    dep: var DependencySpec,
+    deps: Dependencies;
     mode: TraversalMode;
     versions: seq[VersionTag];
-): Dependency =
-  result = Dependency(info: DependencyInfo(ondisk: path))
+): DependencySpec =
+  doAssert dep.info.ondisk.fileExists() and dep.state != NotInitialized, "DependencySpec should've been found or cloned at this point"
+
+  result = DependencySpec(info: Dependency(ondisk: path))
 
   let currentCommit = currentGitCommit(path, Error)
   trace "depgraphs:releases", "currentCommit: " & $currentCommit
   if currentCommit.isEmpty():
-    warn "loadDependency", "unable to find git current version at " & $path
+    warn "traverseDependency", "unable to find git current version at " & $path
     let vtag = VersionTag(v: Version"#head", c: initCommitHash("", FromHead))
     result.versions[vtag] = Requirements(status: HasBrokenRepo)
+    result.state = Error
     return
 
   case mode
   of CurrentCommit:
-    trace "loadDependency", "only loading current commit"
+    trace "traverseDependency", "only loading current commit"
     let vtag = VersionTag(v: Version"#head", c: initCommitHash(currentCommit, FromHead))
     result.loadRelease(nc, vtag)
 
@@ -147,7 +151,7 @@ proc loadDependency*(
     try:
       var uniqueCommits: HashSet[CommitHash]
       let nimbleCommits = collectNimbleVersions(nc, result)
-      debug "loadDependency", "nimble versions: " & $nimbleCommits
+      debug "traverseDependency", "nimble versions: " & $nimbleCommits
 
       for version in versions:
         if version.version == Version"" and
@@ -169,60 +173,52 @@ proc loadDependency*(
 
       if result.versions.len() == 0:
         let vtag = VersionTag(v: Version"#head", c: initCommitHash(currentCommit, FromHead))
-        info "loadDependency", "no versions found, using default #head" & " at " & $path
+        info "traverseDependency", "no versions found, using default #head" & " at " & $path
         result.loadRelease(nc, vtag)
 
     finally:
       if not checkoutGitCommit(path, currentCommit, Warning):
-        info "loadDependency", "error loading releases reverting to " & $ currentCommit
+        info "traverseDependency", "error loading releases reverting to " & $ currentCommit
+
+  result.state = Processed
+
+proc loadDependency*(
+    info: var Dependency,
+    path: Path
+) = 
+  case todo
+  of DoClone:
+    let (status, msg) =
+      if graph[i].pkg.isFileProtocol:
+        copyFromDisk(graph[i], dest)
+      else:
+        cloneUrl(graph[i].pkg, dest, false)
+    if status == Ok:
+      dep.state = Found
+    else:
+      dep.state = Error
+      dep.errors.add $status & ":" & msg
+  of DoNothing:
+    if dep.ondisk.dirExists():
+      dep.state = Found
+    else:
+      dep.state = Error
+      dep.errors.add "ondisk location missing"
 
 
-proc traverseDependency*(nc: NimbleContext;
-                         mode: TraversalMode) =
-
-  # let versions = dep.versions
-
-  let mode = if dep.isRoot: CurrentCommit else: mode
-
-  loadDependency(nc)
-  # for (origin, release) in releases(dep.ondisk, mode, versions, nimbleVersions):
-  #   traverseRelease(nimbleCtx, graph, idx, origin, release, prevNimbleContents)
-  dep.state = Processed
-
-proc expand*(nc: NimbleContext; mode: TraversalMode, ) =
+proc expand*(nc: NimbleContext; mode: TraversalMode, root: Package) =
   ## Expand the graph by adding all dependencies.
   
   var processed = initHashSet[PkgUrl]()
 
-  while i < graph.nodes.len:
-    if not processed.containsOrIncl(graph[i].pkg):
-      let (dest, todo) = pkgUrlToDirname(graph, graph[i])
+  for pkg, dep in nc.packageToDependency.mpairs():
+    if dep.state == NotInitialized:
+      let (dest, todo) = pkgUrlToDirname(graph, dep)
 
       debug "expand", "todo: " & $todo & " pkg: " & graph[i].pkg.projectName & " dest: " & $dest
       # important: the ondisk path set here!
       graph[i].ondisk = dest
 
-      case todo
-      of DoClone:
-        let (status, msg) =
-          if graph[i].pkg.isFileProtocol:
-            copyFromDisk(graph[i], dest)
-          else:
-            cloneUrl(graph[i].pkg, dest, false)
-        if status == Ok:
-          graph[i].state = Found
-        else:
-          graph[i].state = Error
-          graph[i].errors.add $status & ":" & msg
-      of DoNothing:
-        if graph[i].ondisk.dirExists():
-          graph[i].state = Found
-        else:
-          graph[i].state = Error
-          graph[i].errors.add "ondisk location missing"
-
-      if graph[i].state == Found:
-        traverseDependency(nimbleCtx, graph, i, mode)
     inc i
 
   # if context().dumpGraphs:

@@ -11,21 +11,20 @@ type
     Processed
     Error
 
-  DependencyInfo* = object
+  Dependency* = object
+    pkg*: PkgUrl
+    state*: DependencyState
     isRoot*: bool
     isTopLevel*: bool
     ondisk*: Path
     errors*: seq[string]
 
-  Dependency* = ref object
-    pkg*: PkgUrl
-    info*: DependencyInfo
-    state*: DependencyState
+  DependencySpec* = object
+    dep*: Dependency
     versions*: OrderedTable[VersionTag, Requirements]
   
   DepConstraint* = object
-    pkg*: PkgUrl
-    info*: DependencyInfo
+    dep*: Dependency
     activeVersion*: int
     active*: bool
     versions*: seq[DepVersion]
@@ -54,8 +53,12 @@ type
 
   NimbleContext* = object
     hasPackageList*: bool
-    nameToUrl*: Table[string, string]
+    nameToUrl*: Table[string, PkgUrl]
+
+  DependencySpecs* = ref object
     packageToDependency*: Table[PkgUrl, Dependency]
+    specs*: Table[Dependency, DependencySpec]
+    nimbleCtx*: NimbleContext
 
 const
   EmptyReqs* = 0
@@ -68,6 +71,14 @@ proc sortDepVersions*(a, b: DepVersion): int =
 
 proc initDepVersion*(version: Version, commit: CommitHash, req = EmptyReqs, vid = NoVar): DepVersion =
   result = DepVersion(vtag: VersionTag(c: commit, v: version), req: req, vid: vid)
+
+proc `$`*(d: Dependency): string =
+  d.pkg.projectName
+
+proc projectName*(d: Dependency): string =
+  d.pkg.projectName
+proc projectName*(s: DependencySpec): string =
+  s.dep.pkg.projectName
 
 proc commit*(d: DepConstraint): CommitHash =
   result =
@@ -99,6 +110,18 @@ proc toJsonHook*(r: Requirements, opt: ToJsonOptions): JsonNode =
   if r.vid != NoVar:
     result["varId"] = toJson(r.vid, opt)
   result["status"] = toJson(r.status, opt)
+
+proc hash*(r: Dependency): Hash =
+  ## use pkg name and url for identification and lookups
+  var h: Hash = 0
+  h = h !& hash(r.pkg)
+  result = !$h
+  # pkg*: PkgUrl
+  # state*: DependencyState
+  # isRoot*: bool
+  # isTopLevel*: bool
+  # ondisk*: Path
+  # errors*: seq[string]
 
 proc hash*(r: Requirements): Hash =
   var h: Hash = 0

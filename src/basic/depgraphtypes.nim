@@ -55,6 +55,20 @@ type
   PackageAction* = enum
     DoNothing, DoClone
 
+proc pkgUrlToDirname*(g: var NimbleContext; di: DependencyInfo): (Path, PackageAction) =
+  # XXX implement namespace support here
+  # var dest = Path g.ondisk.getOrDefault(d.pkg.url)
+  var dest = Path ""
+  if dest.string.len == 0:
+    if di.isTopLevel:
+      dest = context().workspace
+    else:
+      let depsDir =
+        if di.isRoot: context().workspace
+        else: context().depsDir
+      dest = depsDir / Path d.pkg.projectName
+  result = (dest, if dirExists(dest): DoNothing else: DoClone)
+
 proc pkgUrlToDirname*(g: var DepGraph; d: DepConstraint): (Path, PackageAction) =
   # XXX implement namespace support here
   # var dest = Path g.ondisk.getOrDefault(d.pkg.url)
