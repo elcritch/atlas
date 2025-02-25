@@ -122,7 +122,7 @@ proc processRelease(specs: DependencySpecs; dep: Dependency, release: VersionTag
 
 proc traverseDependency*(
     specs: DependencySpecs;
-    dep: var Dependency,
+    dep: Dependency,
     mode: TraversalMode;
     versions: seq[VersionTag];
 ): DependencySpec =
@@ -162,23 +162,23 @@ proc traverseDependency*(
       let tags = collectTaggedVersions(dep.ondisk)
       for tag in tags:
         if not uniqueCommits.containsOrIncl(tag.c):
-          result.versions[vtag] = specs.processRelease(result.dep, tag)
+          result.versions[tag] = specs.processRelease(result.dep, tag)
           assert tag.commit.orig == FromGitTag, "maybe this needs to be overriden like before"
 
       for tag in nimbleCommits:
         if not uniqueCommits.containsOrIncl(tag.c):
-          result.versions[vtag] = specs.processRelease(result.dep, tag)
+          result.versions[tag] = specs.processRelease(result.dep, tag)
 
       if result.versions.len() == 0:
         let vtag = VersionTag(v: Version"#head", c: initCommitHash(currentCommit, FromHead))
-        info "traverseDependency", "no versions found, using default #head" & " at " & $path
+        info "traverseDependency", "no versions found, using default #head" & " at " & $dep.ondisk
         result.versions[vtag] = specs.processRelease(result.dep, vtag)
 
     finally:
-      if not checkoutGitCommit(path, currentCommit, Warning):
+      if not checkoutGitCommit(dep.ondisk, currentCommit, Warning):
         info "traverseDependency", "error loading releases reverting to " & $ currentCommit
 
-  result.state = Processed
+  result.dep.state = Processed
 
 proc loadDependency*(
     dep: var Dependency,
