@@ -70,87 +70,85 @@ proc fillPackageLookupTable(c: var NimbleContext) =
       updatePackages(pkgsDir)
     let packages = getPackageInfos(pkgsDir)
     for entry in packages:
-      c.nameToUrl[unicode.toLower entry.name] = entry.url
+      c.nameToUrl[unicode.toLower(entry.name)] = createUrlSkipPatterns(entry.url, skipDirTest=true)
 
 proc createNimbleContext*(): NimbleContext =
   result = NimbleContext()
   fillPackageLookupTable(result)
 
-proc collectNimbleVersions*(nc: NimbleContext; info: Dependency): seq[VersionTag] =
-  let nimbleFiles = findNimbleFile(info)
-  let dir = info.ondisk
-  doAssert(info.ondisk.string != "", "Package ondisk must be set before collectNimbleVersions can be called! Package: " & $(info))
+proc collectNimbleVersions*(nc: NimbleContext; dep: Dependency): seq[VersionTag] =
+  let nimbleFiles = findNimbleFile(dep)
+  let dir = dep.ondisk
+  doAssert(dep.ondisk.string != "", "Package ondisk must be set before collectNimbleVersions can be called! Package: " & $(dep))
   result = @[]
   if nimbleFiles.len() == 1:
     result = collectFileCommits(dir, nimbleFiles[0], ignoreError = true)
     result.reverse()
     trace "collectNimbleVersions", "commits: " & $mapIt(result, it.c.short())
 
-proc loadRelease(dep: Dependency, specs: DependencySpecs; release: VersionTag): DependencieSpec =
-  debug "loadRelease", "name: " & dep.projectName() & " release: " & $release
+proc processRelease(specs: DependencySpecs; dep: Dependency, release: VersionTag): Requirements =
+  debug "processRelease", "name: " & dep.projectName() & " release: " & $release
 
   if release.version == Version"#head":
-    trace "loadRelease", "using current commit"
+    trace "processRelease", "using current commit"
   elif release.commit.isEmpty():
-    error "loadRelease", "missing commit " & $release & " at " & $dep.info.ondisk
-    result.versions[release] = Requirements(status: HasBrokenRelease, err: "no commit")
+    error "processRelease", "missing commit " & $release & " at " & $dep.ondisk
+    result = Requirements(status: HasBrokenRelease, err: "no commit")
     return
-  elif not checkoutGitCommit(dep.info.ondisk, release.commit):
-    dep.versions[release] = Requirements(status: HasBrokenRelease, err: "error checking out release")
+  elif not checkoutGitCommit(dep.ondisk, release.commit):
+    result = Requirements(status: HasBrokenRelease, err: "error checking out release")
     return
 
-  let nimbleFiles = findNimbleFile(dep.info)
+  let nimbleFiles = findNimbleFile(dep)
   var badNimbleFile = false
   if nimbleFiles.len() == 0:
-    info "loadRelease", "skipping release: missing nimble file" & $release
-    dep.versions[release] = Requirements(status: HasUnknownNimbleFile, err: "missing nimble file")
+    info "processRelease", "skipping release: missing nimble file" & $release
+    result = Requirements(status: HasUnknownNimbleFile, err: "missing nimble file")
   elif nimbleFiles.len() > 1:
-    info "loadRelease", "skipping release: ambiguous nimble file" & $release & " files: " & $(nimbleFiles.mapIt(it.splitPath().tail).join(", "))
-    dep.versions[release] = Requirements(status: HasUnknownNimbleFile, err: "ambiguous nimble file")
-  
-  let nimbleFile = nimbleFiles[0]
-  let nimbleReqs = parseNimbleFile(nc, nimbleFile, context().overrides)
-  if nimbleReqs.status == Normal:
-    dep.versions[release] = nimbleReqs
+    info "processRelease", "skipping release: ambiguous nimble file" & $release & " files: " & $(nimbleFiles.mapIt(it.splitPath().tail).join(", "))
+    result = Requirements(status: HasUnknownNimbleFile, err: "ambiguous nimble file")
+  else:
+    let nimbleFile = nimbleFiles[0]
+    result = parseNimbleFile(specs.nimbleCtx, nimbleFile, context().overrides)
 
-    for pkgUrl, interval in items(nimbleReqs.deps):
-      var pkgDep = nc.packageToDependency.getOrDefault(pkgUrl, nil)
-      if pkgDep == nil:
-        pkgDep = DependencySpec(info: Dependency(pkg: pkgUrl), state: NotInitialized)
-        nc.packageToDependency[pkgUrl] = pkgDep
-        # TODO: enrich versions with hashes when added
-        # enrichVersionsViaExplicitHash graph[depIdx].versions, interval
-
+    if result.status == Normal:
+      for pkgUrl, interval in items(result.deps):
+        # var pkgDep = specs.packageToDependency.getOrDefault(pkgUrl, nil)
+        if pkgUrl notin specs.packageToDependency:
+          let pkgDep = Dependency(pkg: pkgUrl, state: NotInitialized)
+          specs.packageToDependency[pkgUrl] = pkgDep
+          # TODO: enrich versions with hashes when added
+          # enrichVersionsViaExplicitHash graph[depIdx].versions, interval
 
 proc traverseDependency*(
-    dep: var DependencySpec,
-    deps: Dependencies;
+    specs: DependencySpecs;
+    dep: var Dependency,
     mode: TraversalMode;
     versions: seq[VersionTag];
 ): DependencySpec =
-  doAssert dep.info.ondisk.fileExists() and dep.state != NotInitialized, "DependencySpec should've been found or cloned at this point"
+  doAssert dep.ondisk.fileExists() and dep.state != NotInitialized, "DependencySpec should've been found or cloned at this point"
 
-  result = DependencySpec(info: Dependency(ondisk: path))
+  result = DependencySpec(dep: dep)
 
-  let currentCommit = currentGitCommit(path, Error)
+  let currentCommit = currentGitCommit(dep.ondisk, Error)
   trace "depgraphs:releases", "currentCommit: " & $currentCommit
   if currentCommit.isEmpty():
-    warn "traverseDependency", "unable to find git current version at " & $path
+    warn "traverseDependency", "unable to find git current version at " & $dep.ondisk
     let vtag = VersionTag(v: Version"#head", c: initCommitHash("", FromHead))
     result.versions[vtag] = Requirements(status: HasBrokenRepo)
-    result.state = Error
+    result.dep.state = Error
     return
 
   case mode
   of CurrentCommit:
     trace "traverseDependency", "only loading current commit"
     let vtag = VersionTag(v: Version"#head", c: initCommitHash(currentCommit, FromHead))
-    result.loadRelease(nc, vtag)
+    result.versions[vtag] = specs.processRelease(result.dep, vtag)
 
   of AllReleases:
     try:
       var uniqueCommits: HashSet[CommitHash]
-      let nimbleCommits = collectNimbleVersions(nc, result)
+      let nimbleCommits = specs.nimbleCtx.collectNimbleVersions(dep)
       debug "traverseDependency", "nimble versions: " & $nimbleCommits
 
       for version in versions:
@@ -159,22 +157,22 @@ proc traverseDependency*(
             not uniqueCommits.containsOrIncl(version.commit):
             let vtag = VersionTag(v: Version"", c: version.commit)
             assert vtag.commit.orig == FromDep, "maybe this needs to be overriden like before"
-            result.loadRelease(nc, vtag)
+            result.versions[vtag] = specs.processRelease(result.dep, vtag)
 
-      let tags = collectTaggedVersions(path)
+      let tags = collectTaggedVersions(dep.ondisk)
       for tag in tags:
         if not uniqueCommits.containsOrIncl(tag.c):
-          result.loadRelease(nc, tag)
+          result.versions[vtag] = specs.processRelease(result.dep, tag)
           assert tag.commit.orig == FromGitTag, "maybe this needs to be overriden like before"
 
       for tag in nimbleCommits:
         if not uniqueCommits.containsOrIncl(tag.c):
-          result.loadRelease(nc, tag)
+          result.versions[vtag] = specs.processRelease(result.dep, tag)
 
       if result.versions.len() == 0:
         let vtag = VersionTag(v: Version"#head", c: initCommitHash(currentCommit, FromHead))
         info "traverseDependency", "no versions found, using default #head" & " at " & $path
-        result.loadRelease(nc, vtag)
+        result.versions[vtag] = specs.processRelease(result.dep, vtag)
 
     finally:
       if not checkoutGitCommit(path, currentCommit, Warning):
@@ -183,7 +181,7 @@ proc traverseDependency*(
   result.state = Processed
 
 proc loadDependency*(
-    info: var Dependency,
+    dep: var Dependency,
     path: Path
 ) = 
   case todo

@@ -36,9 +36,9 @@ proc extractProjectName*(s: string): string =
 proc `$`*(u: PkgUrl): string = u.u
 proc toJsonHook*(v: PkgUrl): JsonNode = %($(v))
 
-proc createUrlSkipPatterns*(x: string): PkgUrl =
-  if "://" notin x:
-    if dirExists(x):
+proc createUrlSkipPatterns*(x: string, skipDirTest = false): PkgUrl =
+  if not x.isUrl():
+    if dirExists(x) or skipDirTest:
       let u2 =
         if isGitDir(x):
           getRemoteUrl(Path(x))
