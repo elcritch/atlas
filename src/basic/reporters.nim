@@ -58,8 +58,8 @@ proc writeMessage(c: var Reporter; k: MsgKind; p, arg: string) =
     let (color, style) =
       case k
       of Ignore: (fgWhite, styleDim)
-      of Debug: (fgWhite, styleDim)
-      of Trace: (fgBlue, styleBright)
+      of Trace: (fgWhite, styleDim)
+      of Debug: (fgBlue, styleBright)
       of Info: (fgGreen, styleBright)
       of Warning: (fgYellow, styleBright)
       of Error: (fgRed, styleBright)
