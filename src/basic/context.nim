@@ -42,7 +42,8 @@ type
     IgnoreUrls
 
   AtlasContext* = object
-    workspace*, depsDir*: Path
+    workspace*: Path = Path"."
+    depsDir*: Path = Path"deps"
     flags*: set[Flag]
     #urlMapping*: Table[string, Package] # name -> url mapping
     dumpGraphs*: bool = true # TODO: debugging, plumb cli option later
@@ -55,7 +56,7 @@ type
     proxy*: Uri
     dumbProxy*: bool
 
-var atlasContext: AtlasContext
+var atlasContext = AtlasContext()
 
 proc setContext*(ctx: AtlasContext) =
   atlasContext = ctx

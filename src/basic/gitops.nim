@@ -65,7 +65,7 @@ proc exec*(gitCmd: Command;
   if isGitDir(path):
     result = silentExec(cmd, args)
   else:
-    result = ("not a git repository", ResultCode(1))
+    result = ("", ResultCode(1))
   if result[1] != RES_OK:
     message errorReportLevel, "gitops", "Git command failed `$1` failed with code: $2" % [$gitCmd, $int(result[1])]
     trace "gitops", "Running Git command `$1`" % [ join(@[cmd] & @args, " ")]
@@ -119,10 +119,12 @@ proc collectTaggedVersions*(path: Path): seq[VersionTag] =
   else:
     result = @[]
 
-proc collectFileCommits*(path, file: Path, ignoreError = false): seq[VersionTag] =
-  let (outp, status) = exec(GitLog, path, [$file], Trace)
+proc collectFileCommits*(path, file: Path, errorReportLevel: MsgKind = Warning): seq[VersionTag] =
+  let (outp, status) = exec(GitLog, path, [$file], Warning)
   if status == RES_OK:
     result = parseTaggedVersions(outp, requireVersions = false)
+  else:
+    message(errorReportLevel, $path, "could not collect file commits " & $file)
 
 proc versionToCommit*(path: Path, algo: ResolutionAlgorithm; query: VersionInterval): CommitHash =
   let allVersions = collectTaggedVersions(path)

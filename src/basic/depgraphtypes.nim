@@ -61,26 +61,13 @@ proc pkgUrlToDirname*(di: Dependency): (Path, PackageAction) =
   var dest = Path ""
   if dest.string.len == 0:
     if di.isTopLevel:
+      trace "pkgUrlToDirName", "topLevel= " & $di.isTopLevel
       dest = context().workspace
     else:
-      let depsDir =
-        if di.isRoot: context().workspace
-        else: context().depsDir
+      let depsDir = context().workspace / context().depsDir
       dest = depsDir / Path di.pkg.projectName
-  result = (dest, if dirExists(dest): DoNothing else: DoClone)
-
-proc pkgUrlToDirname*(g: var DepGraph; d: DepConstraint): (Path, PackageAction) =
-  # XXX implement namespace support here
-  # var dest = Path g.ondisk.getOrDefault(d.pkg.url)
-  var dest = Path ""
-  if dest.string.len == 0:
-    if d.dep.isTopLevel:
-      dest = context().workspace
-    else:
-      let depsDir =
-        if d.dep.isRoot: context().workspace
-        else: context().depsDir
-      dest = depsDir / Path d.dep.pkg.projectName
+      trace "pkgUrlToDirName", "depsDir= " & $depsDir
+  dest = dest.absolutePath
   result = (dest, if dirExists(dest): DoNothing else: DoClone)
 
 proc toDestDir*(g: DepGraph; d: DepConstraint): Path =

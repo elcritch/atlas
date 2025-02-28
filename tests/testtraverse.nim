@@ -39,57 +39,40 @@ suite "basic repo tests":
     setAtlasVerbosity(Trace)
 
   test "ws_testtraverse collect nimbles":
-    when false:
       withDir "tests/ws_testtraverse":
         context().flags = {UsesOverrides, KeepWorkspace, ListVersions, FullClones}
         context().defaultAlgo = SemVer
         discard context().overrides.addPattern("$+", "file://./buildGraph/$#")
-        # {"overrides":{"s":[{"0":"(code: @[(opc: Capture1UntilEnd, arg1: 0, arg2: 0)], usedMatches: 1, error: \"\")","1":"file://./source/$#"}],"t":{},"strings":[]},
-        # "defaultAlgo":"SemVer","plugins":{"builderPatterns":[]},"overridesFile":"url.rules","pluginsFile":"","proxy":{"scheme":"","username":"","password":"","hostname":"","port":"","path":"","query":"","anchor":"","opaque":false,"isIpv6":false},"dumbProxy":false,"verbosity":2,"noColors":false,"assertOnError":true,"warnings":0,"errors":0,"messages":[]}
+
+        let dir = ospaths2.getCurrentDir()
+        # writeFile("ws_testtraverse.nimble", "requires \"proj_a\"\n")
 
         let deps = setupGraph()
         var nc = NimbleContext()
         # var graph = DepGraph(nodes: @[], reqs: defaultReqs())
-        let pkg = nc.createUrl(dir, projectName = pkgname)
-        let res = expand(nc, AllReleases, pkg)
-        # var graph = createGraph(createUrlSkipPatterns(ospaths2.getCurrentDir()))
-        # graph[0].ondisk = paths.getCurrentDir()
-        # graph[0].state = Found
+        let pkg = nc.createUrl(dir, projectName = "ws_testtraverse")
 
-        dumpJson graph, "graph-ws_testtraverse-collectnimbles.json"
+        var dep0 = Dependency(pkg: pkg, isRoot: true, isTopLevel: true)
+        var dep1 = Dependency(pkg: nc.createUrl("file://./buildGraph/proj_a"), isRoot: true)
+        nc.loadDependency(dep0)
+        nc.loadDependency(dep1)
+        echo "DEP0: ", dep0.repr
+        echo "DEP1: ", dep1.repr
 
-        for dep in deps:
-          let url = createUrlSkipPatterns(dep)
-          graph.packageToDependency[url] = graph.nodes.len
-          graph.nodes.add Dependency(
-            pkg: url, versions: @[], isRoot: false, isTopLevel: false, activeVersion: -1,
-            ondisk: Path(dep),
-            state: Found
-          )
+        # setAtlasVerbosity(Error)
+        # defer: setAtlasVerbosity(Trace)
 
-        # dumpJson graph
-        check graph[0].isRoot == true
-        check graph[0].isTopLevel == true
-        check graph[0].pkg.projectName == "ws_testtraverse"
-        check graph.nodes.mapIt(it.pkg.projectName) == @["ws_testtraverse", "proj_a", "proj_b", "proj_c", "proj_d"]
+        # These will change if atlas-tests is regnerated!
+        # To update run and use commits not adding a proj_x.nim file
+        #    curl http://localhost:4242/buildGraph/ws_generated-logs.txt
+        check collectNimbleVersions(nc, dep0) == newSeq[VersionTag]()
+        let hashes1 = @["e479b438015e734bea67a9c63d783e78cab5746e", "7ca5581cd5355f6b5461a23f9683f19378bd268a", "fb3804df03c3c414d98d1f57deeb44c8a223ba44"]
+        let vtags1 = hashes1.mapIt(VersionTag(c: initCommitHash(it, FromGitTag)))
+        check collectNimbleVersions(nc, dep1) == vtags1
+        # check collectNimbleVersions(nc, graph[2]) == @[VersionTag(h: "af4275109d60caaeacf2912a37c2339aca40a922"), VersionTag(h: "cd3ad76043e5f983f704be6bf61e57d187fe070f"), VersionTag(h: "ee875baecee161ed053b87b583b2f08526838bd6")]
+        # check collectNimbleVersions(nc, graph[3]) == @[VersionTag(h: "c7540297c01dc57a98cb1fce7660ab6f2a0cee5f"), VersionTag(h: "9331e14f3fa20ed75b7d5c0ab93aa5fb0293192f")]
+        # check collectNimbleVersions(nc, graph[4]) == @[VersionTag(h: "0dec9c9733129919972416f04e73b1fb2cbf3bd3"), VersionTag(h: "dd98f775ae33d450dc7f936f850e247e820e31ad")]
 
-        when true:
-          setAtlasVerbosity(Error)
-          defer: setAtlasVerbosity(Trace)
-
-          # These will change if atlas-tests is regnerated!
-          # To update run and use commits not adding a proj_x.nim file
-          #    curl http://localhost:4242/buildGraph/ws_generated-logs.txt
-          check collectNimbleVersions(nc, graph[0]) == newSeq[VersionTag]()
-          check collectNimbleVersions(nc, graph[1]) == @[VersionTag(h: "e479b438015e734bea67a9c63d783e78cab5746e"), VersionTag(h: "7ca5581cd5355f6b5461a23f9683f19378bd268a"), VersionTag(h: "fb3804df03c3c414d98d1f57deeb44c8a223ba44")]
-          check collectNimbleVersions(nc, graph[2]) == @[VersionTag(h: "af4275109d60caaeacf2912a37c2339aca40a922"), VersionTag(h: "cd3ad76043e5f983f704be6bf61e57d187fe070f"), VersionTag(h: "ee875baecee161ed053b87b583b2f08526838bd6")]
-          check collectNimbleVersions(nc, graph[3]) == @[VersionTag(h: "c7540297c01dc57a98cb1fce7660ab6f2a0cee5f"), VersionTag(h: "9331e14f3fa20ed75b7d5c0ab93aa5fb0293192f")]
-          check collectNimbleVersions(nc, graph[4]) == @[VersionTag(h: "0dec9c9733129919972416f04e73b1fb2cbf3bd3"), VersionTag(h: "dd98f775ae33d450dc7f936f850e247e820e31ad")]
-
-        check graph.nodes.mapIt(it.pkg.projectName) == @["ws_testtraverse", "proj_a", "proj_b", "proj_c", "proj_d"]
-
-        # echo "\nGRAPH:POST:"
-        # dumpJson graph
 
   test "ws_testtraverse releases":
     when false:
@@ -110,7 +93,6 @@ suite "basic repo tests":
           let rels = toSeq(releases(Path dep, AllReleases, versions, nimbleVersions))
           for rel in rels:
             echo "release: ", rel
-
 
   test "ws_testtraverse traverseDependency":
       # setAtlasVerbosity(Debug)

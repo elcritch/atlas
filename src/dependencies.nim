@@ -83,7 +83,7 @@ proc collectNimbleVersions*(nc: NimbleContext; dep: Dependency): seq[VersionTag]
   doAssert(dep.ondisk.string != "", "Package ondisk must be set before collectNimbleVersions can be called! Package: " & $(dep))
   result = @[]
   if nimbleFiles.len() == 1:
-    result = collectFileCommits(dir, nimbleFiles[0], ignoreError = true)
+    result = collectFileCommits(dir, nimbleFiles[0])
     result.reverse()
     trace "collectNimbleVersions", "commits: " & $mapIt(result, it.c.short())
 
@@ -186,6 +186,7 @@ proc loadDependency*(
     dep: var Dependency,
 ) = 
   let (dest, todo) = pkgUrlToDirname(dep)
+  echo "LOAD DEP: ", " todo=", todo, " dest=", dest
   dep.ondisk = dest
 
   case todo
