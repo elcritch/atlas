@@ -123,40 +123,43 @@ when not compiles(len(Path("test"))):
     x.string.len()
 
 proc warn*(c: var Reporter; p: Path, arg: string) =
-  warn(c, $p, arg)
+  warn(c, $p.splitFile().name, arg)
 
 proc error*(c: var Reporter; p: Path, arg: string) =
-  error(c, $p, arg)
+  error(c, $p.splitFile().name, arg)
 
 proc info*(c: var Reporter; p: Path, arg: string) =
-  info(c, $p, arg)
+  info(c, $p.splitFile().name, arg)
 
 proc trace*(c: var Reporter; p: Path, arg: string) =
-  trace(c, $p, arg)
+  trace(c, $p.splitFile().name, arg)
 
 proc debug*(c: var Reporter; p: Path, arg: string) =
-  debug(c, $p, arg)
+  debug(c, $p.splitFile().name, arg)
 
-proc message*(k: MsgKind; p: string, args: varargs[string]) =
-  message(atlasReporter, k, p, @args)
+proc toProj(s: string): string = s
+proc toProj(p: Path): string = $p.splitFile().name
+
+proc message*(k: MsgKind; p: Path | string, args: varargs[string]) =
+  message(atlasReporter, k, toProj(p), @args)
 
 proc warn*(p: Path | string, args: varargs[string]) =
-  warn(atlasReporter, $p, @args)
+  warn(atlasReporter, toProj(p), @args)
 
 proc error*(p: Path | string, args: varargs[string]) =
-  error(atlasReporter, $p, @args)
+  error(atlasReporter, toProj(p), @args)
 
 proc info*(p: Path | string, args: varargs[string]) =
-  info(atlasReporter, $p, @args)
+  info(atlasReporter, toProj(p), @args)
 
 proc trace*(p: Path | string, args: varargs[string]) =
-  trace(atlasReporter, $p, @args)
+  trace(atlasReporter, toProj(p), @args)
 
 proc debug*(p: Path | string, args: varargs[string]) =
-  debug(atlasReporter, $p, @args)
+  debug(atlasReporter, toProj(p), @args)
 
 proc fatal*(msg: string | Path, prefix = "fatal", code = 1) =
   fatal(atlasReporter, msg, prefix, code)
 
 proc infoNow*(p: Path | string, args: varargs[string]) =
-  infoNow(atlasReporter, $p, @args)
+  infoNow(atlasReporter, toProj(p), @args)

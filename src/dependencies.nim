@@ -208,21 +208,32 @@ proc loadDependency*(
       dep.state = Error
       dep.errors.add "ondisk location missing"
 
-      # debug "expand", "todo: " & $todo & " pkg: " & graph[i].pkg.projectName & " dest: " & $dest
-      # # important: the ondisk path set here!
-      # graph[i].ondisk = dest
-
 proc expand*(nc: NimbleContext; mode: TraversalMode, pkg: PkgUrl): DependencySpecs =
   ## Expand the graph by adding all dependencies.
   
-  info "expand", "pkg:", $pkg
+  warn pkg.projectName, "expanding root package at:", $pkg
   var dep = Dependency(pkg: pkg, isRoot: true, isTopLevel: true)
+  nc.loadDependency(dep)
+
   var processed = initHashSet[PkgUrl]()
   var specs = DependencySpecs()
+  specs.packageToDependency[dep.pkg] = dep
 
-  for pkg, dep in specs.packageToDependency.mpairs():
-    if dep.state == NotInitialized:
-      nc.loadDependency(dep)
+  var processing = true
+  while processing:
+    processing = false
+    for pkg, dep in specs.packageToDependency.mpairs():
+      case dep.state:
+      of NotInitialized:
+        info "initializing", "dep:", $dep
+        nc.loadDependency(dep)
+        debug "expanded", "dep:", dep.repr
+        processing = true
+      of Found:
+        info "processing", "dep:", $dep
+        # processing = true
+      else:
+        discard
 
 
   # if context().dumpGraphs:

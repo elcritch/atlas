@@ -64,8 +64,6 @@ suite "basic repo tests":
         nc.loadDependency(dep2)
         nc.loadDependency(dep3)
         nc.loadDependency(dep4)
-        echo "DEP0: ", dep0.repr
-        echo "DEP1: ", dep1.repr
 
         # These will change if atlas-tests is regnerated!
         # To update run and use commits not adding a proj_x.nim file
