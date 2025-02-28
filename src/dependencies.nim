@@ -181,9 +181,11 @@ proc traverseDependency*(
   result.dep.state = Processed
 
 proc loadDependency*(
+    nc: NimbleContext,
     dep: var Dependency,
-    path: Path
 ) = 
+  let (dest, todo) = pkgUrlToDirname(dep)
+
   case todo
   of DoClone:
     let (status, msg) =
@@ -211,7 +213,6 @@ proc expand*(nc: NimbleContext; mode: TraversalMode, root: Package) =
 
   for pkg, dep in nc.packageToDependency.mpairs():
     if dep.state == NotInitialized:
-      let (dest, todo) = pkgUrlToDirname(graph, dep)
 
       debug "expand", "todo: " & $todo & " pkg: " & graph[i].pkg.projectName & " dest: " & $dest
       # important: the ondisk path set here!

@@ -1,7 +1,7 @@
 
 import std / [sets, paths, files, dirs, tables, os, strutils, streams, json, jsonutils, algorithm]
 
-import sattypes, context, dependencies, gitops, reporters, nimbleparser, pkgurls, versions
+import sattypes, context, deptypes, gitops, reporters, nimbleparser, pkgurls, versions
 
 
 type
@@ -55,7 +55,7 @@ type
   PackageAction* = enum
     DoNothing, DoClone
 
-proc pkgUrlToDirname*(g: var NimbleContext; di: DependencyInfo): (Path, PackageAction) =
+proc pkgUrlToDirname*(di: Dependency): (Path, PackageAction) =
   # XXX implement namespace support here
   # var dest = Path g.ondisk.getOrDefault(d.pkg.url)
   var dest = Path ""
@@ -66,7 +66,7 @@ proc pkgUrlToDirname*(g: var NimbleContext; di: DependencyInfo): (Path, PackageA
       let depsDir =
         if di.isRoot: context().workspace
         else: context().depsDir
-      dest = depsDir / Path d.pkg.projectName
+      dest = depsDir / Path di.pkg.projectName
   result = (dest, if dirExists(dest): DoNothing else: DoClone)
 
 proc pkgUrlToDirname*(g: var DepGraph; d: DepConstraint): (Path, PackageAction) =
@@ -74,17 +74,17 @@ proc pkgUrlToDirname*(g: var DepGraph; d: DepConstraint): (Path, PackageAction) 
   # var dest = Path g.ondisk.getOrDefault(d.pkg.url)
   var dest = Path ""
   if dest.string.len == 0:
-    if d.info.isTopLevel:
+    if d.dep.isTopLevel:
       dest = context().workspace
     else:
       let depsDir =
-        if d.info.isRoot: context().workspace
+        if d.dep.isRoot: context().workspace
         else: context().depsDir
-      dest = depsDir / Path d.pkg.projectName
+      dest = depsDir / Path d.dep.pkg.projectName
   result = (dest, if dirExists(dest): DoNothing else: DoClone)
 
 proc toDestDir*(g: DepGraph; d: DepConstraint): Path =
-  result = d.info.ondisk
+  result = d.dep.ondisk
 
 iterator allNodes*(g: DepGraph): lent DepConstraint =
   for i in 0 ..< g.nodes.len: yield g.nodes[i]
@@ -132,21 +132,19 @@ proc readOnDisk(result: var DepGraph) =
     let nodes = jsonTo(n, typeof(result.nodes))
     for n in nodes:
       # result.ondisk[n.pkg.url] = n.ondisk
-      if dirExists(n.info.ondisk):
-        if n.info.isRoot:
-          if not result.packageToDependency.hasKey(n.pkg):
-            result.packageToDependency[n.pkg] = result.nodes.len
-            let info = DependencyInfo(isRoot: true, isTopLevel: n.info.isTopLevel)
-            result.nodes.add DepConstraint(pkg: n.pkg, info: info, activeVersion: -1)
+      if dirExists(n.dep.ondisk):
+        if n.dep.isRoot:
+          if not result.packageToDependency.hasKey(n.dep.pkg):
+            result.packageToDependency[n.dep.pkg] = result.nodes.len
+            result.nodes.add DepConstraint(dep: n.dep, activeVersion: -1)
   except:
     warn configFile, "couldn't load graph from: " & $configFile
 
 proc createGraph*(s: PkgUrl): DepGraph =
-  result = DepGraph(nodes: @[],
-    reqs: defaultReqs())
+  result = DepGraph(nodes: @[], reqs: defaultReqs())
   result.packageToDependency[s] = result.nodes.len
-  let info = DependencyInfo(isRoot: true, isTopLevel: true)
-  result.nodes.add DepConstraint(pkg: s, versions: @[], info: info, activeVersion: -1)
+  let dep = Dependency(pkg: s, isRoot: true, isTopLevel: true)
+  result.nodes.add DepConstraint(dep: dep, versions: @[], activeVersion: -1)
   readOnDisk(result)
 
 proc createGraphFromWorkspace*(): DepGraph =
@@ -165,19 +163,19 @@ proc createGraphFromWorkspace*(): DepGraph =
     result.reqs = jsonTo(g["reqs"], typeof(result.reqs))
 
     for i, n in mpairs(result.nodes):
-      result.packageToDependency[n.pkg] = i
+      result.packageToDependency[n.dep.pkg] = i
   except:
     warn configFile, "couldn't load graph from: " & $configFile
 
 proc copyFromDisk*(w: DepConstraint; destDir: Path): (CloneStatus, string) =
-  var dir = w.pkg.url
+  var dir = w.dep.pkg.url
   if dir.startsWith(FileWorkspace):
     dir = $context().workspace / dir.substr(FileWorkspace.len)
   #template selectDir(a, b: string): string =
   #  if dirExists(a): a else: b
 
   #let dir = selectDir(u & "@" & w.commit, u)
-  if w.info.isTopLevel:
+  if w.dep.isTopLevel:
     result = (Ok, "")
   elif dirExists(dir):
     info destDir, "cloning: " & dir
