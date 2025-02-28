@@ -157,7 +157,7 @@ proc currentGitCommit*(path: Path, errorReportLevel: MsgKind = Info): CommitHash
 proc checkoutGitCommit*(path: Path, commit: CommitHash, errorReportLevel: MsgKind = Warning): bool =
   let currentCommit = currentGitCommit(path)
   if currentCommit.isFull() and currentCommit == commit:
-    return
+    return true
 
   let (_, statusB) = exec(GitCheckout, path, [$commit], errorReportLevel)
   if statusB != RES_OK:

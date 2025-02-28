@@ -100,7 +100,8 @@ proc processRelease(
     error "processRelease", "missing commit ", $release, "at:", $dep.ondisk
     result = Requirements(status: HasBrokenRelease, err: "no commit")
     return
-  elif not checkoutGitCommit(dep.ondisk, release.commit):
+  elif not checkoutGitCommit(dep.ondisk, release.commit, Error):
+    warn "processRelease", "unable to checkout commit ", $release, "at:", $dep.ondisk
     result = Requirements(status: HasBrokenRelease, err: "error checking out release")
     return
 
