@@ -7,7 +7,7 @@
 #
 
 import std / [os, strutils, tables, unicode, sequtils, sets, json, hashes, algorithm, paths, files, dirs]
-import basic/[context, deptypes, versions, osutils, nimbleparser, packageinfos, reporters, gitops, parse_requires, pkgurls, compiledpatterns]
+import basic/[context, deptypes, depgraphtypes, versions, osutils, nimbleparser, packageinfos, reporters, gitops, parse_requires, pkgurls, compiledpatterns]
 
 const
   DefaultPackagesSubDir* = Path"packages"
@@ -189,10 +189,10 @@ proc loadDependency*(
   case todo
   of DoClone:
     let (status, msg) =
-      if graph[i].pkg.isFileProtocol:
-        copyFromDisk(graph[i], dest)
+      if dep.pkg.isFileProtocol:
+        copyFromDisk(dep, dest)
       else:
-        cloneUrl(graph[i].pkg, dest, false)
+        cloneUrl(dep.pkg, dest, false)
     if status == Ok:
       dep.state = Found
     else:

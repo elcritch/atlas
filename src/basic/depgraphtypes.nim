@@ -167,15 +167,15 @@ proc createGraphFromWorkspace*(): DepGraph =
   except:
     warn configFile, "couldn't load graph from: " & $configFile
 
-proc copyFromDisk*(w: DepConstraint; destDir: Path): (CloneStatus, string) =
-  var dir = w.dep.pkg.url
+proc copyFromDisk*(dep: Dependency; destDir: Path): (CloneStatus, string) =
+  var dir = dep.pkg.url
   if dir.startsWith(FileWorkspace):
     dir = $context().workspace / dir.substr(FileWorkspace.len)
   #template selectDir(a, b: string): string =
   #  if dirExists(a): a else: b
 
   #let dir = selectDir(u & "@" & w.commit, u)
-  if w.dep.isTopLevel:
+  if dep.isTopLevel:
     result = (Ok, "")
   elif dirExists(dir):
     info destDir, "cloning: " & dir
