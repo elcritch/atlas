@@ -24,7 +24,7 @@ type
     assertOnError*: bool
     warnings*: int
     errors*: int
-    messages: seq[(MsgKind, string, string)] # delayed output
+    messages: seq[(MsgKind, string, seq[string])] # delayed output
 
 var atlasReporter* = Reporter(verbosity: Info)
 
@@ -40,20 +40,20 @@ proc setAtlasAssertOnError*(err: bool) =
 proc atlasErrors*(): int =
   atlasReporter.errors
 
-proc writeMessage(c: var Reporter; category: string; p, arg: string) =
+proc writeMessageRaw(c: var Reporter; category: string; p: string, args: seq[string]) =
   var msg = category
   if p.len > 0: msg.add "(" & p & ") "
-  msg.add arg
+  for arg in args: msg.add arg
   stdout.writeLine msg
 
-proc writeMessage(c: var Reporter; k: MsgKind; p, arg: string) =
+proc writeMessage(c: var Reporter; k: MsgKind; p: string, args: seq[string]) =
   if k == Ignore: return
   if k > c.verbosity: return
   # if k == Trace and c.verbosity < 1: return
   # elif k == Debug and c.verbosity < 2: return
 
   if c.noColors:
-    writeMessage(c, $k, p, arg)
+    writeMessageRaw(c, $k, p, args)
   else:
     let (color, style) =
       case k
@@ -63,33 +63,38 @@ proc writeMessage(c: var Reporter; k: MsgKind; p, arg: string) =
       of Info: (fgGreen, styleBright)
       of Warning: (fgYellow, styleBright)
       of Error: (fgRed, styleBright)
-    stdout.styledWriteLine(color, style, $k, resetStyle, fgCyan, "(", p, ")", resetStyle, " ", arg)
+    
+    stdout.styledWrite(color, style, $k, resetStyle, fgCyan, "(", p, ")", resetStyle, " ")
+    let colors = [fgWhite, fgMagenta]
+    for idx, arg in args:
+      stdout.styledWrite(colors[idx mod 2], " ", arg)
+    stdout.styledWriteLine(resetStyle, "\n")
 
-proc message(c: var Reporter; k: MsgKind; p, arg: string) =
+proc message(c: var Reporter; k: MsgKind; p: string, args: varargs[string]) =
   ## collects messages or prints them out immediately
   # c.messages.add (k, p, arg)
-  writeMessage c, k, p, arg
+  writeMessage c, k, p, @args
 
 
-proc warn*(c: var Reporter; p, arg: string) =
-  c.message(Warning, p, arg)
+proc warn*(c: var Reporter; p: string, args: varargs[string]) =
+  c.message(Warning, p, @args)
   # writeMessage c, Warning, p, arg
   inc c.warnings
 
-proc error*(c: var Reporter; p, arg: string) =
+proc error*(c: var Reporter; p: string, args: varargs[string]) =
   if c.assertOnError:
-    raise newException(AssertionDefect, p & ": " & arg)
-  c.message(Error, p, arg)
+    raise newException(AssertionDefect, p & ": " & $args)
+  c.message(Error, p, @args)
   inc c.errors
 
-proc info*(c: var Reporter; p, arg: string) =
-  c.message(Info, p, arg)
+proc info*(c: var Reporter; p: string, args: varargs[string]) =
+  c.message(Info, p, @args)
 
-proc trace*(c: var Reporter; p, arg: string) =
-  c.message(Trace, p, arg)
+proc trace*(c: var Reporter; p: string, args: varargs[string]) =
+  c.message(Trace, p, @args)
 
-proc debug*(c: var Reporter; p, arg: string) =
-  c.message(Debug, p, arg)
+proc debug*(c: var Reporter; p: string, args: varargs[string]) =
+  c.message(Debug, p, @args)
 
 proc writePendingMessages*(c: var Reporter) =
   for i in 0..<c.messages.len:
@@ -100,13 +105,13 @@ proc writePendingMessages*(c: var Reporter) =
 proc atlasWritePendingMessages*() =
   atlasReporter.writePendingMessages()
 
-proc infoNow*(c: var Reporter; p, arg: string) =
-  writeMessage c, Info, p, arg
+proc infoNow*(c: var Reporter; p: string, args: varargs[string]) =
+  writeMessage c, Info, p, @args
 
 proc fatal*(c: var Reporter, msg: string, prefix = "fatal", code = 1) =
   when defined(debug):
     writeStackTrace()
-  writeMessage(c, Error, prefix, msg)
+  writeMessage(c, Error, prefix, @[msg])
   quit 1
 
 when not compiles($(Path("test"))):
@@ -132,26 +137,26 @@ proc trace*(c: var Reporter; p: Path, arg: string) =
 proc debug*(c: var Reporter; p: Path, arg: string) =
   debug(c, $p, arg)
 
-proc message*(k: MsgKind; p, arg: string) =
-  message(atlasReporter, k, p, arg)
+proc message*(k: MsgKind; p: string, args: varargs[string]) =
+  message(atlasReporter, k, p, @args)
 
-proc warn*(p: Path | string, arg: string) =
-  warn(atlasReporter, $p, arg)
+proc warn*(p: Path | string, args: varargs[string]) =
+  warn(atlasReporter, $p, @args)
 
-proc error*(p: Path | string, arg: string) =
-  error(atlasReporter, $p, arg)
+proc error*(p: Path | string, args: varargs[string]) =
+  error(atlasReporter, $p, @args)
 
-proc info*(p: Path | string, arg: string) =
-  info(atlasReporter, $p, arg)
+proc info*(p: Path | string, args: varargs[string]) =
+  info(atlasReporter, $p, @args)
 
-proc trace*(p: Path | string, arg: string) =
-  trace(atlasReporter, $p, arg)
+proc trace*(p: Path | string, args: varargs[string]) =
+  trace(atlasReporter, $p, @args)
 
-proc debug*(p: Path | string, arg: string) =
-  debug(atlasReporter, $p, arg)
+proc debug*(p: Path | string, args: varargs[string]) =
+  debug(atlasReporter, $p, @args)
 
 proc fatal*(msg: string | Path, prefix = "fatal", code = 1) =
   fatal(atlasReporter, msg, prefix, code)
 
-proc infoNow*(p: Path | string, arg: string) =
-  infoNow(atlasReporter, $p, arg)
+proc infoNow*(p: Path | string, args: varargs[string]) =
+  infoNow(atlasReporter, $p, @args)

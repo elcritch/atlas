@@ -188,7 +188,7 @@ proc loadDependency*(
   let (dest, todo) = pkgUrlToDirname(dep)
   dep.ondisk = dest
 
-  debug "dependencies:loadDependency", "todo= " & $todo & " at " & $dest
+  debug "dependencies:loadDependency", "todo=", $todo, "dest=", $dest
   case todo
   of DoClone:
     let (status, msg) =
