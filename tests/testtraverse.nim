@@ -36,7 +36,7 @@ proc setupGraphNoGitTags*(): seq[string] =
 
 suite "basic repo tests":
   setup:
-    setAtlasVerbosity(Trace)
+    setAtlasVerbosity(Warning)
 
   test "ws_testtraverse collect nimbles":
       withDir "tests/ws_testtraverse":
@@ -55,13 +55,17 @@ suite "basic repo tests":
 
         var dep0 = Dependency(pkg: pkg, isRoot: true, isTopLevel: true)
         var dep1 = Dependency(pkg: nc.createUrl("file://./buildGraph/proj_a"), isRoot: true)
+        var dep2 = Dependency(pkg: nc.createUrl("file://./buildGraph/proj_b"), isRoot: true)
+        var dep3 = Dependency(pkg: nc.createUrl("file://./buildGraph/proj_c"), isRoot: true)
+        var dep4 = Dependency(pkg: nc.createUrl("file://./buildGraph/proj_d"), isRoot: true)
+
         nc.loadDependency(dep0)
         nc.loadDependency(dep1)
+        nc.loadDependency(dep2)
+        nc.loadDependency(dep3)
+        nc.loadDependency(dep4)
         echo "DEP0: ", dep0.repr
         echo "DEP1: ", dep1.repr
-
-        # setAtlasVerbosity(Error)
-        # defer: setAtlasVerbosity(Trace)
 
         # These will change if atlas-tests is regnerated!
         # To update run and use commits not adding a proj_x.nim file
@@ -73,14 +77,28 @@ suite "basic repo tests":
         fb3804df03c3c414d98d1f57deeb44c8a223ba44
         """.parseTaggedVersions(false)
         check collectNimbleVersions(nc, dep1) == vtags1
-        # check collectNimbleVersions(nc, graph[2]) == @[VersionTag(h: "af4275109d60caaeacf2912a37c2339aca40a922"), VersionTag(h: "cd3ad76043e5f983f704be6bf61e57d187fe070f"), VersionTag(h: "ee875baecee161ed053b87b583b2f08526838bd6")]
-        # check collectNimbleVersions(nc, graph[3]) == @[VersionTag(h: "c7540297c01dc57a98cb1fce7660ab6f2a0cee5f"), VersionTag(h: "9331e14f3fa20ed75b7d5c0ab93aa5fb0293192f")]
-        # check collectNimbleVersions(nc, graph[4]) == @[VersionTag(h: "0dec9c9733129919972416f04e73b1fb2cbf3bd3"), VersionTag(h: "dd98f775ae33d450dc7f936f850e247e820e31ad")]
+
+        let vtags2 = dedent"""
+        af4275109d60caaeacf2912a37c2339aca40a922
+        cd3ad76043e5f983f704be6bf61e57d187fe070f
+        ee875baecee161ed053b87b583b2f08526838bd6
+        """.parseTaggedVersions(false)
+        let vtags3 = dedent"""
+        c7540297c01dc57a98cb1fce7660ab6f2a0cee5f
+        9331e14f3fa20ed75b7d5c0ab93aa5fb0293192f
+        """.parseTaggedVersions(false)
+        let vtags4 = dedent"""
+        0dec9c9733129919972416f04e73b1fb2cbf3bd3
+        dd98f775ae33d450dc7f936f850e247e820e31ad
+        """.parseTaggedVersions(false)
+
+        check collectNimbleVersions(nc, dep2) == vtags2
+        check collectNimbleVersions(nc, dep3) == vtags3
+        check collectNimbleVersions(nc, dep4) == vtags4
 
   test "ws_testtraverse traverseDependency":
-      # setAtlasVerbosity(Debug)
+      setAtlasVerbosity(Debug)
       withDir "tests/ws_testtraverse":
-        echo "RUNNING"
         context().workspace = paths.getCurrentDir()
         context().depsDir = paths.getCurrentDir() / Path"buildGraph"
         context().flags = {UsesOverrides, KeepWorkspace, ListVersions, FullClones}
