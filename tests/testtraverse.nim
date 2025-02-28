@@ -101,17 +101,17 @@ suite "basic repo tests":
         context().depsDir = paths.getCurrentDir() / Path"buildGraph"
         context().flags = {UsesOverrides, KeepWorkspace, ListVersions, FullClones}
         context().defaultAlgo = SemVer
-        discard context().overrides.addPattern("$+", "file://buildGraph/$#")
+
+        var nc = NimbleContext()
+        discard nc.overrides.addPattern("$+", "file://buildGraph/$#")
 
         let deps = setupGraph()
-        var nc = NimbleContext()
         let dir = ospaths2.getCurrentDir()
         writeFile("ws_testtraverse.nimble", "requires \"proj_a\"\n")
 
         let pkg = nc.createUrl(dir, projectName = "ws_testtraverse")
 
         let specs: DependencySpecs = expand(nc, AllReleases, pkg)
-
 
         # check graph[0].pkg.projectName == "ws_testtraverse"
         # check graph[0].ondisk.string.endsWith("ws_testtraverse")

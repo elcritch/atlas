@@ -87,7 +87,11 @@ proc collectNimbleVersions*(nc: NimbleContext; dep: Dependency): seq[VersionTag]
     result.reverse()
     trace "collectNimbleVersions", "commits:", mapIt(result, it.c.short()).join(", "), "nimble:", $nimbleFiles[0]
 
-proc processRelease(specs: DependencySpecs; dep: Dependency, release: VersionTag): Requirements =
+proc processRelease(
+    nc: var NimbleContext;
+    dep: Dependency,
+    release: VersionTag
+): Requirements =
   debug dep.pkg.projectName, "process release: " & $release
 
   if release.version == Version"#head":
@@ -110,19 +114,19 @@ proc processRelease(specs: DependencySpecs; dep: Dependency, release: VersionTag
     result = Requirements(status: HasUnknownNimbleFile, err: "ambiguous nimble file")
   else:
     let nimbleFile = nimbleFiles[0]
-    result = parseNimbleFile(specs.nimbleCtx, nimbleFile, context().overrides)
+    result = nc.parseNimbleFile(nimbleFile, context().overrides)
 
     if result.status == Normal:
       for pkgUrl, interval in items(result.deps):
         # var pkgDep = specs.packageToDependency.getOrDefault(pkgUrl, nil)
-        if pkgUrl notin specs.packageToDependency:
+        if pkgUrl notin nc.packageToDependency:
           let pkgDep = Dependency(pkg: pkgUrl, state: NotInitialized)
-          specs.packageToDependency[pkgUrl] = pkgDep
+          nc.packageToDependency[pkgUrl] = pkgDep
           # TODO: enrich versions with hashes when added
           # enrichVersionsViaExplicitHash graph[depIdx].versions, interval
 
 proc traverseDependency*(
-    specs: DependencySpecs;
+    nc: var NimbleContext;
     dep: Dependency,
     mode: TraversalMode;
     versions: seq[VersionTag];
@@ -149,12 +153,12 @@ proc traverseDependency*(
   of CurrentCommit:
     trace "traverseDependency", "only loading current commit"
     let vtag = VersionTag(v: Version"#head", c: initCommitHash(currentCommit, FromHead))
-    result.versions[vtag] = specs.processRelease(result.dep, vtag)
+    result.versions[vtag] = nc.processRelease(result.dep, vtag)
 
   of AllReleases:
     try:
       var uniqueCommits: HashSet[CommitHash]
-      let nimbleCommits = specs.nimbleCtx.collectNimbleVersions(dep)
+      let nimbleCommits = nc.collectNimbleVersions(dep)
       debug "traverseDependency", "nimble versions: " & $nimbleCommits
 
       for version in versions:
@@ -163,22 +167,22 @@ proc traverseDependency*(
             not uniqueCommits.containsOrIncl(version.commit):
             let vtag = VersionTag(v: Version"", c: version.commit)
             assert vtag.commit.orig == FromDep, "maybe this needs to be overriden like before"
-            result.versions[vtag] = specs.processRelease(result.dep, vtag)
+            result.versions[vtag] = nc.processRelease(result.dep, vtag)
 
       let tags = collectTaggedVersions(dep.ondisk)
       for tag in tags:
         if not uniqueCommits.containsOrIncl(tag.c):
-          result.versions[tag] = specs.processRelease(result.dep, tag)
+          result.versions[tag] = nc.processRelease(result.dep, tag)
           assert tag.commit.orig == FromGitTag, "maybe this needs to be overriden like before"
 
       for tag in nimbleCommits:
         if not uniqueCommits.containsOrIncl(tag.c):
-          result.versions[tag] = specs.processRelease(result.dep, tag)
+          result.versions[tag] = nc.processRelease(result.dep, tag)
 
       if result.versions.len() == 0:
         let vtag = VersionTag(v: Version"#head", c: initCommitHash(currentCommit, FromHead))
         info "traverseDependency", "no versions found, using default #head", "at", $dep.ondisk
-        result.versions[vtag] = specs.processRelease(result.dep, vtag)
+        result.versions[vtag] = nc.processRelease(result.dep, vtag)
 
     finally:
       if not checkoutGitCommit(dep.ondisk, currentCommit, Warning):
@@ -213,32 +217,33 @@ proc loadDependency*(
       dep.state = Error
       dep.errors.add "ondisk location missing"
 
-proc expand*(nc: NimbleContext; mode: TraversalMode, pkg: PkgUrl): DependencySpecs =
+proc expand*(nimble: NimbleContext; mode: TraversalMode, pkg: PkgUrl): DependencySpecs =
   ## Expand the graph by adding all dependencies.
   
+  var nc = nimble
   warn pkg.projectName, "expanding root package at:", $pkg
   var dep = Dependency(pkg: pkg, isRoot: true, isTopLevel: true)
   # nc.loadDependency(dep)
 
   var processed = initHashSet[PkgUrl]()
-  var specs = DependencySpecs()
-  specs.packageToDependency[dep.pkg] = dep
+  var specs = DependencySpecs(nimbleCtx: nc)
+  specs.nimbleCtx.packageToDependency[dep.pkg] = dep
 
   var processing = true
   while processing:
     processing = false
-    for pkg, dep in specs.packageToDependency.mpairs():
+    for pkg, dep in specs.nimbleCtx.packageToDependency.mpairs():
       case dep.state:
       of NotInitialized:
         info pkg.projectName, "initializing at:", $dep
-        nc.loadDependency(dep)
+        specs.nimbleCtx.loadDependency(dep)
         debug pkg.projectName, "expanded dep:", dep.repr
         processing = true
       of Found:
         info pkg.projectName, "processing at:", $dep.ondisk
         # processing = true
         let mode = if dep.isRoot: CurrentCommit else: mode
-        let spec = traverseDependency(specs, dep, mode, @[])
+        let spec = nc.traverseDependency(dep, mode, @[])
         debug pkg.projectName, "processed spec:", $spec.dep
         for vtag, reqs in spec.versions:
           debug pkg.projectName, "spec version:", $vtag, "reqs:", $reqs

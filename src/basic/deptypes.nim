@@ -52,12 +52,12 @@ type
     FromHead, FromGitTag, FromDep, FromNimbleFile
 
   DependencySpecs* = ref object
-    packageToDependency*: Table[PkgUrl, Dependency]
     depsToSpecs*: Table[Dependency, DependencySpec]
     nimbleCtx*: NimbleContext
 
   NimbleContext* = object
-    patterns*: Patterns
+    packageToDependency*: Table[PkgUrl, Dependency]
+    overrides*: Patterns
     hasPackageList*: bool
     nameToUrl*: Table[string, PkgUrl]
 
@@ -65,11 +65,12 @@ const
   EmptyReqs* = 0
   UnknownReqs* = 1
 
-proc createUrl*(nc: NimbleContext, name: string; projectName: string = ""): PkgUrl =
+proc createUrl*(nc: NimbleContext, nameOrig: string; projectName: string = ""): PkgUrl =
   ## primary point to createUrl's from a name or argument
   ## TODO: add unit tests!
   var didReplace = false
-  var name = substitute(nc.patterns, name, didReplace)
+  var name = substitute(nc.overrides, nameOrig, didReplace)
+  debug "createUrl", "name:", name, "orig:", nameOrig, "patterns:", $nc.overrides
   if name.isUrl():
     result = createUrlSkipPatterns(name)
   else:
