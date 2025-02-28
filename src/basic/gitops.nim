@@ -164,7 +164,7 @@ proc checkoutGitCommit*(path: Path, commit: CommitHash, errorReportLevel: MsgKin
     message(errorReportLevel, path, "could not checkout commit " & $commit)
     result = false
   else:
-    debug(path, "updated package to " & $commit)
+    debug path, "updated package to ", $commit
     result = true
 
 proc checkoutGitCommitFull*(path: Path; commit: string, fullClones: bool;
@@ -198,7 +198,7 @@ proc checkoutGitCommitFull*(path: Path; commit: string, fullClones: bool;
     message(errorReportLevel, $path, "could not checkout commit " & commit)
     result = false
   else:
-    trace($path, "updated package to " & commit)
+    trace $path, "updated package to:", commit
 
   let (_, subModStatus) = exec(GitSubModUpdate, path, smExtraArgs)
   if subModstatus != RES_OK:

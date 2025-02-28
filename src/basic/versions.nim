@@ -77,7 +77,8 @@ proc short*(c: CommitHash): string =
   elif c.h.len() == 0: ""
   else: "!"&c.h[0..<c.h.len()]
 proc `$`*(vt: VersionTag): string =
-  if vt.v.string == "": result = $vt.v
+  if vt.v.string != "":
+    result = $vt.v
   else: result = "~" 
   if vt.c.short() != "":
     result &= "@" & vt.c.short()

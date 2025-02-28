@@ -85,7 +85,7 @@ proc collectNimbleVersions*(nc: NimbleContext; dep: Dependency): seq[VersionTag]
   if nimbleFiles.len() == 1:
     result = collectFileCommits(dir, nimbleFiles[0])
     result.reverse()
-    trace "collectNimbleVersions", "commits:", mapIt(result, it.c.short()).join(", "), "nimble:", $nimbleFiles[0]
+    trace dep.pkg.projectName, "collectNimbleVersions commits:", mapIt(result, it.c.short()).join(", "), "nimble:", $nimbleFiles[0]
 
 proc processRelease(
     nc: var NimbleContext;
@@ -95,13 +95,13 @@ proc processRelease(
   info dep.pkg.projectName, "Processing release:", $release
 
   if release.version == Version"#head":
-    trace "processRelease", "using current commit"
+    trace dep.pkg.projectName, "processRelease using current commit"
   elif release.commit.isEmpty():
-    error "processRelease", "missing commit ", $release, "at:", $dep.ondisk
+    error dep.pkg.projectName, "processRelease missing commit ", $release, "at:", $dep.ondisk
     result = Requirements(status: HasBrokenRelease, err: "no commit")
     return
   elif not checkoutGitCommit(dep.ondisk, release.commit, Error):
-    warn "processRelease", "unable to checkout commit ", $release, "at:", $dep.ondisk
+    warn dep.pkg.projectName, "processRelease unable to checkout commit ", $release, "at:", $dep.ondisk
     result = Requirements(status: HasBrokenRelease, err: "error checking out release")
     return
 
@@ -137,23 +137,24 @@ proc traverseDependency*(
 
   result = DependencySpec()
 
-  let currentCommit = currentGitCommit(dep.ondisk, Error)
-  trace "depgraphs:releases", "currentCommit:", $currentCommit
+  let currentCommit = currentGitCommit(dep.ondisk, Warning)
   if mode == CurrentCommit and currentCommit.isEmpty():
     let vtag = VersionTag(v: Version"#head", c: initCommitHash("", FromHead))
     result.versions[vtag] = Requirements(status: Normal)
     dep.state = Processed
-    info dep.pkg.projectName, "using current commit:" & $vtag
+    info dep.pkg.projectName, "traversing dependency using current commit:", $vtag
   elif currentCommit.isEmpty():
-    warn "traverseDependency", "unable to find git current version at " & $dep.ondisk
+    warn dep.pkg.projectName, "traversing dependency unable to find git current version at ", $dep.ondisk
     let vtag = VersionTag(v: Version"#head", c: initCommitHash("", FromHead))
     result.versions[vtag] = Requirements(status: HasBrokenRepo)
     dep.state = Error
     return
+  else:
+    trace dep.pkg.projectName, "traversing dependency current commit:", $currentCommit
 
   case mode
   of CurrentCommit:
-    trace "traverseDependency", "only loading current commit"
+    trace dep.pkg.projectName, "traverseDependency only loading current commit"
     let vtag = VersionTag(v: Version"#head", c: initCommitHash(currentCommit, FromHead))
     result.versions[vtag] = nc.processRelease(dep, vtag)
 
@@ -161,7 +162,7 @@ proc traverseDependency*(
     try:
       var uniqueCommits: HashSet[CommitHash]
       let nimbleCommits = nc.collectNimbleVersions(dep)
-      debug "traverseDependency", "nimble versions:", $nimbleCommits
+      debug dep.pkg.projectName, "traverseDependency nimble versions:", $nimbleCommits
 
       for version in versions:
         if version.version == Version"" and
@@ -183,12 +184,12 @@ proc traverseDependency*(
 
       if result.versions.len() == 0:
         let vtag = VersionTag(v: Version"#head", c: initCommitHash(currentCommit, FromHead))
-        info "traverseDependency", "no versions found, using default #head", "at", $dep.ondisk
+        info dep.pkg.projectName, "traverseDependency no versions found, using default #head", "at", $dep.ondisk
         result.versions[vtag] = nc.processRelease(dep, vtag)
 
     finally:
       if not checkoutGitCommit(dep.ondisk, currentCommit, Warning):
-        info "traverseDependency", "error loading releases reverting to " & $ currentCommit
+        info dep.pkg.projectName, "traverseDependency error loading releases reverting to ", $currentCommit
 
   dep.state = Processed
 
