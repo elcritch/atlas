@@ -127,7 +127,7 @@ proc traverseDependency*(
     mode: TraversalMode;
     versions: seq[VersionTag];
 ): DependencySpec =
-  doAssert dep.ondisk.fileExists() and dep.state != NotInitialized, "DependencySpec should've been found or cloned at this point"
+  doAssert dep.ondisk.dirExists() and dep.state != NotInitialized, "DependencySpec should've been found or cloned at this point"
 
   result = DependencySpec(dep: dep)
 
@@ -232,7 +232,9 @@ proc expand*(nc: NimbleContext; mode: TraversalMode, pkg: PkgUrl): DependencySpe
       of Found:
         info pkg.projectName, "processing at:", $dep.ondisk
         # processing = true
-        debug pkg.projectName, "processed dep:", $dep.repr
+        let spec = traverseDependency(specs, dep, mode, @[])
+        # debug pkg.projectName, "processed spec:", $spec.repr
+        specs.depsToSpecs[dep] = spec
       else:
         discard
 
