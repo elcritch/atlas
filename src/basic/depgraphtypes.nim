@@ -60,12 +60,12 @@ proc pkgUrlToDirname*(dep: Dependency): (Path, PackageAction) =
   # var dest = Path g.ondisk.getOrDefault(d.pkg.url)
   var dest = Path ""
   if dep.isTopLevel:
-    trace "pkgUrlToDirName", "topLevel= " & $dep.isTopLevel
+    trace dep.pkg.projectName, "pkgUrlToDirName topLevel= " & $dep.isTopLevel
     dest = context().workspace
   else:
     let depsDir = context().workspace / context().depsDir
     dest = depsDir / Path(dep.pkg.projectName)
-    trace "pkgUrlToDirName", "depsDir:", $depsDir, "projectName:", dep.pkg.projectName
+    trace dep.pkg.projectName, "pkgUrlToDirName depsDir:", $depsDir, "projectName:", dep.pkg.projectName
   dest = dest.absolutePath
   result = (dest, if dirExists(dest): DoNothing else: DoClone)
 
@@ -154,22 +154,22 @@ proc createGraphFromWorkspace*(): DepGraph =
     warn configFile, "couldn't load graph from: " & $configFile
 
 proc copyFromDisk*(dep: Dependency; destDir: Path): (CloneStatus, string) =
-  var dir = dep.pkg.url
-  if dir.startsWith(FileWorkspace):
-    dir = $context().workspace / dir.substr(FileWorkspace.len)
+  var dir = Path dep.pkg.url
+  if dir.string.startsWith(FileWorkspace):
+    dir = context().workspace / Path(dir.string.substr(FileWorkspace.len))
   #template selectDir(a, b: string): string =
   #  if dirExists(a): a else: b
 
   #let dir = selectDir(u & "@" & w.commit, u)
   if dep.isTopLevel:
-    trace "copyFromDisk", "isTopLevel", dir
-    result = (Ok, dir)
+    trace dir, "copyFromDisk isTopLevel", $dir
+    result = (Ok, $dir)
   elif dirExists(dir):
-    trace "copyFromDisk", "cloning:", dir
-    copyDir(dir, $destDir)
+    trace dir, "copyFromDisk cloning:", $dir
+    copyDir($dir, $destDir)
     result = (Ok, "")
   else:
-    warn "copyFromDisk", "not found:", dir
-    result = (NotFound, dir)
+    warn dir, "copyFromDisk not found:", $dir
+    result = (NotFound, $dir)
   #writeFile destDir / ThisVersion, w.commit
   #echo "WRITTEN ", destDir / ThisVersion

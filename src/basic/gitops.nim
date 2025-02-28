@@ -161,10 +161,10 @@ proc checkoutGitCommit*(path: Path, commit: CommitHash, errorReportLevel: MsgKin
 
   let (_, statusB) = exec(GitCheckout, path, [$commit], errorReportLevel)
   if statusB != RES_OK:
-    message(errorReportLevel, $path, "could not checkout commit " & $commit)
+    message(errorReportLevel, path, "could not checkout commit " & $commit)
     result = false
   else:
-    debug($path, "updated package to " & $commit)
+    debug(path, "updated package to " & $commit)
     result = true
 
 proc checkoutGitCommitFull*(path: Path; commit: string, fullClones: bool;
