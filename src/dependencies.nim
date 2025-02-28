@@ -36,7 +36,7 @@ proc findNimbleFile*(dir: Path, projectName: string): seq[Path] =
   if result.len() == 0:
     for file in walkFiles($dir / "*.nimble"):
       result.add Path(file)
-  debug "findNimbleFile:search:", " name: " & projectName & " found: " & $result
+  debug "findNimbleFile:search", "name:", projectName, "found:", $result
 
 proc findNimbleFile*(info: Dependency): seq[Path] =
   doAssert(info.ondisk.string != "", "Package ondisk must be set before findNimbleFile can be called! Package: " & $(info))
@@ -172,7 +172,7 @@ proc traverseDependency*(
 
       if result.versions.len() == 0:
         let vtag = VersionTag(v: Version"#head", c: initCommitHash(currentCommit, FromHead))
-        info "traverseDependency", "no versions found, using default #head" & " at " & $dep.ondisk
+        info "traverseDependency", "no versions found, using default #head", "at", $dep.ondisk
         result.versions[vtag] = specs.processRelease(result.dep, vtag)
 
     finally:
@@ -188,7 +188,7 @@ proc loadDependency*(
   let (dest, todo) = pkgUrlToDirname(dep)
   dep.ondisk = dest
 
-  debug "dependencies:loadDependency", "todo=", $todo, "dest=", $dest
+  debug "dependencies:loadDependency", "todo:", $todo, "dest:", $dest
   case todo
   of DoClone:
     let (status, msg) =
@@ -215,7 +215,7 @@ proc loadDependency*(
 proc expand*(nc: NimbleContext; mode: TraversalMode, pkg: PkgUrl): DependencySpecs =
   ## Expand the graph by adding all dependencies.
   
-  info "expand", "pkg: " & $pkg
+  info "expand", "pkg=", $pkg
   var dep = Dependency(pkg: pkg, isRoot: true, isTopLevel: true)
   var processed = initHashSet[PkgUrl]()
   var specs = DependencySpecs()

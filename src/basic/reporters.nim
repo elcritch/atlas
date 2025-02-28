@@ -12,11 +12,11 @@ export paths
 type
   MsgKind* = enum
     Ignore = ""
-    Error = "[Error] "
-    Warning = "[Warning] ",
-    Info = "[Info] ",
-    Debug = "[Debug] "
-    Trace = "[Trace] "
+    Error =   "[Error] "
+    Warning = "[Warn]  ",
+    Info =    "[Info]  ",
+    Debug =   "[Debug] "
+    Trace =   "[Trace] "
 
   Reporter* = object of RootObj
     verbosity*: MsgKind
@@ -68,7 +68,7 @@ proc writeMessage(c: var Reporter; k: MsgKind; p: string, args: seq[string]) =
     let colors = [fgWhite, fgMagenta]
     for idx, arg in args:
       stdout.styledWrite(colors[idx mod 2], " ", arg)
-    stdout.styledWriteLine(resetStyle, "\n")
+    stdout.styledWriteLine(resetStyle, "")
 
 proc message(c: var Reporter; k: MsgKind; p: string, args: varargs[string]) =
   ## collects messages or prints them out immediately
