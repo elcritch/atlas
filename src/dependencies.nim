@@ -8,6 +8,7 @@
 
 import std / [os, strutils, tables, unicode, sequtils, sets, json, hashes, algorithm, paths, files, dirs]
 import basic/[context, deptypes, depgraphtypes, versions, osutils, nimbleparser, packageinfos, reporters, gitops, parse_requires, pkgurls, compiledpatterns]
+import cloner
 
 const
   DefaultPackagesSubDir* = Path"packages"
@@ -206,12 +207,14 @@ proc loadDependency*(
       dep.errors.add "ondisk location missing"
 
 
-proc expand*(nc: NimbleContext; mode: TraversalMode, root: Package) =
+proc expand*(nc: NimbleContext; mode: TraversalMode, pkg: PkgUrl): DependencySpecs =
   ## Expand the graph by adding all dependencies.
   
+  var dep = Dependency(pkg: pkg, isRoot: true, isTopLevel: true)
   var processed = initHashSet[PkgUrl]()
+  var specs = DependencySpecs()
 
-  for pkg, dep in nc.packageToDependency.mpairs():
+  for pkg, dep in spec.packageToDependency.mpairs():
     if dep.state == NotInitialized:
 
       debug "expand", "todo: " & $todo & " pkg: " & graph[i].pkg.projectName & " dest: " & $dest

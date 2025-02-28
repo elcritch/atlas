@@ -65,7 +65,7 @@ const
   EmptyReqs* = 0
   UnknownReqs* = 1
 
-proc createUrl*(nc: NimbleContext, name: string): PkgUrl =
+proc createUrl*(nc: NimbleContext, name: string; projectName: string = ""): PkgUrl =
   ## primary point to createUrl's from a name or argument
   ## TODO: add unit tests!
   var didReplace = false
@@ -78,6 +78,8 @@ proc createUrl*(nc: NimbleContext, name: string): PkgUrl =
       result = nc.nameToUrl[lname]
     else:
       result = createUrlSkipPatterns(name)
+  if projectName != "":
+    result.projectName = projectName
 
 proc sortDepVersions*(a, b: DepVersion): int =
   (if a.vtag.v < b.vtag.v: 1

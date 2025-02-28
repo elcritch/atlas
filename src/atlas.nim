@@ -177,11 +177,13 @@ proc installDependencies(nc: var NimbleContext; nimbleFile: Path) =
   # 2. install deps from .nimble
   var (dir, pkgname, _) = splitFile(nimbleFile)
   if dir == Path "":
-    dir = Path "."
+    dir = Path(".").absolutePath
   info pkgname, "installing dependencies for " & $pkgname & ".nimble"
   trace pkgname, "using nimble file at " & $nimbleFile
-  var g = createGraph(createUrlSkipPatterns($dir))
-  let paths = traverseLoop(nc, g)
+  # var g = createGraph(createUrlSkipPatterns($dir))
+  # let paths = traverseLoop(nc, g)
+  let pkg = nc.createUrl(dir, projectName = pkgname)
+  discard expand(nc, AllReleases, pkg)
   let cfgPath = if CfgHere in context().flags: CfgPath context().currentDir else: findCfgDir()
   patchNimCfg(paths, cfgPath)
   afterGraphActions g
