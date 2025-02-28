@@ -47,7 +47,10 @@ type
 const
   InvalidCommit* = "#head" #"<invalid commit>"
 
-proc `$`*(v: Version): string {.borrow.}
+proc `$`*(v: Version): string =
+  result = v.string
+  if result == "":
+    result = "~"
 proc `$`*(c: CommitHash): string = c.h
 const ValidChars = {'a'..'f', '0'..'9'}
 
@@ -75,8 +78,9 @@ proc short*(c: CommitHash): string =
   else: "!"&c.h[0..<c.h.len()]
 proc `$`*(vt: VersionTag): string =
   if vt.v.string == "": result = $vt.v
-  else: result = "-" 
-  result &= "@" & vt.c.short()
+  else: result = "~" 
+  if vt.c.short() != "":
+    result &= "@" & vt.c.short()
 
 
 proc commit*(vt: VersionTag): CommitHash = vt.c
