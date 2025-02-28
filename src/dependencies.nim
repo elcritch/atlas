@@ -186,6 +186,7 @@ proc loadDependency*(
     dep: var Dependency,
 ) = 
   let (dest, todo) = pkgUrlToDirname(dep)
+  dep.ondisk = dest
 
   case todo
   of DoClone:
@@ -206,6 +207,9 @@ proc loadDependency*(
       dep.state = Error
       dep.errors.add "ondisk location missing"
 
+      # debug "expand", "todo: " & $todo & " pkg: " & graph[i].pkg.projectName & " dest: " & $dest
+      # # important: the ondisk path set here!
+      # graph[i].ondisk = dest
 
 proc expand*(nc: NimbleContext; mode: TraversalMode, pkg: PkgUrl): DependencySpecs =
   ## Expand the graph by adding all dependencies.
@@ -214,14 +218,10 @@ proc expand*(nc: NimbleContext; mode: TraversalMode, pkg: PkgUrl): DependencySpe
   var processed = initHashSet[PkgUrl]()
   var specs = DependencySpecs()
 
-  for pkg, dep in spec.packageToDependency.mpairs():
+  for pkg, dep in specs.packageToDependency.mpairs():
     if dep.state == NotInitialized:
+      nc.loadDependency(dep)
 
-      debug "expand", "todo: " & $todo & " pkg: " & graph[i].pkg.projectName & " dest: " & $dest
-      # important: the ondisk path set here!
-      graph[i].ondisk = dest
-
-    inc i
 
   # if context().dumpGraphs:
   #   dumpJson(graph, "graph-expanded.json")
