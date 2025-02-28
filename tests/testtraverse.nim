@@ -95,7 +95,7 @@ suite "basic repo tests":
         check collectNimbleVersions(nc, dep4) == vtags4
 
   test "ws_testtraverse traverseDependency":
-      setAtlasVerbosity(Trace)
+      setAtlasVerbosity(Info)
       withDir "tests/ws_testtraverse":
         removeDir("deps")
         context().workspace = paths.getCurrentDir()

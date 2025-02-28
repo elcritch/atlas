@@ -236,17 +236,17 @@ proc expand*(nimble: NimbleContext; mode: TraversalMode, pkg: PkgUrl): Dependenc
   while processing:
     processing = false
     let pkgs = nc.packageToDependency.keys().toSeq()
+    info "Expand", "Expanding packages for:", $pkg.projectName
     for pkg in pkgs:
       template dep(): var Dependency = nc.packageToDependency[pkg]
-      # debug pkg.projectName, "expanding state:", $dep.state
       case dep.state:
       of NotInitialized:
-        info pkg.projectName, "initializing at:", $dep
+        info pkg.projectName, "Initializing at:", $dep
         nc.loadDependency(dep)
         debug pkg.projectName, "expanded dep:", dep.repr
         processing = true
       of Found:
-        info pkg.projectName, "processing at:", $dep.ondisk
+        info pkg.projectName, "Processing at:", $dep.ondisk
         # processing = true
         let mode = if dep.isRoot: CurrentCommit else: mode
         let spec = nc.traverseDependency(dep, mode, @[])
@@ -259,7 +259,7 @@ proc expand*(nimble: NimbleContext; mode: TraversalMode, pkg: PkgUrl): Dependenc
         discard
 
   for pkg, spec in specs.depsToSpecs:
-    warn pkg.projectName, "processed:", $pkg.url()
+    warn pkg.projectName, "Processed:", $pkg.url()
     for vtag, reqs in spec.versions:
       info pkg.projectName, "spec version:", $vtag, "reqs:", reqs.deps.mapIt($(it[0].projectName) & " " & $(it[1])).join(", "), "status:", $reqs.status
 
