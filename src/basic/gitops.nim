@@ -67,8 +67,8 @@ proc exec*(gitCmd: Command;
   else:
     result = ("", ResultCode(1))
   if result[1] != RES_OK:
-    message errorReportLevel, "gitops", "Git command failed `$1` failed with code: $2" % [$gitCmd, $int(result[1])]
-    trace "gitops", "Running Git command `$1`" % [ join(@[cmd] & @args, " ")]
+    message errorReportLevel, "gitops", "Git command failed:", "`$1`" % [$gitCmd], "with code:", $int(result[1])
+    trace "gitops", "Running Git command:", "`$1`" % [join(@[cmd])]
 
 proc checkGitDiffStatus*(path: Path): string =
   let (outp, status) = exec(GitDiff, path, [])

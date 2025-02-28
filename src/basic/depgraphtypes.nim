@@ -163,12 +163,14 @@ proc copyFromDisk*(dep: Dependency; destDir: Path): (CloneStatus, string) =
 
   #let dir = selectDir(u & "@" & w.commit, u)
   if dep.isTopLevel:
-    result = (Ok, "")
+    trace "copyFromDisk", "isTopLevel", dir
+    result = (Ok, dir)
   elif dirExists(dir):
-    info destDir, "cloning: " & dir
+    trace "copyFromDisk", "cloning:", dir
     copyDir(dir, $destDir)
     result = (Ok, "")
   else:
+    warn "copyFromDisk", "not found:", dir
     result = (NotFound, dir)
   #writeFile destDir / ThisVersion, w.commit
   #echo "WRITTEN ", destDir / ThisVersion

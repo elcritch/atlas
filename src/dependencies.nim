@@ -85,7 +85,7 @@ proc collectNimbleVersions*(nc: NimbleContext; dep: Dependency): seq[VersionTag]
   if nimbleFiles.len() == 1:
     result = collectFileCommits(dir, nimbleFiles[0])
     result.reverse()
-    trace "collectNimbleVersions", "commits: " & $mapIt(result, it.c.short())
+    trace "collectNimbleVersions", "commits:", mapIt(result, it.c.short()).join(", ")
 
 proc processRelease(specs: DependencySpecs; dep: Dependency, release: VersionTag): Requirements =
   debug "processRelease", "name: " & dep.projectName() & " release: " & $release

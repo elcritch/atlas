@@ -40,6 +40,7 @@ suite "basic repo tests":
 
   test "ws_testtraverse collect nimbles":
       withDir "tests/ws_testtraverse":
+        removeDir("deps")
         context().flags = {UsesOverrides, KeepWorkspace, ListVersions, FullClones}
         context().defaultAlgo = SemVer
         discard context().overrides.addPattern("$+", "file://./buildGraph/$#")
