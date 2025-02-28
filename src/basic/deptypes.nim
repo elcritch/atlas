@@ -52,7 +52,7 @@ type
     FromHead, FromGitTag, FromDep, FromNimbleFile
 
   DependencySpecs* = ref object
-    depsToSpecs*: Table[PkgUrl, DependencySpec]
+    depsToSpecs*: OrderedTable[PkgUrl, DependencySpec]
     # nc*: NimbleContext
 
   NimbleContext* = object

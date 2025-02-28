@@ -256,6 +256,11 @@ proc expand*(nimble: NimbleContext; mode: TraversalMode, pkg: PkgUrl): Dependenc
       else:
         discard
 
+  for pkg, spec in specs.depsToSpecs:
+    warn pkg.projectName, "processed:", $pkg.url()
+    for vtag, reqs in spec.versions:
+      info pkg.projectName, "spec version:", $vtag, "reqs:", reqs.deps.mapIt($(it[0].projectName) & " " & $(it[1])).join(", "), "status:", $reqs.status
+
 
   # if context().dumpGraphs:
   #   dumpJson(graph, "graph-expanded.json")
