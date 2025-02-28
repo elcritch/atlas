@@ -36,7 +36,7 @@ proc findNimbleFile*(dir: Path, projectName: string): seq[Path] =
   if result.len() == 0:
     for file in walkFiles($dir / "*.nimble"):
       result.add Path(file)
-  debug "findNimbleFile:search", "name:", projectName, "found:", result.join(", ")
+  debug dir, "finding nimble file searching by name:", projectName, "found:", result.join(", ")
 
 proc findNimbleFile*(info: Dependency): seq[Path] =
   doAssert(info.ondisk.string != "", "Package ondisk must be set before findNimbleFile can be called! Package: " & $(info))
@@ -88,7 +88,7 @@ proc collectNimbleVersions*(nc: NimbleContext; dep: Dependency): seq[VersionTag]
     trace "collectNimbleVersions", "commits:", mapIt(result, it.c.short()).join(", "), "nimble:", $nimbleFiles[0]
 
 proc processRelease(specs: DependencySpecs; dep: Dependency, release: VersionTag): Requirements =
-  debug "processRelease", "name: " & dep.projectName() & " release: " & $release
+  debug dep.pkg.projectName, "process release: " & $release
 
   if release.version == Version"#head":
     trace "processRelease", "using current commit"
@@ -133,7 +133,12 @@ proc traverseDependency*(
 
   let currentCommit = currentGitCommit(dep.ondisk, Error)
   trace "depgraphs:releases", "currentCommit: " & $currentCommit
-  if currentCommit.isEmpty():
+  if mode == CurrentCommit and currentCommit.isEmpty():
+    let vtag = VersionTag(v: Version"#head", c: initCommitHash("", FromHead))
+    result.versions[vtag] = Requirements(status: Normal)
+    result.dep.state = Processed
+    info dep.pkg.projectName, "using current commit:" & $vtag
+  elif currentCommit.isEmpty():
     warn "traverseDependency", "unable to find git current version at " & $dep.ondisk
     let vtag = VersionTag(v: Version"#head", c: initCommitHash("", FromHead))
     result.versions[vtag] = Requirements(status: HasBrokenRepo)
@@ -232,8 +237,11 @@ proc expand*(nc: NimbleContext; mode: TraversalMode, pkg: PkgUrl): DependencySpe
       of Found:
         info pkg.projectName, "processing at:", $dep.ondisk
         # processing = true
+        let mode = if dep.isRoot: CurrentCommit else: mode
         let spec = traverseDependency(specs, dep, mode, @[])
-        # debug pkg.projectName, "processed spec:", $spec.repr
+        debug pkg.projectName, "processed spec:", $spec.dep
+        for vtag, reqs in spec.versions:
+          debug pkg.projectName, "spec version:", $vtag, "reqs:", $reqs
         specs.depsToSpecs[dep] = spec
       else:
         discard

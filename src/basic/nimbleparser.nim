@@ -52,7 +52,7 @@ proc parseNimbleFile*(nc: NimbleContext; nimbleFile: Path; p: Patterns): Require
           result.deps.add (url, query)
     except ValueError, IOError, OSError:
       result.status = HasBrokenDep
-      warn $nimbleFile, "cannot resolve dependency package name: " & name
+      warn nimbleFile, "cannot resolve dependency package name: " & name
       result.err.addError $nimbleFile, "cannot resolve package name: " & name
 
 proc genRequiresLine(u: string): string = "requires \"$1\"\n" % u.escape("", "")
