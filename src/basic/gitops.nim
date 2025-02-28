@@ -124,7 +124,7 @@ proc collectFileCommits*(path, file: Path, errorReportLevel: MsgKind = Warning):
   if status == RES_OK:
     result = parseTaggedVersions(outp, requireVersions = false)
   else:
-    message(errorReportLevel, $path, "could not collect file commits " & $file)
+    message(errorReportLevel, $path, "could not collect file commits at:", $file)
 
 proc versionToCommit*(path: Path, algo: ResolutionAlgorithm; query: VersionInterval): CommitHash =
   let allVersions = collectTaggedVersions(path)

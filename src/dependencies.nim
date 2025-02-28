@@ -215,7 +215,7 @@ proc loadDependency*(
 proc expand*(nc: NimbleContext; mode: TraversalMode, pkg: PkgUrl): DependencySpecs =
   ## Expand the graph by adding all dependencies.
   
-  info "expand", "pkg=", $pkg
+  info "expand", "pkg:", $pkg
   var dep = Dependency(pkg: pkg, isRoot: true, isTopLevel: true)
   var processed = initHashSet[PkgUrl]()
   var specs = DependencySpecs()

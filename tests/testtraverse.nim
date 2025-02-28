@@ -114,26 +114,6 @@ suite "basic repo tests":
 
         let specs: DependencySpecs = expand(nc, AllReleases, pkg)
 
-        # graph[0].ondisk = paths.getCurrentDir()
-        # graph[0].state = Found
-
-        # dumpJson graph, "graph-ws_testtraverse-traverseDependency.json"
-
-        # var i = 0
-        # while i < graph.nodes.len:
-        #   for dep in graph.nodes.mitems():
-        #     if dep.state == NotInitialized:
-        #       let (dest, _) = pkgUrlToDirname(graph, dep)
-        #       dep.ondisk = dest
-        #       dep.state = Found
-
-        #   traverseDependency(nc, graph, i, TraversalMode.AllReleases)
-        #   inc i
-
-        # dumpJson graph, "graph-ws_testtraverse-traverseDependency-post.json"
-
-        # check graph[0].versions.len() == 1
-        # check graph.nodes.mapIt(it.pkg.projectName) == @["ws_testtraverse", "proj_a", "proj_b", "proj_c", "proj_d", "does_not_exist"]
 
         # check graph[0].pkg.projectName == "ws_testtraverse"
         # check graph[0].ondisk.string.endsWith("ws_testtraverse")
