@@ -52,8 +52,8 @@ type
     FromHead, FromGitTag, FromDep, FromNimbleFile
 
   DependencySpecs* = ref object
-    depsToSpecs*: Table[Dependency, DependencySpec]
-    nc*: NimbleContext
+    depsToSpecs*: Table[PkgUrl, DependencySpec]
+    # nc*: NimbleContext
 
   NimbleContext* = object
     packageToDependency*: Table[PkgUrl, Dependency]
