@@ -12,11 +12,11 @@ export paths
 type
   MsgKind* = enum
     Ignore = ""
-    Error =   "[Error] "
-    Warning = "[Warn]  ",
-    Info =    "[Info]  ",
-    Debug =   "[Debug] "
-    Trace =   "[Trace] "
+    Error =   "[Error]  "
+    Warning = "[Warn]   ",
+    Info =    "[Info]   ",
+    Debug =   "[Debug]  "
+    Trace =   "[Trace]  "
 
   Reporter* = object of RootObj
     verbosity*: MsgKind
