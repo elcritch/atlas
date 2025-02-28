@@ -97,6 +97,7 @@ suite "basic repo tests":
   test "ws_testtraverse traverseDependency":
       setAtlasVerbosity(Debug)
       withDir "tests/ws_testtraverse":
+        removeDir("deps")
         context().workspace = paths.getCurrentDir()
         context().depsDir = paths.getCurrentDir() / Path"buildGraph"
         context().flags = {UsesOverrides, KeepWorkspace, ListVersions, FullClones}
