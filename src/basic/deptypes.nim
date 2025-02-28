@@ -53,7 +53,7 @@ type
 
   DependencySpecs* = ref object
     depsToSpecs*: Table[Dependency, DependencySpec]
-    nimbleCtx*: NimbleContext
+    nc*: NimbleContext
 
   NimbleContext* = object
     packageToDependency*: Table[PkgUrl, Dependency]

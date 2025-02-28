@@ -226,19 +226,17 @@ proc expand*(nimble: NimbleContext; mode: TraversalMode, pkg: PkgUrl): Dependenc
   # nc.loadDependency(dep)
 
   var processed = initHashSet[PkgUrl]()
-  var specs = DependencySpecs(nimbleCtx: nc)
-  specs.nimbleCtx.packageToDependency[dep.pkg] = dep
+  var specs = DependencySpecs(nc: nc)
+  specs.nc.packageToDependency[dep.pkg] = dep
 
-  var processing = true
-  while processing:
-    processing = false
-    for pkg, dep in specs.nimbleCtx.packageToDependency.mpairs():
+  var cnt = 0
+  while nc.packageToDependency.len() != specs.nc.packageToDependency.len():
+    for pkg, dep in nc.packageToDependency.mpairs():
       case dep.state:
       of NotInitialized:
         info pkg.projectName, "initializing at:", $dep
-        specs.nimbleCtx.loadDependency(dep)
+        nc.loadDependency(dep)
         debug pkg.projectName, "expanded dep:", dep.repr
-        processing = true
       of Found:
         info pkg.projectName, "processing at:", $dep.ondisk
         # processing = true
@@ -250,6 +248,11 @@ proc expand*(nimble: NimbleContext; mode: TraversalMode, pkg: PkgUrl): Dependenc
         specs.depsToSpecs[dep] = spec
       else:
         discard
+    
+    debug "expand", "processed nc:", $nc.packageToDependency
+    debug "expand", "processed spec:", $specs.nc.packageToDependency
+    cnt.inc
+    assert cnt < 2
 
 
   # if context().dumpGraphs:
