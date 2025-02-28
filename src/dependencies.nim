@@ -213,7 +213,7 @@ proc expand*(nc: NimbleContext; mode: TraversalMode, pkg: PkgUrl): DependencySpe
   
   warn pkg.projectName, "expanding root package at:", $pkg
   var dep = Dependency(pkg: pkg, isRoot: true, isTopLevel: true)
-  nc.loadDependency(dep)
+  # nc.loadDependency(dep)
 
   var processed = initHashSet[PkgUrl]()
   var specs = DependencySpecs()
@@ -225,13 +225,14 @@ proc expand*(nc: NimbleContext; mode: TraversalMode, pkg: PkgUrl): DependencySpe
     for pkg, dep in specs.packageToDependency.mpairs():
       case dep.state:
       of NotInitialized:
-        info pkg.projectName, "initializing", "dep:", $dep
+        info pkg.projectName, "initializing at:", $dep
         nc.loadDependency(dep)
-        debug pkg.projectName, "expanded", "dep:", dep.repr
+        debug pkg.projectName, "expanded dep:", dep.repr
         processing = true
       of Found:
-        info "processing", "dep:", $dep
+        info pkg.projectName, "processing at:", $dep.ondisk
         # processing = true
+        debug pkg.projectName, "processed dep:", $dep.repr
       else:
         discard
 
