@@ -1,7 +1,7 @@
 import std / [sets, paths, dirs, files, tables, os, strutils, streams, json, jsonutils, algorithm]
 
-import basic/[dependencies, depgraphtypes, osutils, context, gitops, reporters, nimbleparser, pkgurls, versions]
-import runners, cloner, pkgcache 
+import basic/[deptypes, depgraphtypes, osutils, context, gitops, reporters, nimbleparser, pkgurls, versions]
+import dependencies, runners, cloner 
 
 import std/[json, jsonutils]
 
