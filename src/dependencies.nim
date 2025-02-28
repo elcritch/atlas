@@ -36,7 +36,7 @@ proc findNimbleFile*(dir: Path, projectName: string): seq[Path] =
   if result.len() == 0:
     for file in walkFiles($dir / "*.nimble"):
       result.add Path(file)
-  debug "findNimbleFile:search", "name:", projectName, "found:", $result
+  debug "findNimbleFile:search", "name:", projectName, "found:", result.join(", ")
 
 proc findNimbleFile*(info: Dependency): seq[Path] =
   doAssert(info.ondisk.string != "", "Package ondisk must be set before findNimbleFile can be called! Package: " & $(info))
@@ -85,7 +85,7 @@ proc collectNimbleVersions*(nc: NimbleContext; dep: Dependency): seq[VersionTag]
   if nimbleFiles.len() == 1:
     result = collectFileCommits(dir, nimbleFiles[0])
     result.reverse()
-    trace "collectNimbleVersions", "commits:", mapIt(result, it.c.short()).join(", ")
+    trace "collectNimbleVersions", "commits:", mapIt(result, it.c.short()).join(", "), "nimble:", $nimbleFiles[0]
 
 proc processRelease(specs: DependencySpecs; dep: Dependency, release: VersionTag): Requirements =
   debug "processRelease", "name: " & dep.projectName() & " release: " & $release
