@@ -77,26 +77,6 @@ suite "basic repo tests":
         # check collectNimbleVersions(nc, graph[3]) == @[VersionTag(h: "c7540297c01dc57a98cb1fce7660ab6f2a0cee5f"), VersionTag(h: "9331e14f3fa20ed75b7d5c0ab93aa5fb0293192f")]
         # check collectNimbleVersions(nc, graph[4]) == @[VersionTag(h: "0dec9c9733129919972416f04e73b1fb2cbf3bd3"), VersionTag(h: "dd98f775ae33d450dc7f936f850e247e820e31ad")]
 
-  test "ws_testtraverse releases":
-    when false:
-      setAtlasVerbosity(Debug)
-      withDir "tests/ws_testtraverse":
-        context().flags = {UsesOverrides, KeepWorkspace, ListVersions, FullClones}
-        context().defaultAlgo = SemVer
-
-        var nc = NimbleContext()
-        let deps = setupGraph()
-        for dep in deps[0..0]:
-          let name = dep.splitPath.tail
-          echo "dep: ", name, " path: ", dep
-          var versions: seq[DependencyVersion]
-          let pkgDep = Dependency(pkg: createUrlSkipPatterns(dep), ondisk: Path dep)
-          let nimbleVersions = collectNimbleVersions(nc, pkgDep)
-
-          let rels = toSeq(releases(Path dep, AllReleases, versions, nimbleVersions))
-          for rel in rels:
-            echo "release: ", rel
-
   test "ws_testtraverse traverseDependency":
       # setAtlasVerbosity(Debug)
       withDir "tests/ws_testtraverse":
@@ -162,6 +142,26 @@ suite "basic repo tests":
         # ]
 
         # dumpJson graph, "graph-ws_testtraverse-traverseDependency-post.json"
+
+  test "ws_testtraverse releases":
+    when false:
+      setAtlasVerbosity(Debug)
+      withDir "tests/ws_testtraverse":
+        context().flags = {UsesOverrides, KeepWorkspace, ListVersions, FullClones}
+        context().defaultAlgo = SemVer
+
+        var nc = NimbleContext()
+        let deps = setupGraph()
+        for dep in deps[0..0]:
+          let name = dep.splitPath.tail
+          echo "dep: ", name, " path: ", dep
+          var versions: seq[DependencyVersion]
+          let pkgDep = Dependency(pkg: createUrlSkipPatterns(dep), ondisk: Path dep)
+          let nimbleVersions = collectNimbleVersions(nc, pkgDep)
+
+          let rels = toSeq(releases(Path dep, AllReleases, versions, nimbleVersions))
+          for rel in rels:
+            echo "release: ", rel
 
   test "ws_testtraverse collectNimble no git tags":
     when false:
