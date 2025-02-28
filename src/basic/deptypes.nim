@@ -20,7 +20,7 @@ type
     errors*: seq[string]
 
   DependencySpec* = object
-    dep*: Dependency
+    # dep*: Dependency
     versions*: OrderedTable[VersionTag, Requirements]
   
   DepConstraint* = object
@@ -95,8 +95,8 @@ proc `$`*(d: Dependency): string =
 
 proc projectName*(d: Dependency): string =
   d.pkg.projectName
-proc projectName*(s: DependencySpec): string =
-  s.dep.pkg.projectName
+# proc projectName*(s: DependencySpec): string =
+#   s.pkg.projectName
 
 proc commit*(d: DepConstraint): CommitHash =
   result =

@@ -120,6 +120,7 @@ proc processRelease(
       for pkgUrl, interval in items(result.deps):
         # var pkgDep = specs.packageToDependency.getOrDefault(pkgUrl, nil)
         if pkgUrl notin nc.packageToDependency:
+          info dep.pkg.projectName, "found new dep:", pkgUrl.projectName, "url:", pkgUrl.url()
           let pkgDep = Dependency(pkg: pkgUrl, state: NotInitialized)
           nc.packageToDependency[pkgUrl] = pkgDep
           # TODO: enrich versions with hashes when added
@@ -127,33 +128,33 @@ proc processRelease(
 
 proc traverseDependency*(
     nc: var NimbleContext;
-    dep: Dependency,
+    dep: var Dependency,
     mode: TraversalMode;
     versions: seq[VersionTag];
 ): DependencySpec =
   doAssert dep.ondisk.dirExists() and dep.state != NotInitialized, "DependencySpec should've been found or cloned at this point"
 
-  result = DependencySpec(dep: dep)
+  result = DependencySpec()
 
   let currentCommit = currentGitCommit(dep.ondisk, Error)
   trace "depgraphs:releases", "currentCommit: " & $currentCommit
   if mode == CurrentCommit and currentCommit.isEmpty():
     let vtag = VersionTag(v: Version"#head", c: initCommitHash("", FromHead))
     result.versions[vtag] = Requirements(status: Normal)
-    result.dep.state = Processed
+    dep.state = Processed
     info dep.pkg.projectName, "using current commit:" & $vtag
   elif currentCommit.isEmpty():
     warn "traverseDependency", "unable to find git current version at " & $dep.ondisk
     let vtag = VersionTag(v: Version"#head", c: initCommitHash("", FromHead))
     result.versions[vtag] = Requirements(status: HasBrokenRepo)
-    result.dep.state = Error
+    dep.state = Error
     return
 
   case mode
   of CurrentCommit:
     trace "traverseDependency", "only loading current commit"
     let vtag = VersionTag(v: Version"#head", c: initCommitHash(currentCommit, FromHead))
-    result.versions[vtag] = nc.processRelease(result.dep, vtag)
+    result.versions[vtag] = nc.processRelease(dep, vtag)
 
   of AllReleases:
     try:
@@ -167,28 +168,28 @@ proc traverseDependency*(
             not uniqueCommits.containsOrIncl(version.commit):
             let vtag = VersionTag(v: Version"", c: version.commit)
             assert vtag.commit.orig == FromDep, "maybe this needs to be overriden like before"
-            result.versions[vtag] = nc.processRelease(result.dep, vtag)
+            result.versions[vtag] = nc.processRelease(dep, vtag)
 
       let tags = collectTaggedVersions(dep.ondisk)
       for tag in tags:
         if not uniqueCommits.containsOrIncl(tag.c):
-          result.versions[tag] = nc.processRelease(result.dep, tag)
+          result.versions[tag] = nc.processRelease(dep, tag)
           assert tag.commit.orig == FromGitTag, "maybe this needs to be overriden like before"
 
       for tag in nimbleCommits:
         if not uniqueCommits.containsOrIncl(tag.c):
-          result.versions[tag] = nc.processRelease(result.dep, tag)
+          result.versions[tag] = nc.processRelease(dep, tag)
 
       if result.versions.len() == 0:
         let vtag = VersionTag(v: Version"#head", c: initCommitHash(currentCommit, FromHead))
         info "traverseDependency", "no versions found, using default #head", "at", $dep.ondisk
-        result.versions[vtag] = nc.processRelease(result.dep, vtag)
+        result.versions[vtag] = nc.processRelease(dep, vtag)
 
     finally:
       if not checkoutGitCommit(dep.ondisk, currentCommit, Warning):
         info "traverseDependency", "error loading releases reverting to " & $ currentCommit
 
-  result.dep.state = Processed
+  dep.state = Processed
 
 proc loadDependency*(
     nc: NimbleContext,
@@ -232,7 +233,10 @@ proc expand*(nimble: NimbleContext; mode: TraversalMode, pkg: PkgUrl): Dependenc
   var processing = true
   while processing:
     processing = false
-    for pkg, dep in nc.packageToDependency.mpairs():
+    let pkgs = nc.packageToDependency.keys().toSeq()
+    for pkg in pkgs:
+      template dep(): var Dependency = nc.packageToDependency[pkg]
+      debug pkg.projectName, "expanding in state:", $dep.state
       case dep.state:
       of NotInitialized:
         info pkg.projectName, "initializing at:", $dep
@@ -244,10 +248,11 @@ proc expand*(nimble: NimbleContext; mode: TraversalMode, pkg: PkgUrl): Dependenc
         # processing = true
         let mode = if dep.isRoot: CurrentCommit else: mode
         let spec = nc.traverseDependency(dep, mode, @[])
-        debug pkg.projectName, "processed spec:", $spec.dep
+        debug pkg.projectName, "processed spec:", $spec
         for vtag, reqs in spec.versions:
           debug pkg.projectName, "spec version:", $vtag, "reqs:", $reqs
         specs.depsToSpecs[pkg] = spec
+        processing = true
       else:
         discard
 
