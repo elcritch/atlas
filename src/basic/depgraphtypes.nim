@@ -55,17 +55,17 @@ type
   PackageAction* = enum
     DoNothing, DoClone
 
-proc pkgUrlToDirname*(di: Dependency): (Path, PackageAction) =
+proc pkgUrlToDirname*(dep: Dependency): (Path, PackageAction) =
   # XXX implement namespace support here
   # var dest = Path g.ondisk.getOrDefault(d.pkg.url)
   var dest = Path ""
   if dest.string.len == 0:
-    if di.isTopLevel:
-      trace "pkgUrlToDirName", "topLevel= " & $di.isTopLevel
+    if dep.isTopLevel:
+      trace "pkgUrlToDirName", "topLevel= " & $dep.isTopLevel
       dest = context().workspace
     else:
       let depsDir = context().workspace / context().depsDir
-      dest = depsDir / Path di.pkg.projectName
+      dest = depsDir / Path dep.pkg.projectName
       trace "pkgUrlToDirName", "depsDir= " & $depsDir
   dest = dest.absolutePath
   result = (dest, if dirExists(dest): DoNothing else: DoClone)

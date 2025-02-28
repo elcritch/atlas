@@ -236,7 +236,7 @@ proc expand*(nimble: NimbleContext; mode: TraversalMode, pkg: PkgUrl): Dependenc
     let pkgs = nc.packageToDependency.keys().toSeq()
     for pkg in pkgs:
       template dep(): var Dependency = nc.packageToDependency[pkg]
-      debug pkg.projectName, "expanding in state:", $dep.state
+      debug pkg.projectName, "expanding state:", $dep.state
       case dep.state:
       of NotInitialized:
         info pkg.projectName, "initializing at:", $dep
