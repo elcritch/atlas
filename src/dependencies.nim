@@ -92,12 +92,12 @@ proc processRelease(
     dep: Dependency,
     release: VersionTag
 ): Requirements =
-  debug dep.pkg.projectName, "process release: " & $release
+  info dep.pkg.projectName, "process release:", $release
 
   if release.version == Version"#head":
     trace "processRelease", "using current commit"
   elif release.commit.isEmpty():
-    error "processRelease", "missing commit " & $release & " at " & $dep.ondisk
+    error "processRelease", "missing commit ", $release, "at:", $dep.ondisk
     result = Requirements(status: HasBrokenRelease, err: "no commit")
     return
   elif not checkoutGitCommit(dep.ondisk, release.commit):
@@ -107,10 +107,10 @@ proc processRelease(
   let nimbleFiles = findNimbleFile(dep)
   var badNimbleFile = false
   if nimbleFiles.len() == 0:
-    info "processRelease", "skipping release: missing nimble file" & $release
+    info "processRelease", "skipping release: missing nimble file:", $release
     result = Requirements(status: HasUnknownNimbleFile, err: "missing nimble file")
   elif nimbleFiles.len() > 1:
-    info "processRelease", "skipping release: ambiguous nimble file" & $release & " files: " & $(nimbleFiles.mapIt(it.splitPath().tail).join(", "))
+    info "processRelease", "skipping release: ambiguous nimble file:", $release, "files:", $(nimbleFiles.mapIt(it.splitPath().tail).join(", "))
     result = Requirements(status: HasUnknownNimbleFile, err: "ambiguous nimble file")
   else:
     let nimbleFile = nimbleFiles[0]
@@ -137,7 +137,7 @@ proc traverseDependency*(
   result = DependencySpec()
 
   let currentCommit = currentGitCommit(dep.ondisk, Error)
-  trace "depgraphs:releases", "currentCommit: " & $currentCommit
+  trace "depgraphs:releases", "currentCommit:", $currentCommit
   if mode == CurrentCommit and currentCommit.isEmpty():
     let vtag = VersionTag(v: Version"#head", c: initCommitHash("", FromHead))
     result.versions[vtag] = Requirements(status: Normal)
@@ -160,7 +160,7 @@ proc traverseDependency*(
     try:
       var uniqueCommits: HashSet[CommitHash]
       let nimbleCommits = nc.collectNimbleVersions(dep)
-      debug "traverseDependency", "nimble versions: " & $nimbleCommits
+      debug "traverseDependency", "nimble versions:", $nimbleCommits
 
       for version in versions:
         if version.version == Version"" and
@@ -236,7 +236,7 @@ proc expand*(nimble: NimbleContext; mode: TraversalMode, pkg: PkgUrl): Dependenc
     let pkgs = nc.packageToDependency.keys().toSeq()
     for pkg in pkgs:
       template dep(): var Dependency = nc.packageToDependency[pkg]
-      debug pkg.projectName, "expanding state:", $dep.state
+      # debug pkg.projectName, "expanding state:", $dep.state
       case dep.state:
       of NotInitialized:
         info pkg.projectName, "initializing at:", $dep
@@ -248,9 +248,9 @@ proc expand*(nimble: NimbleContext; mode: TraversalMode, pkg: PkgUrl): Dependenc
         # processing = true
         let mode = if dep.isRoot: CurrentCommit else: mode
         let spec = nc.traverseDependency(dep, mode, @[])
-        debug pkg.projectName, "processed spec:", $spec
+        # debug pkg.projectName, "processed spec:", $spec
         for vtag, reqs in spec.versions:
-          debug pkg.projectName, "spec version:", $vtag, "reqs:", $reqs
+          debug pkg.projectName, "spec version:", $vtag, "reqs:", $(toJsonHook(reqs))
         specs.depsToSpecs[pkg] = spec
         processing = true
       else:

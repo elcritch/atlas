@@ -13,7 +13,7 @@ type
     reqsByDeps*: Table[Requirements, int]
 
 const
-  FileWorkspace* = "file://./"
+  FileWorkspace* = "file://"
 
 proc `[]`*(g: DepGraph, idx: int): DepConstraint =
   g.nodes[idx]
@@ -59,14 +59,13 @@ proc pkgUrlToDirname*(dep: Dependency): (Path, PackageAction) =
   # XXX implement namespace support here
   # var dest = Path g.ondisk.getOrDefault(d.pkg.url)
   var dest = Path ""
-  if dest.string.len == 0:
-    if dep.isTopLevel:
-      trace "pkgUrlToDirName", "topLevel= " & $dep.isTopLevel
-      dest = context().workspace
-    else:
-      let depsDir = context().workspace / context().depsDir
-      dest = depsDir / Path dep.pkg.projectName
-      trace "pkgUrlToDirName", "depsDir= " & $depsDir
+  if dep.isTopLevel:
+    trace "pkgUrlToDirName", "topLevel= " & $dep.isTopLevel
+    dest = context().workspace
+  else:
+    let depsDir = context().workspace / context().depsDir
+    dest = depsDir / Path(dep.pkg.projectName)
+    trace "pkgUrlToDirName", "depsDir:", $depsDir, "projectName:", dep.pkg.projectName
   dest = dest.absolutePath
   result = (dest, if dirExists(dest): DoNothing else: DoClone)
 

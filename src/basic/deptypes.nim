@@ -116,7 +116,7 @@ proc toJsonHook*(v: (PkgUrl, VersionInterval), opt: ToJsonOptions): JsonNode =
   result["url"] = toJsonHook(v[0])
   result["version"] = toJsonHook(v[1])
 
-proc toJsonHook*(r: Requirements, opt: ToJsonOptions): JsonNode =
+proc toJsonHook*(r: Requirements, opt: ToJsonOptions = ToJsonOptions()): JsonNode =
   result = newJObject()
   result["deps"] = toJson(r.deps, opt)
   if r.hasInstallHooks:
