@@ -64,7 +64,7 @@ proc writeMessage(c: var Reporter; k: MsgKind; p: string, args: seq[string]) =
       of Warning: (fgYellow, styleBright)
       of Error: (fgRed, styleBright)
     
-    stdout.styledWrite(color, style, $k, resetStyle, fgCyan, "(", p, ")", resetStyle, " ")
+    stdout.styledWrite(color, style, $k, resetStyle, fgCyan, "(", p, ")", resetStyle)
     let colors = [fgWhite, fgMagenta]
     for idx, arg in args:
       stdout.styledWrite(colors[idx mod 2], " ", arg)

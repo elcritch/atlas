@@ -188,7 +188,7 @@ proc loadDependency*(
   let (dest, todo) = pkgUrlToDirname(dep)
   dep.ondisk = dest
 
-  debug "dependencies:loadDependency", "todo:", $todo, "dest:", $dest
+  debug dep.pkg.projectName, "loading dependency todo:", $todo, "dest:", $dest
   case todo
   of DoClone:
     let (status, msg) =
@@ -225,9 +225,9 @@ proc expand*(nc: NimbleContext; mode: TraversalMode, pkg: PkgUrl): DependencySpe
     for pkg, dep in specs.packageToDependency.mpairs():
       case dep.state:
       of NotInitialized:
-        info "initializing", "dep:", $dep
+        info pkg.projectName, "initializing", "dep:", $dep
         nc.loadDependency(dep)
-        debug "expanded", "dep:", dep.repr
+        debug pkg.projectName, "expanded", "dep:", dep.repr
         processing = true
       of Found:
         info "processing", "dep:", $dep
