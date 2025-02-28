@@ -92,7 +92,7 @@ proc processRelease(
     dep: Dependency,
     release: VersionTag
 ): Requirements =
-  info dep.pkg.projectName, "process release:", $release
+  info dep.pkg.projectName, "Processing release:", $release
 
   if release.version == Version"#head":
     trace "processRelease", "using current commit"
