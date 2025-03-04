@@ -171,3 +171,15 @@ suite "versions":
     check tags[0].c.h == "24870f48c40da2146ce12ff1e675e6e7b9748355"
     check tags[1].c.h == "b54236aaee2fc90200cb3a4e7070820ced9ce605"
     check tags[2].c.h == "f06dc8ee3baf8f64cce67a28a6e6e8a8cd9bf04b"
+
+  test "test version tag and commit hash str":
+    let c1 = initCommitHash("24870f48c40da2146ce12ff1e675e6e7b9748355", FromNone)
+    let v1 = VersionTag(v: Version"#head", c: c1)
+
+    check $c1 == "24870f48c40da2146ce12ff1e675e6e7b9748355"
+    check $v1 == "#head@24870f48"
+
+    let v2 = toVersionTag("#head@24870f48c40da2146ce12ff1e675e6e7b9748355")
+
+    check $v2 == "#head@24870f48"
+    check repr(v2) == "#head@24870f48c40da2146ce12ff1e675e6e7b9748355"

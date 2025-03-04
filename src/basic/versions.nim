@@ -66,7 +66,7 @@ proc isLowerAlphaNum*(s: string): bool =
 
 proc initCommitHash*(raw: string, origin: CommitOrigin): CommitHash = 
   result = CommitHash(h: raw.toLower(), orig: origin)
-  doAssert result.h.isLowerAlphaNum(), "hash must hexdecimal"
+  doAssert result.h.isLowerAlphaNum(), "hash must hexdecimal but got: " & $raw
 
 proc initCommitHash*(c: CommitHash, origin: CommitOrigin): CommitHash = 
   result = c
@@ -78,15 +78,20 @@ proc isFull*(c: CommitHash): bool =
   c.h.len() == 40
 proc short*(c: CommitHash): string =
   if c.h.len() == 40: c.h[0..7]
-  elif c.h.len() == 0: ""
+  elif c.h.len() == 0: "-"
   else: "!"&c.h[0..<c.h.len()]
+
 proc `$`*(vt: VersionTag): string =
   if vt.v.string != "":
     result = $vt.v
-  else: result = "~" 
-  if vt.c.short() != "":
-    result &= "@" & vt.c.short()
+  else: result = "~"
+  result &= "@" & vt.c.short()
 
+proc repr*(vt: VersionTag): string =
+  if vt.v.string != "":
+    result = $vt.v
+  else: result = "~" 
+  result &= "@" & $vt.c
 
 proc commit*(vt: VersionTag): CommitHash = vt.c
 proc version*(vt: VersionTag): Version = vt.v
@@ -414,3 +419,18 @@ proc `$`*(i: VersionInterval): string =
 proc toJsonHook*(v: VersionInterval): JsonNode = toJson($(v))
 proc toJsonHook*(v: Version): JsonNode = toJson($v)
 proc toJsonHook*(v: VersionTag): JsonNode = toJson("$1@$2" % [$v.v, $v.c])
+
+proc toVersion*(str: string): Version =
+  if str == "~": result = Version("")
+  else: result = parseVersion(str, 0)
+
+proc toCommitHash*(str: string, origin = FromNone): CommitHash =
+  if str == "-": result = initCommitHash("", origin)
+  else: result = initCommitHash(str, origin)
+
+proc toVersionTag*(str: string, origin = FromNone): VersionTag =
+  let res = str.split("@")
+  doAssert res.len() == 2, "version tag string format is `version@commit` but got: " & $str
+
+  result.v = toVersion(res[0])
+  result.c = toCommitHash(res[1], origin)

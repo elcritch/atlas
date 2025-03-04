@@ -119,6 +119,8 @@ suite "basic repo tests":
         check $sp[3][0] == "file://buildGraph/proj_c"
         check $sp[4][0] == "file://buildGraph/proj_d"
 
+        check sp[0][1].versions.len() == 1
+
   test "ws_testtraverse collectNimble no git tags":
     when false:
       withDir "tests/ws_testtraverse":
