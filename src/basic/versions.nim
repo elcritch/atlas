@@ -51,7 +51,11 @@ proc `$`*(v: Version): string =
   result = v.string
   if result == "":
     result = "~"
-proc `$`*(c: CommitHash): string = c.h
+proc `$`*(c: CommitHash): string =
+  result = c.h
+  if result == "":
+    result = "-"
+
 const ValidChars = {'a'..'f', '0'..'9'}
 
 proc isLowerAlphaNum*(s: string): bool =
