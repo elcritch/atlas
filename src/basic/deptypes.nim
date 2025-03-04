@@ -156,11 +156,11 @@ proc `==`*(a, b: Requirements): bool =
   #and a.version == b.version
 
 proc toJsonHook*(t: OrderedTable[VersionTag, Requirements], opt: ToJsonOptions): JsonNode =
-  result = newJArray()
+  result = newJObject()
   for k, v in t:
-    result.add(%* [toJson(k, opt), toJson(v, opt)] )
+    result[$(k)] = toJson(v, opt)
 
 proc toJsonHook*(t: OrderedTable[PkgUrl, DependencySpec], opt: ToJsonOptions): JsonNode =
-  result = newJArray()
+  result = newJObject()
   for k, v in t:
-    result.add(%* [toJson(k, opt), toJson(v, opt)] )
+    result[$(k)] = toJson(v, opt)

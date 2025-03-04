@@ -113,9 +113,7 @@ suite "basic repo tests":
 
         let specs: DependencySpecs = expand(nc, AllReleases, pkg)
 
-        for pkg, spec in specs.depsToSpecs:
-          echo "pkg: ", pkg
-          echo "\tspec: ", spec.toJson().pretty()
+        echo "\tspec:\n", specs.toJson()
 
   test "ws_testtraverse collectNimble no git tags":
     when false:
