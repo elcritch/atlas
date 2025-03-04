@@ -1,6 +1,6 @@
 # Small program that runs the test cases
 
-import std / [strutils, os, osproc, tables, sequtils, strformat, unittest]
+import std / [strutils, os, osproc, jsonutils, json, tables, sequtils, strformat, unittest]
 import basic/[sattypes, context, gitops, reporters, nimbleparser, pkgurls, compiledpatterns, versions]
 import basic/deptypes
 import dependencies
@@ -113,25 +113,9 @@ suite "basic repo tests":
 
         let specs: DependencySpecs = expand(nc, AllReleases, pkg)
 
-  test "ws_testtraverse releases":
-    when false:
-      setAtlasVerbosity(Debug)
-      withDir "tests/ws_testtraverse":
-        context().flags = {UsesOverrides, KeepWorkspace, ListVersions, FullClones}
-        context().defaultAlgo = SemVer
-
-        var nc = NimbleContext()
-        let deps = setupGraph()
-        for dep in deps[0..0]:
-          let name = dep.splitPath.tail
-          echo "dep: ", name, " path: ", dep
-          var versions: seq[DependencyVersion]
-          let pkgDep = Dependency(pkg: createUrlSkipPatterns(dep), ondisk: Path dep)
-          let nimbleVersions = collectNimbleVersions(nc, pkgDep)
-
-          let rels = toSeq(releases(Path dep, AllReleases, versions, nimbleVersions))
-          for rel in rels:
-            echo "release: ", rel
+        for pkg, spec in specs.depsToSpecs:
+          echo "pkg: ", pkg
+          echo "\tspec: ", spec.toJson().pretty()
 
   test "ws_testtraverse collectNimble no git tags":
     when false:

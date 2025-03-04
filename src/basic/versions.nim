@@ -409,3 +409,4 @@ proc `$`*(i: VersionInterval): string =
 
 proc toJsonHook*(v: VersionInterval): JsonNode = toJson($(v))
 proc toJsonHook*(v: Version): JsonNode = toJson($v)
+proc toJsonHook*(v: VersionTag): JsonNode = toJson("$1@$2" % [$v.v, $v.c])

@@ -1,7 +1,7 @@
 import std/[unicode, paths, sha1, tables, json, jsonutils, hashes]
 import sattypes, pkgurls, versions, context, compiledpatterns
 
-export sha1
+export sha1, tables
 
 type
 
@@ -154,3 +154,13 @@ proc `==`*(a, b: Requirements): bool =
   result = a.deps == b.deps and a.hasInstallHooks == b.hasInstallHooks and
       a.srcDir == b.srcDir and a.nimVersion == b.nimVersion
   #and a.version == b.version
+
+proc toJsonHook*(t: OrderedTable[VersionTag, Requirements], opt: ToJsonOptions): JsonNode =
+  result = newJArray()
+  for k, v in t:
+    result.add(%* [toJson(k, opt), toJson(v, opt)] )
+
+proc toJsonHook*(t: OrderedTable[PkgUrl, DependencySpec], opt: ToJsonOptions): JsonNode =
+  result = newJArray()
+  for k, v in t:
+    result.add(%* [toJson(k, opt), toJson(v, opt)] )

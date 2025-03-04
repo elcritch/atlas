@@ -10,6 +10,8 @@ import std / [os, strutils, tables, unicode, sequtils, sets, json, hashes, algor
 import basic/[context, deptypes, depgraphtypes, versions, osutils, nimbleparser, packageinfos, reporters, gitops, parse_requires, pkgurls, compiledpatterns]
 import cloner
 
+export depgraphtypes, deptypes, versions
+
 const
   DefaultPackagesSubDir* = Path"packages"
 
@@ -263,6 +265,7 @@ proc expand*(nimble: NimbleContext; mode: TraversalMode, pkg: PkgUrl): Dependenc
     for vtag, reqs in spec.versions:
       info pkg.projectName, "spec version:", $vtag, "reqs:", reqs.deps.mapIt($(it[0].projectName) & " " & $(it[1])).join(", "), "status:", $reqs.status
 
+  result = specs
 
   # if context().dumpGraphs:
   #   dumpJson(graph, "graph-expanded.json")
