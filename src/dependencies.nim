@@ -222,10 +222,10 @@ proc loadDependency*(
       dep.state = Error
       dep.errors.add "ondisk location missing"
 
-proc expand*(nimble: NimbleContext; mode: TraversalMode, pkg: PkgUrl): DependencySpecs =
+proc expand*(nc: var NimbleContext; mode: TraversalMode, path: Path): DependencySpecs =
   ## Expand the graph by adding all dependencies.
   
-  var nc = nimble
+  let pkg = nc.createUrl(path)
   warn pkg.projectName, "expanding root package at:", $pkg
   var dep = Dependency(pkg: pkg, isRoot: true, isTopLevel: true)
   # nc.loadDependency(dep)

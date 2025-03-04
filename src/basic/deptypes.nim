@@ -65,6 +65,10 @@ const
   EmptyReqs* = 0
   UnknownReqs* = 1
 
+proc createUrl*(nc: NimbleContext, orig: Path): PkgUrl =
+  var didReplace = false
+  result = createUrlSkipPatterns($orig)
+
 proc createUrl*(nc: NimbleContext, nameOrig: string; projectName: string = ""): PkgUrl =
   ## primary point to createUrl's from a name or argument
   ## TODO: add unit tests!

@@ -106,17 +106,14 @@ suite "basic repo tests":
         discard nc.overrides.addPattern("$+", "file://buildGraph/$#")
 
         let deps = setupGraph()
-        let dir = ospaths2.getCurrentDir()
-        writeFile("ws_testtraverse.nimble", "requires \"proj_a\"\n")
+        let dir = paths.getCurrentDir().absolutePath
 
-        let pkg = nc.createUrl(dir, projectName = "ws_testtraverse")
-
-        let specs: DependencySpecs = expand(nc, AllReleases, pkg)
+        let specs: DependencySpecs = expand(nc, AllReleases, dir)
 
         echo "\tspec:\n", specs.toJson()
         let sp = specs.depsToSpecs.pairs().toSeq()
 
-        check $sp[0][0] == "file://ws_testtraverse"
+        check $sp[0][0] == "file://$1" % [$dir]
         check $sp[1][0] == "file://buildGraph/proj_a"
         check $sp[2][0] == "file://buildGraph/proj_b"
         check $sp[3][0] == "file://buildGraph/proj_c"
