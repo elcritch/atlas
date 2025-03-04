@@ -180,6 +180,11 @@ suite "versions":
     check $v1 == "#head@24870f48"
 
     let v2 = toVersionTag("#head@24870f48c40da2146ce12ff1e675e6e7b9748355")
-
     check $v2 == "#head@24870f48"
     check repr(v2) == "#head@24870f48c40da2146ce12ff1e675e6e7b9748355"
+
+    let v3 = toVersionTag("#head@-")
+    check v3.v.string == "#head"
+    check v3.c.h == ""
+    check $v3 == "#head@-"
+    check repr(v3) == "#head@-"

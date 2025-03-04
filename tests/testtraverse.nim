@@ -110,7 +110,7 @@ suite "basic repo tests":
 
         let specs: DependencySpecs = expand(nc, AllReleases, dir)
 
-        echo "\tspec:\n", specs.toJson()
+        echo "\tspec:\n", specs.toJson(ToJsonOptions(enumMode: joptEnumString))
         let sp = specs.depsToSpecs.pairs().toSeq()
 
         check $sp[0][0] == "file://$1" % [$dir]
@@ -120,6 +120,9 @@ suite "basic repo tests":
         check $sp[4][0] == "file://buildGraph/proj_d"
 
         check sp[0][1].versions.len() == 1
+        let sp0v0 = toVersionTag("#head@-")
+        check $sp[0][1].versions[sp0v0] == "#head@-"
+        # check $proj1Spec[0][0] == "#head@-"
 
   test "ws_testtraverse collectNimble no git tags":
     when false:
