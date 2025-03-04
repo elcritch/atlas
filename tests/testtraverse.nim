@@ -119,9 +119,12 @@ suite "basic repo tests":
         check $sp[3][0] == "file://buildGraph/proj_c"
         check $sp[4][0] == "file://buildGraph/proj_d"
 
-        check sp[0][1].versions.len() == 1
+        let sp0 = sp[0][1]
+        check sp0.versions.len() == 1
         let sp0v0 = toVersionTag("#head@-")
-        check $sp[0][1].versions[sp0v0] == "#head@-"
+        echo "sp0v0 ", repr sp0v0
+        echo "sp0v0 ", repr sp0.versions.pairs().toSeq()[0][0]
+        check $sp0.versions[sp0v0] == "#head@-"
         # check $proj1Spec[0][0] == "#head@-"
 
   test "ws_testtraverse collectNimble no git tags":

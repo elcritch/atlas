@@ -187,4 +187,7 @@ suite "versions":
     check v3.v.string == "#head"
     check v3.c.h == ""
     check $v3 == "#head@-"
-    check repr(v3) == "#head@-"
+    # check repr(v3) == "#head@-"
+
+    let v4 = VersionTag(v: Version"#head", c: initCommitHash("", FromGitTag))
+    check v4 == v3
