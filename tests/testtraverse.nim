@@ -114,6 +114,13 @@ suite "basic repo tests":
         let specs: DependencySpecs = expand(nc, AllReleases, pkg)
 
         echo "\tspec:\n", specs.toJson()
+        let sp = specs.depsToSpecs.pairs().toSeq()
+
+        check $sp[0][0] == "file://ws_testtraverse"
+        check $sp[1][0] == "file://buildGraph/proj_a"
+        check $sp[2][0] == "file://buildGraph/proj_b"
+        check $sp[3][0] == "file://buildGraph/proj_c"
+        check $sp[4][0] == "file://buildGraph/proj_d"
 
   test "ws_testtraverse collectNimble no git tags":
     when false:
