@@ -113,32 +113,6 @@ suite "basic repo tests":
 
         let specs: DependencySpecs = expand(nc, AllReleases, pkg)
 
-        # check graph[0].pkg.projectName == "ws_testtraverse"
-        # check graph[0].ondisk.string.endsWith("ws_testtraverse")
-        # check graph[1].ondisk.string.endsWith("ws_testtraverse/buildGraph/proj_a")
-        # check graph[2].ondisk.string.endsWith("ws_testtraverse/buildGraph/proj_b")
-        # check graph[3].ondisk.string.endsWith("ws_testtraverse/buildGraph/proj_c")
-        # check graph[4].ondisk.string.endsWith("ws_testtraverse/buildGraph/proj_d")
-
-        # check graph[1].versions.mapIt(($it.version, it.commit)) == @[
-        #     ("1.1.0", "fb3804df03c3c414d98d1f57deeb44c8a223ba44"),
-        #     ("1.0.0", "e479b438015e734bea67a9c63d783e78cab5746e"),
-        # ]
-        # check graph[2].versions.mapIt(($it.version, it.commit)) == @[
-        #     ("1.1.0", "ee875baecee161ed053b87b583b2f08526838bd6"),
-        #     ("1.0.0", "af4275109d60caaeacf2912a37c2339aca40a922"),
-        # ]
-        # check graph[3].versions.mapIt(($it.version, it.commit)) == @[
-        #     ("1.2.0", "9331e14f3fa20ed75b7d5c0ab93aa5fb0293192f"),
-        #     # ("1.0.0", "c7540297c01dc57a98cb1fce7660ab6f2a0cee5f"), # not tagged
-        # ]
-        # check graph[4].versions.mapIt(($it.version, it.commit)) == @[
-        #     ("2.0.0", "dd98f775ae33d450dc7f936f850e247e820e31ad"),
-        #     ("1.0.0", "0dec9c9733129919972416f04e73b1fb2cbf3bd3"),
-        # ]
-
-        # dumpJson graph, "graph-ws_testtraverse-traverseDependency-post.json"
-
   test "ws_testtraverse releases":
     when false:
       setAtlasVerbosity(Debug)
