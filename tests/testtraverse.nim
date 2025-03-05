@@ -261,12 +261,12 @@ suite "test expand with no git tags":
 
   test "ws_testtraverse collect nimbles":
       withDir "tests/ws_testtraverse":
-        # setAtlasVerbosity(Trace)
+        setAtlasVerbosity(Trace)
         removeDir("deps")
         context().flags = {UsesOverrides, KeepWorkspace, ListVersions, FullClones}
         context().defaultAlgo = SemVer
 
-        discard context().overrides.addPattern("$+", "file://buildGraphNoGitTags/$#")
+        discard context().overrides.addPattern("$+", "file://./buildGraphNoGitTags/$#")
 
         let dir = ospaths2.getCurrentDir()
         # writeFile("ws_testtraverse.nimble", "requires \"proj_a\"\n")
