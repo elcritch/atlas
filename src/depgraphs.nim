@@ -60,15 +60,18 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
 
     if p.dep.state == Error:
       builder.openOpr(AndForm)
-      for ver in mitems p.versions: builder.addNegated ver.vid
+      for ver in p.versions.mitems():
+        builder.addNegated ver.vid
       builder.closeOpr # AndForm
     elif p.dep.isRoot:
       builder.openOpr(ExactlyOneOfForm)
-      for ver in mitems p.versions: builder.add ver.vid
+      for ver in p.versions.mitems():
+        builder.add ver.vid
       builder.closeOpr # ExactlyOneOfForm
     else:
       builder.openOpr(ZeroOrOneOfForm)
-      for ver in mitems p.versions: builder.add ver.vid
+      for ver in p.versions.mitems():
+        builder.add ver.vid
       builder.closeOpr # ExactlyOneOfForm
 
   for pkg in mitems(graph.nodes):
