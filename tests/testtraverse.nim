@@ -34,7 +34,10 @@ proc setupGraphNoGitTags*(): seq[string] =
   for proj in projs:
     result.add(ospaths2.getCurrentDir() / "buildGraphNoGitTags" / proj)
 
-template testRequirements(sp, projTags, vers: untyped; skipCount = false) =
+proc testRequirements(sp: DependencySpec,
+                          projTags: seq[VersionTag],
+                          vers: openArray[(string, string)];
+                          skipCount = false) =
   if not skipCount:
     check sp.versions.len() == vers.len()
 
@@ -42,14 +45,16 @@ template testRequirements(sp, projTags, vers: untyped; skipCount = false) =
     # let vt = projTags[idx]
     echo "checking versiontag: " & $vt & " item: " & $vers[idx]
     let (url, ver) = vers[idx]
-    check sp.versions[vt].status == Normal
-    if not skipCount:
-      check sp.versions[vt].deps.len() == 1
+    check vt in sp.versions
+    if vt in sp.versions:
+      check sp.versions[vt].status == Normal
+      if not skipCount:
+        check sp.versions[vt].deps.len() == 1
 
-    if url != "":
-      check $sp.versions[vt].deps[0][0] == url
-    if ver != "":
-      check $sp.versions[vt].deps[0][1] == ver
+      if url != "":
+        check $sp.versions[vt].deps[0][0] == url
+      if ver != "":
+        check $sp.versions[vt].deps[0][1] == ver
 
 suite "test expand with git tags":
   setup:
@@ -131,7 +136,7 @@ suite "test expand with git tags":
 
         let specs: DependencySpecs = expand(nc, AllReleases, dir)
 
-        # echo "\tspec:\n", specs.toJson(ToJsonOptions(enumMode: joptEnumString))
+        echo "\tspec:\n", specs.toJson(ToJsonOptions(enumMode: joptEnumString))
         let sp = specs.depsToSpecs.pairs().toSeq()
 
         check $sp[0][0] == "file://$1" % [$dir]
@@ -143,7 +148,7 @@ suite "test expand with git tags":
         let vt = toVersionTag
 
         let sp0: DependencySpec = sp[0][1] # proj ws_testtraversal
-        testRequirements(sp0, [vt"#head@-"], [
+        testRequirements(sp0, @[vt"#head@-"], [
           ("file://buildGraph/proj_a", "#head"),
         ])
 
@@ -305,12 +310,12 @@ suite "test expand with no git tags":
         proc stripcommits(tags: seq[VersionTag]): seq[VersionTag] = tags.mapIt(VersionTag(v: Version"", c: it.c))
 
         let sp0: DependencySpec = sp[0][1] # proj ws_testtraversal
-        testRequirements(sp0, [vt"#head@-"], [
+        testRequirements(sp0, @[vt"#head@-"], [
           ("file://buildGraphNoGitTags/proj_a", "#head"),
         ])
 
         let sp1 = sp[1][1] # proj A
-        testRequirements(sp1, projAtags.stripcommits(), [
+        testRequirements(sp1, projAtags, [
           ("file://buildGraphNoGitTags/proj_b", ">= 1.1.0"),
           ("file://buildGraphNoGitTags/proj_b", ">= 1.0.0"),
           ("file://buildGraphNoGitTags/proj_b", ">= 1.0.0"),
