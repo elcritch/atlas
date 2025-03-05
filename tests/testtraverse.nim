@@ -225,19 +225,19 @@ suite "test expand with no git tags":
     #    curl http://localhost:4242/buildGraph/ws_generated-logs.txt
     let projAtags = dedent"""
     61eacba5453392d06ed0e839b52cf17462d94648 1.1.0
-    6a1cc178670d372f21c21329d35579e96283eab0
+    6a1cc178670d372f21c21329d35579e96283eab0 1.0.0
     88d1801bff2e72cdaf2d29b438472336df6aa66d 1.0.0
     """.parseTaggedVersions(false)
 
     let projBtags = dedent"""
     c70824d8b9b669cc37104d35055fd8c11ecdd680 1.1.0
-    bbb208a9cad0d58f85bd00339c85dfeb8a4f7ac0
+    bbb208a9cad0d58f85bd00339c85dfeb8a4f7ac0 1.0.0
     289ae9eea432cdab9d681ab69444ae9d439eb6ae 1.0.0
     """.parseTaggedVersions(false)
 
     let projCtags = dedent"""
     d6c04d67697df7807b8e2b6028d167b517d13440 1.2.0
-    8756fa4575bf750d4472ac78ba91520f05a1de60
+    8756fa4575bf750d4472ac78ba91520f05a1de60 1.0.0
     """.parseTaggedVersions(false)
 
     let projDtags = dedent"""
