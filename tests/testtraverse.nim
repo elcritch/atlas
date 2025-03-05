@@ -251,25 +251,26 @@ suite "test expand with no git tags":
 
   test "ws_testtraverse collect nimbles":
       withDir "tests/ws_testtraverse":
+        setAtlasVerbosity(Trace)
         removeDir("deps")
         context().flags = {UsesOverrides, KeepWorkspace, ListVersions, FullClones}
         context().defaultAlgo = SemVer
 
-        discard context().overrides.addPattern("$+", "file://./buildGraphNoGitTags/$#")
+        discard context().overrides.addPattern("$+", "file://buildGraphNoGitTags/$#")
 
         let dir = ospaths2.getCurrentDir()
         # writeFile("ws_testtraverse.nimble", "requires \"proj_a\"\n")
 
-        let deps = setupGraph()
+        let deps = setupGraphNoGitTags()
         var nc = createNimbleContext()
         # var graph = DepGraph(nodes: @[], reqs: defaultReqs())
         let pkg = nc.createUrl(dir, projectName = "ws_testtraverse")
 
         var dep0 = Dependency(pkg: pkg, isRoot: true, isTopLevel: true)
-        var dep1 = Dependency(pkg: nc.createUrl("file://./buildGraphNoGitTags/proj_a"), isRoot: true)
-        var dep2 = Dependency(pkg: nc.createUrl("file://./buildGraphNoGitTags/proj_b"), isRoot: true)
-        var dep3 = Dependency(pkg: nc.createUrl("file://./buildGraphNoGitTags/proj_c"), isRoot: true)
-        var dep4 = Dependency(pkg: nc.createUrl("file://./buildGraphNoGitTags/proj_d"), isRoot: true)
+        var dep1 = Dependency(pkg: nc.createUrl("proj_a"), isRoot: true)
+        var dep2 = Dependency(pkg: nc.createUrl("proj_b"), isRoot: true)
+        var dep3 = Dependency(pkg: nc.createUrl("proj_c"), isRoot: true)
+        var dep4 = Dependency(pkg: nc.createUrl("proj_d"), isRoot: true)
 
         nc.loadDependency(dep0)
         nc.loadDependency(dep1)
