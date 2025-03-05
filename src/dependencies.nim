@@ -7,10 +7,10 @@
 #
 
 import std / [os, strutils, tables, unicode, sequtils, sets, json, hashes, algorithm, paths, files, dirs]
-import basic/[context, deptypes, depgraphtypes, versions, osutils, nimbleparser, packageinfos, reporters, gitops, parse_requires, pkgurls, compiledpatterns]
+import basic/[context, deptypes, versions, osutils, nimbleparser, packageinfos, reporters, gitops, parse_requires, pkgurls, compiledpatterns]
 import cloner
 
-export depgraphtypes, deptypes, versions
+export deptypes, versions
 
 const
   DefaultPackagesSubDir* = Path"packages"
@@ -89,32 +89,71 @@ proc collectNimbleVersions*(nc: NimbleContext; dep: Dependency): seq[VersionTag]
     result.reverse()
     trace dep.pkg.projectName, "collectNimbleVersions commits:", mapIt(result, it.c.short()).join(", "), "nimble:", $nimbleFiles[0]
 
+type
+  PackageAction* = enum
+    DoNothing, DoClone
+
+proc pkgUrlToDirname*(dep: Dependency): (Path, PackageAction) =
+  # XXX implement namespace support here
+  # var dest = Path g.ondisk.getOrDefault(d.pkg.url)
+  var dest = Path ""
+  if dep.isTopLevel:
+    trace dep.pkg.projectName, "pkgUrlToDirName topLevel= " & $dep.isTopLevel
+    dest = context().workspace
+  else:
+    let depsDir = context().workspace / context().depsDir
+    dest = depsDir / Path(dep.pkg.projectName)
+    trace dep.pkg.projectName, "pkgUrlToDirName depsDir:", $depsDir, "projectName:", dep.pkg.projectName
+  dest = dest.absolutePath
+  result = (dest, if dirExists(dest): DoNothing else: DoClone)
+
+proc copyFromDisk*(dep: Dependency; destDir: Path): (CloneStatus, string) =
+  var dir = Path dep.pkg.url
+  if dir.string.startsWith(FileWorkspace):
+    dir = context().workspace / Path(dir.string.substr(FileWorkspace.len))
+  #template selectDir(a, b: string): string =
+  #  if dirExists(a): a else: b
+
+  #let dir = selectDir(u & "@" & w.commit, u)
+  if dep.isTopLevel:
+    trace dir, "copyFromDisk isTopLevel", $dir
+    result = (Ok, $dir)
+  elif dirExists(dir):
+    trace dir, "copyFromDisk cloning:", $dir
+    copyDir($dir, $destDir)
+    result = (Ok, "")
+  else:
+    warn dir, "copyFromDisk not found:", $dir
+    result = (NotFound, $dir)
+  #writeFile destDir / ThisVersion, w.commit
+  #echo "WRITTEN ", destDir / ThisVersion
+
 proc processNimbleRelease(
     nc: var NimbleContext;
     dep: Dependency,
     release: VersionTag
-): Requirements =
+): NimbleRelease =
   info dep.pkg.projectName, "Processing release:", $release
 
   if release.version == Version"#head":
     trace dep.pkg.projectName, "processRelease using current commit"
   elif release.commit.isEmpty():
     error dep.pkg.projectName, "processRelease missing commit ", $release, "at:", $dep.ondisk
-    result = Requirements(status: HasBrokenRelease, err: "no commit")
+    result = NimbleRelease(status: HasBrokenRelease, err: "no commit")
     return
   elif not checkoutGitCommit(dep.ondisk, release.commit, Error):
     warn dep.pkg.projectName, "processRelease unable to checkout commit ", $release, "at:", $dep.ondisk
-    result = Requirements(status: HasBrokenRelease, err: "error checking out release")
+    result = NimbleRelease(status: HasBrokenRelease, err: "error checking out release")
     return
 
   let nimbleFiles = findNimbleFile(dep)
   var badNimbleFile = false
   if nimbleFiles.len() == 0:
     info "processRelease", "skipping release: missing nimble file:", $release
-    result = Requirements(status: HasUnknownNimbleFile, err: "missing nimble file")
+    result = NimbleRelease(status: HasUnknownNimbleFile, err: "missing nimble file")
   elif nimbleFiles.len() > 1:
     info "processRelease", "skipping release: ambiguous nimble file:", $release, "files:", $(nimbleFiles.mapIt(it.splitPath().tail).join(", "))
-    result = Requirements(status: HasUnknownNimbleFile, err: "ambiguous nimble file")
+    result = NimbleRelease(status: HasUnknownNimbleFile, err: "ambiguous nimble file")
   else:
     let nimbleFile = nimbleFiles[0]
     result = nc.parseNimbleFile(nimbleFile, context().overrides)
@@ -145,7 +184,7 @@ proc addRelease(
   elif vtag.v != release.version:
     warn dep.pkg.projectName, "version mismatch between:", $vtag.v, "nimble version:", $release.version
   
-  spec.versions[vtag] = release
+  spec.releases[vtag] = release
 
 proc traverseDependency*(
     nc: var NimbleContext;
@@ -160,13 +199,13 @@ proc traverseDependency*(
   let currentCommit = currentGitCommit(dep.ondisk, Warning)
   if mode == CurrentCommit and currentCommit.isEmpty():
     let vtag = VersionTag(v: Version"#head", c: initCommitHash("", FromHead))
-    result.versions[vtag] = Requirements(status: Normal)
+    result.releases[vtag] = NimbleRelease(status: Normal)
     dep.state = Processed
     info dep.pkg.projectName, "traversing dependency using current commit:", $vtag
   elif currentCommit.isEmpty():
     warn dep.pkg.projectName, "traversing dependency unable to find git current version at ", $dep.ondisk
     let vtag = VersionTag(v: Version"#head", c: initCommitHash("", FromHead))
-    result.versions[vtag] = Requirements(status: HasBrokenRepo)
+    result.releases[vtag] = NimbleRelease(status: HasBrokenRepo)
     dep.state = Error
     return
   else:
@@ -202,7 +241,7 @@ proc traverseDependency*(
         if not uniqueCommits.containsOrIncl(tag.c):
           discard result.addRelease(nc, dep, tag)
 
-      if result.versions.len() == 0:
+      if result.releases.len() == 0:
         let vtag = VersionTag(v: Version"#head", c: initCommitHash(currentCommit, FromHead))
         info dep.pkg.projectName, "traverseDependency no versions found, using default #head", "at", $dep.ondisk
         discard result.addRelease(nc, dep, vtag)
@@ -212,7 +251,7 @@ proc traverseDependency*(
         info dep.pkg.projectName, "traverseDependency error loading releases reverting to ", $currentCommit
 
   dep.state = Processed
-  result.versions.sort(sortVersions)
+  result.releases.sort(sortVersions)
 
 proc loadDependency*(
     nc: NimbleContext,
@@ -272,7 +311,7 @@ proc expand*(nc: var NimbleContext; mode: TraversalMode, path: Path): Dependency
         let mode = if dep.isRoot: CurrentCommit else: mode
         let spec = nc.traverseDependency(dep, mode, @[])
         # debug pkg.projectName, "processed spec:", $spec
-        for vtag, reqs in spec.versions:
+        for vtag, reqs in spec.releases:
           debug pkg.projectName, "spec version:", $vtag, "reqs:", $(toJsonHook(reqs))
         specs.depsToSpecs[pkg] = spec
         processing = true
@@ -281,7 +320,7 @@ proc expand*(nc: var NimbleContext; mode: TraversalMode, path: Path): Dependency
 
   for pkg, spec in specs.depsToSpecs:
     warn pkg.projectName, "Processed:", $pkg.url()
-    for vtag, reqs in spec.versions:
+    for vtag, reqs in spec.releases:
       info pkg.projectName, "spec version:", $vtag, "reqs:", reqs.deps.mapIt($(it[0].projectName) & " " & $(it[1])).join(", "), "status:", $reqs.status
 
   result = specs

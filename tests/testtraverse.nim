@@ -39,22 +39,22 @@ template testRequirements(sp: DependencySpec,
                           vers: openArray[(string, string)];
                           skipCount = false) =
   if not skipCount:
-    check sp.versions.len() == vers.len()
+    check sp.releases.len() == vers.len()
 
   for idx, vt in projTags:
     # let vt = projTags[idx]
     echo "checking versiontag: " & $vt & " item: " & $vers[idx]
     let (url, ver) = vers[idx]
-    check vt in sp.versions
-    if vt in sp.versions:
-      check sp.versions[vt].status == Normal
+    check vt in sp.releases
+    if vt in sp.releases:
+      check sp.releases[vt].status == Normal
       if not skipCount:
-        check sp.versions[vt].deps.len() == 1
+        check sp.releases[vt].deps.len() == 1
 
       if url != "":
-        check $sp.versions[vt].deps[0][0] == url
+        check $sp.releases[vt].deps[0][0] == url
       if ver != "":
-        check $sp.versions[vt].deps[0][1] == ver
+        check $sp.releases[vt].deps[0][1] == ver
 
 suite "test expand with git tags":
   setup:
@@ -172,19 +172,11 @@ suite "test expand with git tags":
           ("file://buildGraph/proj_d", ">= 1.2.0"),
         ])
 
-        block:
-          let sp = sp[4][1] # proj D
-          let v1 = projDtags[0]
-          let v2 = projDtags[1]
-          check sp.versions.len() == 2
-          check sp.versions[v1].status == Normal
-          check sp.versions[v1].deps.len() == 1
-
-          check sp.versions[v2].status == Normal
-          check sp.versions[v2].deps.len() == 0
-
-          check $sp.versions[v1].deps[0][0] == "file://buildGraph/does_not_exist"
-          check $sp.versions[v1].deps[0][1] == ">= 1.2.0"
+        let sp4 = sp[4][1] # proj C
+        testRequirements(sp4, projDtags, [
+          ("file://buildGraphNoGitTags/does_not_exist", ">= 1.2.0"),
+          ("", ""),
+        ], true)
 
 
   test "ws_testtraverse traverseDependency from http":

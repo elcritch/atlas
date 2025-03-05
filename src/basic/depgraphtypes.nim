@@ -19,15 +19,19 @@ type
     versions*: seq[DepVersion]
 
   Requirements* = object
-
-const
-  FileWorkspace* = "file://"
+    vid*: VarId
+    releases*: NimbleRelease
 
 proc `[]`*(g: DepGraph, idx: int): DepConstraint =
   g.nodes[idx]
 
 proc `[]`*(g: var DepGraph, idx: int): var DepConstraint =
   g.nodes[idx]
+
+# proc commit*(d: DepConstraint): CommitHash =
+#   result =
+#     if d.activeVersion >= 0 and d.activeVersion < d.releases.len: d.releases[d.activeVersion].vtag.commit()
+#     else: CommitHash(h: "")
 
 proc toJsonHook*(vid: VarId): JsonNode = toJson($(int(vid)))
 proc toJsonHook*(p: Path): JsonNode = toJson($(p))
@@ -42,8 +46,8 @@ proc toJsonHook*(t: Table[Requirements, int], opt: ToJsonOptions): JsonNode =
     # result.add(%* {"req": toJson(k), "idx": toJson(v) })
     result.add(%* [toJson(k, opt), toJson(v, opt)] )
 
-proc defaultReqs*(): seq[Requirements] =
-  @[Requirements(deps: @[], vid: NoVar), Requirements(status: HasUnknownNimbleFile, vid: NoVar)]
+# proc defaultReqs*(): seq[Requirements] =
+#   @[Requirements(deps: @[], vid: NoVar), Requirements(status: HasUnknownNimbleFile, vid: NoVar)]
 
 proc toJsonHook*(d: DepGraph, opt: ToJsonOptions): JsonNode =
   result = newJObject()
@@ -58,24 +62,6 @@ proc dumpJson*(d: DepGraph, filename: string, full = true, pretty = true) =
     writeFile(filename, pretty(jn))
   else:
     writeFile(filename, $(jn))
-
-type
-  PackageAction* = enum
-    DoNothing, DoClone
-
-proc pkgUrlToDirname*(dep: Dependency): (Path, PackageAction) =
-  # XXX implement namespace support here
-  # var dest = Path g.ondisk.getOrDefault(d.pkg.url)
-  var dest = Path ""
-  if dep.isTopLevel:
-    trace dep.pkg.projectName, "pkgUrlToDirName topLevel= " & $dep.isTopLevel
-    dest = context().workspace
-  else:
-    let depsDir = context().workspace / context().depsDir
-    dest = depsDir / Path(dep.pkg.projectName)
-    trace dep.pkg.projectName, "pkgUrlToDirName depsDir:", $depsDir, "projectName:", dep.pkg.projectName
-  dest = dest.absolutePath
-  result = (dest, if dirExists(dest): DoNothing else: DoClone)
 
 proc toDestDir*(g: DepGraph; d: DepConstraint): Path =
   result = d.dep.ondisk
@@ -160,24 +146,3 @@ proc createGraphFromWorkspace*(): DepGraph =
       result.packageToDependency[n.dep.pkg] = i
   except:
     warn configFile, "couldn't load graph from: " & $configFile
-
-proc copyFromDisk*(dep: Dependency; destDir: Path): (CloneStatus, string) =
-  var dir = Path dep.pkg.url
-  if dir.string.startsWith(FileWorkspace):
-    dir = context().workspace / Path(dir.string.substr(FileWorkspace.len))
-  #template selectDir(a, b: string): string =
-  #  if dirExists(a): a else: b
-
-  #let dir = selectDir(u & "@" & w.commit, u)
-  if dep.isTopLevel:
-    trace dir, "copyFromDisk isTopLevel", $dir
-    result = (Ok, $dir)
-  elif dirExists(dir):
-    trace dir, "copyFromDisk cloning:", $dir
-    copyDir($dir, $destDir)
-    result = (Ok, "")
-  else:
-    warn dir, "copyFromDisk not found:", $dir
-    result = (NotFound, $dir)
-  #writeFile destDir / ThisVersion, w.commit
-  #echo "WRITTEN ", destDir / ThisVersion

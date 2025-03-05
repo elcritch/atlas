@@ -21,14 +21,14 @@ type
 
   DepVersion* = object  # Represents a specific version of a project.
     vtag*: VersionTag
-    req*: int # index into graph.reqs so that it can be shared between versions
+    req*: int # index into graph.reqs so that it can be shared between releases
     vid*: VarId
 
   DependencySpec* = object
     # dep*: Dependency
-    versions*: OrderedTable[VersionTag, Requirements]
+    releases*: OrderedTable[VersionTag, NimbleRelease]
   
-  Requirements* = object
+  NimbleRelease* = object
     version*: Version
     status*: RequirementStatus
     deps*: seq[(PkgUrl, VersionInterval)]
@@ -58,6 +58,8 @@ const
   EmptyReqs* = 0
   UnknownReqs* = 1
 
+  FileWorkspace* = "file://"
+
 proc createUrl*(nc: NimbleContext, orig: Path): PkgUrl =
   var didReplace = false
   result = createUrlSkipPatterns($orig)
@@ -84,7 +86,7 @@ proc sortDepVersions*(a, b: DepVersion): int =
   elif a.vtag.v == b.vtag.v: 0
   else: -1)
 
-proc sortVersions*(a, b: (VersionTag, Requirements)): int =
+proc sortVersions*(a, b: (VersionTag, NimbleRelease)): int =
   (if a[0].v < b[0].v: 1
   elif a[0].v == b[0].v: 0
   else: -1)
@@ -100,25 +102,20 @@ proc projectName*(d: Dependency): string =
 # proc projectName*(s: DependencySpec): string =
 #   s.pkg.projectName
 
-proc commit*(d: DepConstraint): CommitHash =
-  result =
-    if d.activeVersion >= 0 and d.activeVersion < d.versions.len: d.versions[d.activeVersion].vtag.commit()
-    else: CommitHash(h: "")
-
-proc enrichVersionsViaExplicitHash*(versions: var seq[DepVersion]; x: VersionInterval) =
+proc enrichVersionsViaExplicitHash*(releases: var seq[DepVersion]; x: VersionInterval) =
   let commit = extractSpecificCommit(x)
   if not commit.isEmpty():
-    for ver in versions:
+    for ver in releases:
       if ver.vtag.commit() == commit:
         return
-    versions.add initDepVersion(Version"", commit) 
+    releases.add initDepVersion(Version"", commit) 
 
 proc toJsonHook*(v: (PkgUrl, VersionInterval), opt: ToJsonOptions): JsonNode =
   result = newJObject()
   result["url"] = toJsonHook(v[0])
   result["version"] = toJsonHook(v[1])
 
-proc toJsonHook*(r: Requirements, opt: ToJsonOptions = ToJsonOptions()): JsonNode =
+proc toJsonHook*(r: NimbleRelease, opt: ToJsonOptions = ToJsonOptions()): JsonNode =
   result = newJObject()
   result["deps"] = toJson(r.deps, opt)
   if r.hasInstallHooks:
@@ -127,8 +124,8 @@ proc toJsonHook*(r: Requirements, opt: ToJsonOptions = ToJsonOptions()): JsonNod
     result["srcDir"] = toJson(r.srcDir, opt)
   if r.version != Version"":
     result["version"] = toJson(r.version, opt)
-  if r.vid != NoVar:
-    result["varId"] = toJson(r.vid, opt)
+  # if r.vid != NoVar:
+  #   result["varId"] = toJson(r.vid, opt)
   result["status"] = toJson(r.status, opt)
 
 proc hash*(r: Dependency): Hash =
@@ -143,7 +140,7 @@ proc hash*(r: Dependency): Hash =
   # ondisk*: Path
   # errors*: seq[string]
 
-proc hash*(r: Requirements): Hash =
+proc hash*(r: NimbleRelease): Hash =
   var h: Hash = 0
   h = h !& hash(r.deps)
   h = h !& hash(r.hasInstallHooks)
@@ -152,17 +149,17 @@ proc hash*(r: Requirements): Hash =
   h = h !& hash(r.nimVersion)
   result = !$h
 
-proc `==`*(a, b: Requirements): bool =
+proc `==`*(a, b: NimbleRelease): bool =
   result = a.deps == b.deps and a.hasInstallHooks == b.hasInstallHooks and
       a.srcDir == b.srcDir and a.nimVersion == b.nimVersion
   #and a.version == b.version
 
-proc toJsonHook*(t: Table[VersionTag, Requirements], opt: ToJsonOptions): JsonNode =
+proc toJsonHook*(t: Table[VersionTag, NimbleRelease], opt: ToJsonOptions): JsonNode =
   result = newJObject()
   for k, v in t:
     result[repr(k)] = toJson(v, opt)
 
-proc toJsonHook*(t: OrderedTable[VersionTag, Requirements], opt: ToJsonOptions): JsonNode =
+proc toJsonHook*(t: OrderedTable[VersionTag, NimbleRelease], opt: ToJsonOptions): JsonNode =
   result = newJObject()
   for k, v in t:
     result[repr(k)] = toJson(v, opt)
