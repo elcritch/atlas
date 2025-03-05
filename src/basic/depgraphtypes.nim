@@ -12,16 +12,16 @@ type
     ondisk*: OrderedTable[string, Path] # URL -> dirname mapping
     reqsByDeps*: Table[Requirements, int]
 
-  DepVersion* = object  # Represents a specific version of a project.
-    vtag*: VersionTag
-    req*: int # index into graph.reqs so that it can be shared between releases
-    vid*: VarId
-
   DepConstraint* = object
     dep*: Dependency
     activeVersion*: int
     active*: bool
     versions*: seq[DepVersion]
+
+  DepVersion* = object  # Represents a specific version of a project.
+    vid*: VarId
+    vtag*: VersionTag
+    req*: int # index into graph.reqs so that it can be shared between releases
 
   Requirements* = object
     vid*: VarId
