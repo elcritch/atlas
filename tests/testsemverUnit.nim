@@ -89,7 +89,7 @@ suite "graph solve":
     0dec9c9733129919972416f04e73b1fb2cbf3bd3 1.0.0
     """.parseTaggedVersions(false)
 
-  test "ws_testtraverse traverseDependency":
+  test "ws_semver_unit traverseDependency":
       # setAtlasVerbosity(Info)
       withDir "tests/ws_semver_unit":
         removeDir("deps")
