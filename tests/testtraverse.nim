@@ -282,7 +282,7 @@ suite "test expand with no git tags":
 
 
   test "ws_testtraverse traverseDependency no git tags":
-      setAtlasVerbosity(Error)
+      setAtlasVerbosity(Info)
       withDir "tests/ws_testtraverse":
         removeDir("deps")
         context().workspace = paths.getCurrentDir()
@@ -322,20 +322,20 @@ suite "test expand with no git tags":
         ])
 
         let sp2 = sp[2][1] # proj B
-        testRequirements(sp2, projBtags.stripcommits(), [
+        testRequirements(sp2, projBtags, [
           ("file://buildGraphNoGitTags/proj_c", ">= 1.1.0"),
           ("file://buildGraphNoGitTags/proj_c", ">= 1.0.0"),
           ("file://buildGraphNoGitTags/proj_c", ">= 1.0.0"),
         ])
 
         let sp3 = sp[3][1] # proj C
-        testRequirements(sp3, projCtags.stripcommits(), [
+        testRequirements(sp3, projCtags, [
           ("file://buildGraphNoGitTags/proj_d", ">= 1.0.0"),
           ("file://buildGraphNoGitTags/proj_d", ">= 1.2.0"),
         ])
 
         let sp4 = sp[4][1] # proj C
-        testRequirements(sp4, projDtags.stripcommits(), [
+        testRequirements(sp4, projDtags, [
           ("file://buildGraphNoGitTags/does_not_exist", ">= 1.2.0"),
           ("", ""),
         ], true)

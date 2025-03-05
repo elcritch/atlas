@@ -89,7 +89,7 @@ proc collectNimbleVersions*(nc: NimbleContext; dep: Dependency): seq[VersionTag]
     result.reverse()
     trace dep.pkg.projectName, "collectNimbleVersions commits:", mapIt(result, it.c.short()).join(", "), "nimble:", $nimbleFiles[0]
 
-proc processRelease(
+proc processNimbleRelease(
     nc: var NimbleContext;
     dep: Dependency,
     release: VersionTag
@@ -129,6 +129,24 @@ proc processRelease(
           # TODO: enrich versions with hashes when added
           # enrichVersionsViaExplicitHash graph[depIdx].versions, interval
 
+proc addRelease(
+    spec: var DependencySpec,
+    nc: var NimbleContext;
+    dep: Dependency,
+    vtag: VersionTag
+): VersionTag =
+  var vtag = vtag
+  info dep.pkg.projectName, "Adding Nimble version:", $vtag
+  let release = nc.processNimbleRelease(dep, vtag)
+
+  if vtag.v.string == "":
+    vtag.v = release.version
+    warn dep.pkg.projectName, "updating release tag information:", $vtag
+  elif vtag.v != release.version:
+    warn dep.pkg.projectName, "version mismatch between:", $vtag.v, "nimble version:", $release.version
+  
+  spec.versions[vtag] = release
+
 proc traverseDependency*(
     nc: var NimbleContext;
     dep: var Dependency,
@@ -158,7 +176,7 @@ proc traverseDependency*(
   of CurrentCommit:
     trace dep.pkg.projectName, "traverseDependency only loading current commit"
     let vtag = VersionTag(v: Version"#head", c: initCommitHash(currentCommit, FromHead))
-    result.versions[vtag] = nc.processRelease(dep, vtag)
+    discard result.addRelease(nc, dep, vtag)
 
   of AllReleases:
     try:
@@ -172,29 +190,29 @@ proc traverseDependency*(
             not uniqueCommits.containsOrIncl(version.commit):
             let vtag = VersionTag(v: Version"", c: version.commit)
             assert vtag.commit.orig == FromDep, "maybe this needs to be overriden like before"
-            result.versions[vtag] = nc.processRelease(dep, vtag)
+            discard result.addRelease(nc, dep, vtag)
 
       let tags = collectTaggedVersions(dep.ondisk)
       for tag in tags:
         if not uniqueCommits.containsOrIncl(tag.c):
-          result.versions[tag] = nc.processRelease(dep, tag)
+          let tag = result.addRelease(nc, dep, tag)
           assert tag.commit.orig == FromGitTag, "maybe this needs to be overriden like before"
 
       for tag in nimbleCommits:
         if not uniqueCommits.containsOrIncl(tag.c):
-          result.versions[tag] = nc.processRelease(dep, tag)
+          discard result.addRelease(nc, dep, tag)
 
       if result.versions.len() == 0:
         let vtag = VersionTag(v: Version"#head", c: initCommitHash(currentCommit, FromHead))
         info dep.pkg.projectName, "traverseDependency no versions found, using default #head", "at", $dep.ondisk
-        result.versions[vtag] = nc.processRelease(dep, vtag)
+        discard result.addRelease(nc, dep, vtag)
 
     finally:
       if not checkoutGitCommit(dep.ondisk, currentCommit, Warning):
         info dep.pkg.projectName, "traverseDependency error loading releases reverting to ", $currentCommit
 
   dep.state = Processed
-  # result.versions.sort(sortVersions)
+  result.versions.sort(sortVersions)
 
 proc loadDependency*(
     nc: NimbleContext,
