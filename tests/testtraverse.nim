@@ -147,6 +147,13 @@ suite "test expand with git tags":
             check $sp.versions[vt].deps[0][1] == ver
 
         block:
+          let sp = sp[0][1] # proj ws_testtraversal
+
+          testRequirements(sp, [vt"#head@-"], [
+            ("file://buildGraph/proj_a", "#head"),
+          ])
+
+        block:
           let sp = sp[1][1] # proj A
 
           testRequirements(sp, projAtags, [
