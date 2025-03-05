@@ -6,7 +6,7 @@
 #    distribution, for details about the copyright.
 #
 
-import std / [hashes, paths, strutils, json]
+import std / [hashes, uri, paths, strutils, json]
 from std / os import `/`, dirExists
 import compiledpatterns, gitops, reporters
 
@@ -49,6 +49,12 @@ proc createUrlSkipPatterns*(x: string, skipDirTest = false): PkgUrl =
       raise newException(ValueError, "Invalid name or URL: " & x)
   else:
     result = PkgUrl(projectName: extractProjectName(x), u: x)
+
+proc toPkgUri*(u: Uri): PkgUrl =
+  result = PkgUrl(projectName: extractProjectName($u), u: $u)
+
+proc toUri*(u: PkgUrl): Uri =
+  result = parseUri(u.u)
 
 template url*(p: PkgUrl): string = p.u
 

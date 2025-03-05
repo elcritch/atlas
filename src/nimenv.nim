@@ -61,9 +61,9 @@ proc setupNimEnv*(workspace: Path, nimVersion: string; keepCsources: bool) =
     else:
       "csources_v1"
   withDir $workspace:
-    if not dirExists(csourcesVersion):
-      exec "git clone https://github.com/nim-lang/" & csourcesVersion
-    exec "git clone https://github.com/nim-lang/nim " & $nimDest
+    # if not dirExists(csourcesVersion):
+    #   exec "git clone https://github.com/nim-lang/" & csourcesVersion
+    # exec "git clone https://github.com/nim-lang/nim " & $nimDest
   withDir $workspace / csourcesVersion:
     when defined(windows):
       exec "build.bat"

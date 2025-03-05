@@ -29,6 +29,7 @@ type
     GitLsFiles = "git -C $DIR ls-files"
     GitLog = "git -C $DIR log --format=%H"
     GitCurrentBranch = "git rev-parse --abbrev-ref HEAD"
+    GitLsRemote = "git -C $DIR ls-remote --quiet --tags"
 
 proc isGitDir*(path: Path): bool =
   let gitPath = path / Path(".git")
@@ -142,6 +143,13 @@ proc shortToCommit*(path: Path, short: string): string =
 
 proc listFiles*(path: Path): seq[string] =
   let (outp, status) = exec(GitLsFiles, path, [])
+  if status == RES_OK:
+    result = outp.splitLines().mapIt(it.strip())
+  else:
+    result = @[]
+
+proc listRemoteTags*(path: Path, url: string): seq[string] =
+  let (outp, status) = exec(GitLsRemote, path, [url])
   if status == RES_OK:
     result = outp.splitLines().mapIt(it.strip())
   else:
