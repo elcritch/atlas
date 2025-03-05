@@ -194,6 +194,7 @@ proc traverseDependency*(
         info dep.pkg.projectName, "traverseDependency error loading releases reverting to ", $currentCommit
 
   dep.state = Processed
+  # result.versions.sort(sortVersions)
 
 proc loadDependency*(
     nc: NimbleContext,

@@ -32,7 +32,7 @@ type
 
   DependencySpec* = object
     # dep*: Dependency
-    versions*: Table[VersionTag, Requirements]
+    versions*: OrderedTable[VersionTag, Requirements]
   
   Requirements* = object
     version*: Version
@@ -89,6 +89,11 @@ proc createUrl*(nc: NimbleContext, nameOrig: string; projectName: string = ""): 
 proc sortDepVersions*(a, b: DepVersion): int =
   (if a.vtag.v < b.vtag.v: 1
   elif a.vtag.v == b.vtag.v: 0
+  else: -1)
+
+proc sortVersions*(a, b: (VersionTag, Requirements)): int =
+  (if a[0].v < b[0].v: 1
+  elif a[0].v == b[0].v: 0
   else: -1)
 
 proc initDepVersion*(version: Version, commit: CommitHash, req = EmptyReqs, vid = NoVar): DepVersion =
@@ -160,6 +165,11 @@ proc `==`*(a, b: Requirements): bool =
   #and a.version == b.version
 
 proc toJsonHook*(t: Table[VersionTag, Requirements], opt: ToJsonOptions): JsonNode =
+  result = newJObject()
+  for k, v in t:
+    result[repr(k)] = toJson(v, opt)
+
+proc toJsonHook*(t: OrderedTable[VersionTag, Requirements], opt: ToJsonOptions): JsonNode =
   result = newJObject()
   for k, v in t:
     result[repr(k)] = toJson(v, opt)
