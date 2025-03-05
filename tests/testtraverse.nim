@@ -151,6 +151,8 @@ suite "basic repo tests":
           check $sp.versions[v2].deps[0][0] == "file://buildGraph/proj_b"
           check $sp.versions[v2].deps[0][1] == ">= 1.0.0"
 
+          check $sp.versions[v3].deps[0][0] == "file://buildGraph/proj_b"
+          check $sp.versions[v3].deps[0][1] == ">= 1.0.0"
 
 
   test "ws_testtraverse collectNimble no git tags":

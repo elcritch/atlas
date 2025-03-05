@@ -167,4 +167,4 @@ proc toJsonHook*(t: Table[VersionTag, Requirements], opt: ToJsonOptions): JsonNo
 proc toJsonHook*(t: OrderedTable[PkgUrl, DependencySpec], opt: ToJsonOptions): JsonNode =
   result = newJObject()
   for k, v in t:
-    result[repr(k)] = toJson(v, opt)
+    result[$(k)] = toJson(v, opt)

@@ -439,11 +439,9 @@ proc `==`*(a, b: CommitHash): bool =
   result = a.h == b.h
 
 proc hash*(c: CommitHash): Hash =
-  echo "COMMIT: ", c
   result = c.h.hash()
 
 proc hash*(v: VersionTag): Hash =
-  echo "VTAG: ", v
   var h: Hash = 0
   h = h !& hash(v.v)
   h = h !& hash(v.c)
