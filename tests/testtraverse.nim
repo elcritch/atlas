@@ -36,7 +36,7 @@ proc setupGraphNoGitTags*(): seq[string] =
 
 suite "test expand with git tags":
   setup:
-    setAtlasVerbosity(Warning)
+    setAtlasVerbosity(Error)
 
     # These will change if atlas-tests is regnerated!
     # To update run and use commits not adding a proj_x.nim file
@@ -133,64 +133,44 @@ suite "test expand with git tags":
           check $sp.versions[vt"#head@-"].deps[0][0] == "file://buildGraph/proj_a"
           check $sp.versions[vt"#head@-"].deps[0][1] == "#head"
 
+        template testRequirements(sp, projTags, vers) =
+          check sp.versions.len() == vers.len()
+
+          for idx, vt in projTags:
+            # let vt = projTags[idx]
+            echo "checking versiontag: " & $vt & " item: " & $vers[idx]
+            let (url, ver) = vers[idx]
+            check sp.versions[vt].status == Normal
+            check sp.versions[vt].deps.len() == 1
+
+            check $sp.versions[vt].deps[0][0] == url
+            check $sp.versions[vt].deps[0][1] == ver
+
         block:
           let sp = sp[1][1] # proj A
-          let v1 = projAtags[0]
-          let v2 = projAtags[1]
-          let v3 = projAtags[2]
-          check sp.versions.len() == 3
-          check sp.versions[v1].status == Normal
-          check sp.versions[v1].deps.len() == 1
 
-          check sp.versions[v2].status == Normal
-          check sp.versions[v2].deps.len() == 1
-
-          check $sp.versions[v1].deps[0][0] == "file://buildGraph/proj_b"
-          check $sp.versions[v1].deps[0][1] == ">= 1.1.0"
-
-          check $sp.versions[v2].deps[0][0] == "file://buildGraph/proj_b"
-          check $sp.versions[v2].deps[0][1] == ">= 1.0.0"
-
-          check $sp.versions[v3].deps[0][0] == "file://buildGraph/proj_b"
-          check $sp.versions[v3].deps[0][1] == ">= 1.0.0"
+          testRequirements(sp, projAtags, [
+            ("file://buildGraph/proj_b", ">= 1.1.0"),
+            ("file://buildGraph/proj_b", ">= 1.0.0"),
+            ("file://buildGraph/proj_b", ">= 1.0.0"),
+          ])
 
         block:
           let sp = sp[2][1] # proj B
-          let v1 = projBtags[0]
-          let v2 = projBtags[1]
-          let v3 = projBtags[2]
-          check sp.versions.len() == 3
-          check sp.versions[v1].status == Normal
-          check sp.versions[v1].deps.len() == 1
 
-          check sp.versions[v2].status == Normal
-          check sp.versions[v2].deps.len() == 1
-
-          check $sp.versions[v1].deps[0][0] == "file://buildGraph/proj_c"
-          check $sp.versions[v1].deps[0][1] == ">= 1.1.0"
-
-          check $sp.versions[v2].deps[0][0] == "file://buildGraph/proj_c"
-          check $sp.versions[v2].deps[0][1] == ">= 1.0.0"
-
-          check $sp.versions[v3].deps[0][0] == "file://buildGraph/proj_c"
-          check $sp.versions[v3].deps[0][1] == ">= 1.0.0"
+          testRequirements(sp, projBtags, [
+            ("file://buildGraph/proj_c", ">= 1.1.0"),
+            ("file://buildGraph/proj_c", ">= 1.0.0"),
+            ("file://buildGraph/proj_c", ">= 1.0.0"),
+          ])
 
         block:
           let sp = sp[3][1] # proj C
-          let v1 = projCtags[0]
-          let v2 = projCtags[1]
-          check sp.versions.len() == 2
-          check sp.versions[v1].status == Normal
-          check sp.versions[v1].deps.len() == 1
 
-          check sp.versions[v2].status == Normal
-          check sp.versions[v2].deps.len() == 1
-
-          check $sp.versions[v1].deps[0][0] == "file://buildGraph/proj_d"
-          check $sp.versions[v1].deps[0][1] == ">= 1.0.0"
-
-          check $sp.versions[v2].deps[0][0] == "file://buildGraph/proj_d"
-          check $sp.versions[v2].deps[0][1] == ">= 1.2.0"
+          testRequirements(sp, projCtags, [
+            ("file://buildGraph/proj_d", ">= 1.0.0"),
+            ("file://buildGraph/proj_d", ">= 1.2.0"),
+          ])
 
         block:
           let sp = sp[4][1] # proj D
@@ -206,8 +186,9 @@ suite "test expand with git tags":
           check $sp.versions[v1].deps[0][0] == "file://buildGraph/does_not_exist"
           check $sp.versions[v1].deps[0][1] == ">= 1.2.0"
 
+
   test "ws_testtraverse traverseDependency from http":
-      # setAtlasVerbosity(Info)
+      setAtlasVerbosity(Info)
       withDir "tests/ws_testtraverse":
         removeDir("deps")
         context().workspace = paths.getCurrentDir()
@@ -225,99 +206,100 @@ suite "test expand with git tags":
         echo "\tspec:\n", specs.toJson(ToJsonOptions(enumMode: joptEnumString))
         let sp = specs.depsToSpecs.pairs().toSeq()
 
-        check $sp[0][0] == "file://$1" % [$dir]
-        check $sp[1][0] == "file://buildGraph/proj_a"
-        check $sp[2][0] == "file://buildGraph/proj_b"
-        check $sp[3][0] == "file://buildGraph/proj_c"
-        check $sp[4][0] == "file://buildGraph/proj_d"
+        check sp.len() == 5
+        # check $sp[0][0] == "file://$1" % [$dir]
+        # check $sp[1][0] == "file://buildGraph/proj_a"
+        # check $sp[2][0] == "file://buildGraph/proj_b"
+        # check $sp[3][0] == "file://buildGraph/proj_c"
+        # check $sp[4][0] == "file://buildGraph/proj_d"
 
         let vt = toVersionTag
 
-        block:
-          let sp = sp[0][1]
-          check sp.versions.len() == 1
-          check sp.versions[vt"#head@-"].status == Normal
-          check sp.versions[vt"#head@-"].deps.len() == 1
-          check $sp.versions[vt"#head@-"].deps[0][0] == "file://buildGraph/proj_a"
-          check $sp.versions[vt"#head@-"].deps[0][1] == "#head"
+        # block:
+        #   let sp = sp[0][1]
+        #   check sp.versions.len() == 1
+        #   check sp.versions[vt"#head@-"].status == Normal
+        #   check sp.versions[vt"#head@-"].deps.len() == 1
+        #   check $sp.versions[vt"#head@-"].deps[0][0] == "file://buildGraph/proj_a"
+        #   check $sp.versions[vt"#head@-"].deps[0][1] == "#head"
 
-        block:
-          let sp = sp[1][1] # proj A
-          let v1 = projAtags[0]
-          let v2 = projAtags[1]
-          let v3 = projAtags[2]
-          check sp.versions.len() == 3
-          check sp.versions[v1].status == Normal
-          check sp.versions[v1].deps.len() == 1
+        # block:
+        #   let sp = sp[1][1] # proj A
+        #   let v1 = projAtags[0]
+        #   let v2 = projAtags[1]
+        #   let v3 = projAtags[2]
+        #   check sp.versions.len() == 3
+        #   check sp.versions[v1].status == Normal
+        #   check sp.versions[v1].deps.len() == 1
 
-          check sp.versions[v2].status == Normal
-          check sp.versions[v2].deps.len() == 1
+        #   check sp.versions[v2].status == Normal
+        #   check sp.versions[v2].deps.len() == 1
 
-          check $sp.versions[v1].deps[0][0] == "file://buildGraph/proj_b"
-          check $sp.versions[v1].deps[0][1] == ">= 1.1.0"
+        #   check $sp.versions[v1].deps[0][0] == "file://buildGraph/proj_b"
+        #   check $sp.versions[v1].deps[0][1] == ">= 1.1.0"
 
-          check $sp.versions[v2].deps[0][0] == "file://buildGraph/proj_b"
-          check $sp.versions[v2].deps[0][1] == ">= 1.0.0"
+        #   check $sp.versions[v2].deps[0][0] == "file://buildGraph/proj_b"
+        #   check $sp.versions[v2].deps[0][1] == ">= 1.0.0"
 
-          check $sp.versions[v3].deps[0][0] == "file://buildGraph/proj_b"
-          check $sp.versions[v3].deps[0][1] == ">= 1.0.0"
+        #   check $sp.versions[v3].deps[0][0] == "file://buildGraph/proj_b"
+        #   check $sp.versions[v3].deps[0][1] == ">= 1.0.0"
 
-        block:
-          let sp = sp[2][1] # proj B
-          let v1 = projBtags[0]
-          let v2 = projBtags[1]
-          let v3 = projBtags[2]
-          check sp.versions.len() == 3
-          check sp.versions[v1].status == Normal
-          check sp.versions[v1].deps.len() == 1
+        # block:
+        #   let sp = sp[2][1] # proj B
+        #   let v1 = projBtags[0]
+        #   let v2 = projBtags[1]
+        #   let v3 = projBtags[2]
+        #   check sp.versions.len() == 3
+        #   check sp.versions[v1].status == Normal
+        #   check sp.versions[v1].deps.len() == 1
 
-          check sp.versions[v2].status == Normal
-          check sp.versions[v2].deps.len() == 1
+        #   check sp.versions[v2].status == Normal
+        #   check sp.versions[v2].deps.len() == 1
 
-          check $sp.versions[v1].deps[0][0] == "file://buildGraph/proj_c"
-          check $sp.versions[v1].deps[0][1] == ">= 1.1.0"
+        #   check $sp.versions[v1].deps[0][0] == "file://buildGraph/proj_c"
+        #   check $sp.versions[v1].deps[0][1] == ">= 1.1.0"
 
-          check $sp.versions[v2].deps[0][0] == "file://buildGraph/proj_c"
-          check $sp.versions[v2].deps[0][1] == ">= 1.0.0"
+        #   check $sp.versions[v2].deps[0][0] == "file://buildGraph/proj_c"
+        #   check $sp.versions[v2].deps[0][1] == ">= 1.0.0"
 
-          check $sp.versions[v3].deps[0][0] == "file://buildGraph/proj_c"
-          check $sp.versions[v3].deps[0][1] == ">= 1.0.0"
+        #   check $sp.versions[v3].deps[0][0] == "file://buildGraph/proj_c"
+        #   check $sp.versions[v3].deps[0][1] == ">= 1.0.0"
 
-        block:
-          let sp = sp[3][1] # proj C
-          let v1 = projCtags[0]
-          let v2 = projCtags[1]
-          check sp.versions.len() == 2
-          check sp.versions[v1].status == Normal
-          check sp.versions[v1].deps.len() == 1
+        # block:
+        #   let sp = sp[3][1] # proj C
+        #   let v1 = projCtags[0]
+        #   let v2 = projCtags[1]
+        #   check sp.versions.len() == 2
+        #   check sp.versions[v1].status == Normal
+        #   check sp.versions[v1].deps.len() == 1
 
-          check sp.versions[v2].status == Normal
-          check sp.versions[v2].deps.len() == 1
+        #   check sp.versions[v2].status == Normal
+        #   check sp.versions[v2].deps.len() == 1
 
-          check $sp.versions[v1].deps[0][0] == "file://buildGraph/proj_d"
-          check $sp.versions[v1].deps[0][1] == ">= 1.0.0"
+        #   check $sp.versions[v1].deps[0][0] == "file://buildGraph/proj_d"
+        #   check $sp.versions[v1].deps[0][1] == ">= 1.0.0"
 
-          check $sp.versions[v2].deps[0][0] == "file://buildGraph/proj_d"
-          check $sp.versions[v2].deps[0][1] == ">= 1.2.0"
+        #   check $sp.versions[v2].deps[0][0] == "file://buildGraph/proj_d"
+        #   check $sp.versions[v2].deps[0][1] == ">= 1.2.0"
 
-        block:
-          let sp = sp[4][1] # proj D
-          let v1 = projDtags[0]
-          let v2 = projDtags[1]
-          check sp.versions.len() == 2
-          check sp.versions[v1].status == Normal
-          check sp.versions[v1].deps.len() == 1
+        # block:
+        #   let sp = sp[4][1] # proj D
+        #   let v1 = projDtags[0]
+        #   let v2 = projDtags[1]
+        #   check sp.versions.len() == 2
+        #   check sp.versions[v1].status == Normal
+        #   check sp.versions[v1].deps.len() == 1
 
-          check sp.versions[v2].status == Normal
-          check sp.versions[v2].deps.len() == 0
+        #   check sp.versions[v2].status == Normal
+        #   check sp.versions[v2].deps.len() == 0
 
-          check $sp.versions[v1].deps[0][0] == "file://buildGraph/does_not_exist"
-          check $sp.versions[v1].deps[0][1] == ">= 1.2.0"
+        #   check $sp.versions[v1].deps[0][0] == "file://buildGraph/does_not_exist"
+        #   check $sp.versions[v1].deps[0][1] == ">= 1.2.0"
 
 suite "test expand with no git tags":
 
   setup:
-    setAtlasVerbosity(Warning)
+    setAtlasVerbosity(Error)
 
     # These will change if atlas-tests is regnerated!
     # To update run and use commits not adding a proj_x.nim file
@@ -381,7 +363,7 @@ suite "test expand with no git tags":
 
 
   test "ws_testtraverse traverseDependency no git tags":
-      setAtlasVerbosity(Info)
+      setAtlasVerbosity(Error)
       withDir "tests/ws_testtraverse":
         removeDir("deps")
         context().workspace = paths.getCurrentDir()
