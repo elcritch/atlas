@@ -77,7 +77,6 @@ proc createUrl*(nc: NimbleContext, nameOrig: string; projectName: string = ""): 
     if lname in nc.nameToUrl:
       result = nc.nameToUrl[lname]
     else:
-      # result = createUrlSkipPatterns(name)
       raise newException(ValueError, "project name not found in packages database")
   if projectName != "":
     result.projectName = projectName
