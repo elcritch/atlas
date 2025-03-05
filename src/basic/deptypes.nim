@@ -19,11 +19,6 @@ type
     ondisk*: Path
     errors*: seq[string]
 
-  DepVersion* = object  # Represents a specific version of a project.
-    vtag*: VersionTag
-    req*: int # index into graph.reqs so that it can be shared between releases
-    vid*: VarId
-
   DependencySpec* = object
     # dep*: Dependency
     releases*: OrderedTable[VersionTag, NimbleRelease]
@@ -81,34 +76,16 @@ proc createUrl*(nc: NimbleContext, nameOrig: string; projectName: string = ""): 
   if projectName != "":
     result.projectName = projectName
 
-proc sortDepVersions*(a, b: DepVersion): int =
-  (if a.vtag.v < b.vtag.v: 1
-  elif a.vtag.v == b.vtag.v: 0
-  else: -1)
-
 proc sortVersions*(a, b: (VersionTag, NimbleRelease)): int =
   (if a[0].v < b[0].v: 1
   elif a[0].v == b[0].v: 0
   else: -1)
-
-proc initDepVersion*(version: Version, commit: CommitHash, req = EmptyReqs, vid = NoVar): DepVersion =
-  result = DepVersion(vtag: VersionTag(c: commit, v: version), req: req, vid: vid)
 
 proc `$`*(d: Dependency): string =
   d.pkg.projectName
 
 proc projectName*(d: Dependency): string =
   d.pkg.projectName
-# proc projectName*(s: DependencySpec): string =
-#   s.pkg.projectName
-
-proc enrichVersionsViaExplicitHash*(releases: var seq[DepVersion]; x: VersionInterval) =
-  let commit = extractSpecificCommit(x)
-  if not commit.isEmpty():
-    for ver in releases:
-      if ver.vtag.commit() == commit:
-        return
-    releases.add initDepVersion(Version"", commit) 
 
 proc toJsonHook*(v: (PkgUrl, VersionInterval), opt: ToJsonOptions): JsonNode =
   result = newJObject()

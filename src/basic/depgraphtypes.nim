@@ -12,6 +12,11 @@ type
     ondisk*: OrderedTable[string, Path] # URL -> dirname mapping
     reqsByDeps*: Table[Requirements, int]
 
+  DepVersion* = object  # Represents a specific version of a project.
+    vtag*: VersionTag
+    req*: int # index into graph.reqs so that it can be shared between releases
+    vid*: VarId
+
   DepConstraint* = object
     dep*: Dependency
     activeVersion*: int
@@ -63,6 +68,22 @@ proc toJsonHook*(d: DepGraph, opt: ToJsonOptions): JsonNode =
   result["packageToDependency"] = toJson(d.packageToDependency, opt)
     # result["reqsByDeps"] = toJson(d.reqsByDeps)
 
+proc sortDepVersions*(a, b: DepVersion): int =
+  (if a.vtag.v < b.vtag.v: 1
+  elif a.vtag.v == b.vtag.v: 0
+  else: -1)
+
+proc initDepVersion*(version: Version, commit: CommitHash, req = EmptyReqs, vid = NoVar): DepVersion =
+  result = DepVersion(vtag: VersionTag(c: commit, v: version), req: req, vid: vid)
+
+proc enrichVersionsViaExplicitHash*(releases: var seq[DepVersion]; x: VersionInterval) =
+  let commit = extractSpecificCommit(x)
+  if not commit.isEmpty():
+    for ver in releases:
+      if ver.vtag.commit() == commit:
+        return
+    releases.add initDepVersion(Version"", commit) 
+
 proc dumpJson*(d: DepGraph, filename: string, full = true, pretty = true) =
   let jn = toJson(d, ToJsonOptions(enumMode: joptEnumString))
   if pretty:
@@ -88,13 +109,6 @@ iterator toposorted*(g: DepGraph): lent DepConstraint =
 proc findDependencyForDep*(g: DepGraph; dep: PkgUrl): int {.inline.} =
   assert g.packageToDependency.hasKey(dep), $(dep, g.packageToDependency)
   result = g.packageToDependency.getOrDefault(dep)
-
-iterator directDependencies*(g: DepGraph; d: DepConstraint): lent DepConstraint =
-  if d.activeVersion >= 0 and d.activeVersion < d.versions.len:
-    let deps {.cursor.} = g.reqs[d.versions[d.activeVersion].req].releases
-    for dep in deps:
-      let idx = findDependencyForDep(g, dep[0])
-      yield g.nodes[idx]
 
 # proc getCfgPath*(g: DepGraph; d: DepConstraint): lent CfgPath =
 #   result = CfgPath g.reqs[d.versions[d.activeVersion].req].srcDir

@@ -12,49 +12,17 @@ when defined(nimAtlasBootstrap):
 else:
   import sat/[sat, satvars]
 
-proc expand*(graph: var DepGraph; nimbleCtx: NimbleContext; mode: TraversalMode) =
-  ## Expand the graph by adding all dependencies.
-  # trace "expand", "nodes: " & $graph.nodes
-  if context().dumpGraphs:
-    dumpJson(graph, "graph-expand-input.json")
-  var processed = initHashSet[PkgUrl]()
-  var i = 0
-  while i < graph.nodes.len:
-    if not processed.containsOrIncl(graph[i].pkg):
-      let (dest, todo) = pkgUrlToDirname(graph, graph[i])
+iterator directDependencies*(graph: DepGraph; d: DepConstraint): lent DepConstraint =
+  if d.activeVersion >= 0 and d.activeVersion < d.versions.len:
+    let deps {.cursor.} = graph.reqs[d.versions[d.activeVersion].req].release.deps
+    for dep in deps:
+      let idx = findDependencyForDep(graph, dep[0])
+      yield graph.nodes[idx]
 
-      debug "expand", "todo: " & $todo & " pkg: " & graph[i].pkg.projectName & " dest: " & $dest
-      # important: the ondisk path set here!
-      graph[i].ondisk = dest
-
-      case todo
-      of DoClone:
-        let (status, msg) =
-          if graph[i].pkg.isFileProtocol:
-            copyFromDisk(graph[i], dest)
-          else:
-            cloneUrl(graph[i].pkg, dest, false)
-        if status == Ok:
-          graph[i].state = Found
-        else:
-          graph[i].state = Error
-          graph[i].errors.add $status & ":" & msg
-      of DoNothing:
-        if graph[i].ondisk.dirExists():
-          graph[i].state = Found
-        else:
-          graph[i].state = Error
-          graph[i].errors.add "ondisk location missing"
-
-      if graph[i].state == Found:
-        traverseDependency(nimbleCtx, graph, i, mode)
-    inc i
-  if context().dumpGraphs:
-    dumpJson(graph, "graph-expanded.json")
-
-iterator mvalidVersions*(pkg: var Dependency; graph: var DepGraph): var DepVersion =
-  for ver in mitems pkg.versions:
-    if graph.reqs[ver.req].status == Normal: yield ver
+iterator mvalidVersions*(pkg: var DepConstraint; graph: var DepGraph): var DepVersion =
+  for ver in pkg.versions.mitems():
+    if graph.reqs[ver.req].status == Normal:
+      yield ver
 
 type
   SatVarInfo* = object # attached information for a SAT variable
