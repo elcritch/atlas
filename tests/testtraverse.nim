@@ -58,7 +58,7 @@ template testRequirements(sp: DependencySpec,
 
 suite "test expand with git tags":
   setup:
-    setAtlasVerbosity(Error)
+    setAtlasVerbosity(Warning)
 
     # These will change if atlas-tests is regnerated!
     # To update run and use commits not adding a proj_x.nim file
@@ -101,10 +101,10 @@ suite "test expand with git tags":
         let pkg = nc.createUrl(dir, projectName = "ws_testtraverse")
 
         var dep0 = Dependency(pkg: pkg, isRoot: true, isTopLevel: true)
-        var dep1 = Dependency(pkg: nc.createUrl("file://./buildGraph/proj_a"), isRoot: true)
-        var dep2 = Dependency(pkg: nc.createUrl("file://./buildGraph/proj_b"), isRoot: true)
-        var dep3 = Dependency(pkg: nc.createUrl("file://./buildGraph/proj_c"), isRoot: true)
-        var dep4 = Dependency(pkg: nc.createUrl("file://./buildGraph/proj_d"), isRoot: true)
+        var dep1 = Dependency(pkg: nc.createUrl("proj_a"), isRoot: true)
+        var dep2 = Dependency(pkg: nc.createUrl("proj_b"), isRoot: true)
+        var dep3 = Dependency(pkg: nc.createUrl("proj_c"), isRoot: true)
+        var dep4 = Dependency(pkg: nc.createUrl("proj_d"), isRoot: true)
 
         nc.loadDependency(dep0)
         nc.loadDependency(dep1)
@@ -140,41 +140,41 @@ suite "test expand with git tags":
         let sp = specs.depsToSpecs.pairs().toSeq()
 
         check $sp[0][0] == "file://$1" % [$dir]
-        check $sp[1][0] == "file://buildGraph/proj_a"
-        check $sp[2][0] == "file://buildGraph/proj_b"
-        check $sp[3][0] == "file://buildGraph/proj_c"
-        check $sp[4][0] == "file://buildGraph/proj_d"
+        check $sp[1][0] == "file://./buildGraph/proj_a"
+        check $sp[2][0] == "file://./buildGraph/proj_b"
+        check $sp[3][0] == "file://./buildGraph/proj_c"
+        check $sp[4][0] == "file://./buildGraph/proj_d"
 
         let vt = toVersionTag
 
         let sp0: DependencySpec = sp[0][1] # proj ws_testtraversal
         testRequirements(sp0, @[vt"#head@-"], [
-          ("file://buildGraph/proj_a", "#head"),
+          ("file://./buildGraph/proj_a", "#head"),
         ])
 
         let sp1: DependencySpec = sp[1][1] # proj A
         testRequirements(sp1, projAtags, [
-          ("file://buildGraph/proj_b", ">= 1.1.0"),
-          ("file://buildGraph/proj_b", ">= 1.0.0"),
-          ("file://buildGraph/proj_b", ">= 1.0.0"),
+          ("file://./buildGraph/proj_b", ">= 1.1.0"),
+          ("file://./buildGraph/proj_b", ">= 1.0.0"),
+          ("file://./buildGraph/proj_b", ">= 1.0.0"),
         ])
 
         let sp2 = sp[2][1] # proj B
         testRequirements(sp2, projBtags, [
-          ("file://buildGraph/proj_c", ">= 1.1.0"),
-          ("file://buildGraph/proj_c", ">= 1.0.0"),
-          ("file://buildGraph/proj_c", ">= 1.0.0"),
+          ("file://.///buildGraph/proj_c", ">= 1.1.0"),
+          ("file://.///buildGraph/proj_c", ">= 1.0.0"),
+          ("file://.///buildGraph/proj_c", ">= 1.0.0"),
         ])
 
         let sp3 = sp[3][1] # proj C
         testRequirements(sp3, projCtags, [
-          ("file://buildGraph/proj_d", ">= 1.0.0"),
-          ("file://buildGraph/proj_d", ">= 1.2.0"),
+          ("file://./buildGraph/proj_d", ">= 1.0.0"),
+          ("file://./buildGraph/proj_d", ">= 1.2.0"),
         ])
 
         let sp4 = sp[4][1] # proj C
         testRequirements(sp4, projDtags, [
-          ("file://buildGraph/does_not_exist", ">= 1.2.0"),
+          ("file://./buildGraph/does_not_exist", ">= 1.2.0"),
           ("", ""),
         ], true)
 
@@ -186,8 +186,8 @@ suite "test expand with git tags":
         context().flags = {UsesOverrides, KeepWorkspace, ListVersions, FullClones}
         context().defaultAlgo = SemVer
 
-        var nc = createNimbleContext()
         discard context().overrides.addPattern("$+", "http://localhost:4242/buildGrap/$#")
+        var nc = createNimbleContext()
 
         let pkgA = nc.createUrl("proj_a")
 
@@ -301,42 +301,42 @@ suite "test expand with no git tags":
         let sp = specs.depsToSpecs.pairs().toSeq()
 
         check $sp[0][0] == "file://$1" % [$dir]
-        check $sp[1][0] == "file://buildGraphNoGitTags/proj_a"
-        check $sp[2][0] == "file://buildGraphNoGitTags/proj_b"
-        check $sp[3][0] == "file://buildGraphNoGitTags/proj_c"
-        check $sp[4][0] == "file://buildGraphNoGitTags/proj_d"
+        check $sp[1][0] == "file://./buildGraphNoGitTags/proj_a"
+        check $sp[2][0] == "file://./buildGraphNoGitTags/proj_b"
+        check $sp[3][0] == "file://./buildGraphNoGitTags/proj_c"
+        check $sp[4][0] == "file://./buildGraphNoGitTags/proj_d"
 
         let vt = toVersionTag
         proc stripcommits(tags: seq[VersionTag]): seq[VersionTag] = tags.mapIt(VersionTag(v: Version"", c: it.c))
 
         let sp0: DependencySpec = sp[0][1] # proj ws_testtraversal
         testRequirements(sp0, @[vt"#head@-"], [
-          ("file://buildGraphNoGitTags/proj_a", "#head"),
+          ("file://./buildGraphNoGitTags/proj_a", "#head"),
         ])
 
         let sp1 = sp[1][1] # proj A
         testRequirements(sp1, projAtags, [
-          ("file://buildGraphNoGitTags/proj_b", ">= 1.1.0"),
-          ("file://buildGraphNoGitTags/proj_b", ">= 1.0.0"),
-          ("file://buildGraphNoGitTags/proj_b", ">= 1.0.0"),
+          ("file://./buildGraphNoGitTags/proj_b", ">= 1.1.0"),
+          ("file://./buildGraphNoGitTags/proj_b", ">= 1.0.0"),
+          ("file://./buildGraphNoGitTags/proj_b", ">= 1.0.0"),
         ])
 
         let sp2 = sp[2][1] # proj B
         testRequirements(sp2, projBtags, [
-          ("file://buildGraphNoGitTags/proj_c", ">= 1.1.0"),
-          ("file://buildGraphNoGitTags/proj_c", ">= 1.0.0"),
-          ("file://buildGraphNoGitTags/proj_c", ">= 1.0.0"),
+          ("file://.///buildGraphNoGitTags/proj_c", ">= 1.1.0"),
+          ("file://.///buildGraphNoGitTags/proj_c", ">= 1.0.0"),
+          ("file://.///buildGraphNoGitTags/proj_c", ">= 1.0.0"),
         ])
 
         let sp3 = sp[3][1] # proj C
         testRequirements(sp3, projCtags, [
-          ("file://buildGraphNoGitTags/proj_d", ">= 1.0.0"),
-          ("file://buildGraphNoGitTags/proj_d", ">= 1.2.0"),
+          ("file://./buildGraphNoGitTags/proj_d", ">= 1.0.0"),
+          ("file://./buildGraphNoGitTags/proj_d", ">= 1.2.0"),
         ])
 
         let sp4 = sp[4][1] # proj C
         testRequirements(sp4, projDtags, [
-          ("file://buildGraphNoGitTags/does_not_exist", ">= 1.2.0"),
+          ("file://./buildGraphNoGitTags/does_not_exist", ">= 1.2.0"),
           ("", ""),
         ], true)
 
