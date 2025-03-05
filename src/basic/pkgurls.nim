@@ -53,7 +53,7 @@ proc createUrlSkipPatterns*(x: string, skipDirTest = false): PkgUrl =
 template url*(p: PkgUrl): string = p.u
 
 proc `==`*(a, b: PkgUrl): bool {.inline.} = a.u == b.u
-proc hash*(a: PkgUrl): Hash {.inline.} = hash(a.u)
+# proc hash*(a: PkgUrl): Hash {.inline.} = hash(a.u)
 
 
 proc dir*(s: PkgUrl): string =

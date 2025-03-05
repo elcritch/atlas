@@ -34,7 +34,7 @@ proc setupGraphNoGitTags*(): seq[string] =
   for proj in projs:
     result.add(ospaths2.getCurrentDir() / "buildGraphNoGitTags" / proj)
 
-proc testRequirements(sp: DependencySpec,
+template testRequirements(sp: DependencySpec,
                           projTags: seq[VersionTag],
                           vers: openArray[(string, string)];
                           skipCount = false) =
