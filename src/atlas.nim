@@ -13,7 +13,7 @@ import std / [parseopt, files, dirs, strutils, os, osproc, tables, sets, json, j
 import basic / [versions, context, osutils, packageinfos,
                 configutils, nimblechecksums, reporters,
                 nimbleparser, gitops, pkgurls]
-import cloner, depgraphs, nimenv, lockfiles, confighandler, pkgcache, pkgsearch
+import depgraphs, nimenv, lockfiles, confighandler, pkgcache, pkgsearch
 
 from std/terminal import isatty
 

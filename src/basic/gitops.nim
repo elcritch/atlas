@@ -11,7 +11,7 @@ import reporters, osutils, versions, context
 
 type
   Command* = enum
-    GitClone = "git clone $EXTRAARGS $URL $DEST",
+    GitClone = "git clone",
     GitRemoteUrl = "git -C $DIR config --get remote.origin.url",
     GitDiff = "git -C $DIR diff",
     GitFetch = "git -C $DIR fetch",
@@ -56,7 +56,7 @@ proc extractVersion*(s: string): string =
   while i < s.len and s[i] notin {'0'..'9'}: inc i
   result = s.substr(i)
 
-proc exec*(gitCmd: Command;
+proc exec(gitCmd: Command;
            path: Path;
            args: openArray[string],
            errorReportLevel: MsgKind = Error,
@@ -66,10 +66,11 @@ proc exec*(gitCmd: Command;
   if isGitDir(path):
     result = silentExec(cmd, args)
   else:
-    result = ("", ResultCode(1))
+    result = ("Not a git repo", ResultCode(1))
   if result[1] != RES_OK:
     message errorReportLevel, "gitops", "Git command failed:", "`$1`" % [$gitCmd], "with code:", $int(result[1])
-    trace "gitops", "Running Git command:", "`$1 $2`" % [cmd, join(args, " ")]
+    let lvl = if errorReportLevel == Error: Error else: Trace
+    message lvl, "gitops", "Running Git command:", "`$1 $2`" % [cmd, join(args, " ")]
 
 proc checkGitDiffStatus*(path: Path): string =
   let (outp, status) = exec(GitDiff, path, [])
@@ -98,7 +99,7 @@ proc maybeUrlProxy*(url: Uri): Uri =
     result.path = result.path.strip(leading=false, trailing=true, {'/'})
 
 
-proc clone*(url: string, dest: Path; retries = 5; fullClones=false): bool =
+proc clone*(url: Uri, dest: Path; retries = 5; fullClones=false): (CloneStatus, string) =
   ## clone git repo.
   ##
   ## note clones don't use `--recursive` but rely in the `checkoutCommit`
@@ -111,14 +112,24 @@ proc clone*(url: string, dest: Path; retries = 5; fullClones=false): bool =
     elif not fullClones: "--depth=1"
     else: ""
 
-  var url = maybeUrlProxy(url.parseUri())
+  var url = maybeUrlProxy(url)
 
-  let cmd = $GitClone % [ "EXTRAARGS", extraArgs, "URL", quoteShell($url), "DEST", $dest]
+  # Try first clone with git output directly to the terminal
+  # primarily to give the user feedback for clones that take a while
+  let cmd = $GitClone & join([extraArgs, quoteShell($url), quoteShell($dest)], " ")
+  if execShellCmd(cmd) == 0:
+    return (Ok, "")
+
   const Pauses = [0, 1000, 2000, 3000, 4000, 6000]
   for i in 1..retries:
-    if execShellCmd(cmd) == 0:
-      return true
     os.sleep(min(i, Pauses.len()-1))
+    let (outp, status) = exec(GitClone, dest, [extraArgs, $url, $dest], Error)
+    if status == RES_OK:
+      return (Ok, "")
+    else:
+      result[1] = outp
+
+  result[0] = NotFound
 
 proc gitDescribeRefTag*(path: Path, commit: string): string =
   let (lt, status) = exec(GitDescribe, path, ["--tags", commit])

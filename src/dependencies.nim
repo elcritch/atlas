@@ -6,9 +6,8 @@
 #    distribution, for details about the copyright.
 #
 
-import std / [os, strutils, tables, unicode, sequtils, sets, json, hashes, algorithm, paths, files, dirs]
+import std / [os, strutils, uri, tables, unicode, sequtils, sets, json, hashes, algorithm, paths, files, dirs]
 import basic/[context, deptypes, versions, osutils, nimbleparser, packageinfos, reporters, gitops, parse_requires, pkgurls, compiledpatterns]
-import cloner
 
 export deptypes, versions
 
@@ -62,8 +61,9 @@ proc updatePackages*(pkgsDir = packagesDirectory()) =
   if dirExists(pkgsDir):
     gitPull(pkgsDir)
   else:
-    if not clone("https://github.com/nim-lang/packages", pkgsDir):
-      error DefaultPackagesSubDir, "cannot clone packages repo"
+    let res = clone(parseUri "https://github.com/nim-lang/packages", pkgsDir)
+    if res[0] != Ok:
+      error DefaultPackagesSubDir, "cannot clone packages repo: " & res[1]
 
 proc fillPackageLookupTable(c: var NimbleContext) =
   let pkgsDir = packagesDirectory()
@@ -270,7 +270,7 @@ proc loadDependency*(
       if dep.pkg.isFileProtocol:
         copyFromDisk(dep, dest)
       else:
-        cloneUrl(dep.pkg, dest, false)
+        gitops.clone(dep.pkg.toUri, dest)
     if status == Ok:
       dep.state = Found
     else:
