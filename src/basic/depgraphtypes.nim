@@ -110,8 +110,8 @@ proc findDependencyForDep*(g: DepGraph; dep: PkgUrl): int {.inline.} =
   assert g.packageToDependency.hasKey(dep), $(dep, g.packageToDependency)
   result = g.packageToDependency.getOrDefault(dep)
 
-# proc getCfgPath*(g: DepGraph; d: DepConstraint): lent CfgPath =
-#   result = CfgPath g.reqs[d.versions[d.activeVersion].req].srcDir
+proc getCfgPath*(g: DepGraph; d: DepConstraint): lent CfgPath =
+  result = CfgPath g.reqs[d.versions[d.activeVersion].req].release.srcDir
 
 # proc bestNimVersion*(g: DepGraph): Version =
 #   result = Version""
