@@ -182,8 +182,8 @@ suite "test expand with git tags":
         ], true)
 
   test "ws_testtraverse traverseDependency from http":
-      setAtlasVerbosity(Info)
       withDir "tests/ws_testtraverse":
+        setAtlasVerbosity(Trace)
         removeDir("deps")
         context().workspace = paths.getCurrentDir()
         context().flags = {UsesOverrides, KeepWorkspace, ListVersions, FullClones}
@@ -200,7 +200,7 @@ suite "test expand with git tags":
 
         let pkgA = nc.createUrl("proj_a")
 
-        check $pkgA == "http://localhost:4242/buildGraph/proj_a"
+        check $pkgA == "https://example.com/buildGraph/proj_a"
 
         # let deps = setupGraph()
         let dir = paths.getCurrentDir().absolutePath
@@ -259,7 +259,7 @@ suite "test expand with no git tags":
 
   test "ws_testtraverse collect nimbles":
       withDir "tests/ws_testtraverse":
-        setAtlasVerbosity(Trace)
+        # setAtlasVerbosity(Trace)
         removeDir("deps")
         context().flags = {UsesOverrides, KeepWorkspace, ListVersions, FullClones}
         context().defaultAlgo = SemVer

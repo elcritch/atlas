@@ -69,7 +69,7 @@ proc exec*(gitCmd: Command;
     result = ("", ResultCode(1))
   if result[1] != RES_OK:
     message errorReportLevel, "gitops", "Git command failed:", "`$1`" % [$gitCmd], "with code:", $int(result[1])
-    trace "gitops", "Running Git command:", "`$1`" % [join(@[cmd])]
+    trace "gitops", "Running Git command:", "`$1 $2`" % [cmd, join(args, " ")]
 
 proc checkGitDiffStatus*(path: Path): string =
   let (outp, status) = exec(GitDiff, path, [])
@@ -148,12 +148,14 @@ proc listFiles*(path: Path): seq[string] =
   else:
     result = @[]
 
-proc listRemoteTags*(path: Path, url: string): seq[string] =
-  let (outp, status) = exec(GitLsRemote, path, [url])
+proc listRemoteTags*(path: Path, url: string, errorReportLevel: MsgKind = Debug): (seq[VersionTag], bool) =
+  var url = maybeUrlProxy(url.parseUri())
+
+  let (outp, status) = exec(GitLsRemote, path, [$url], errorReportLevel)
   if status == RES_OK:
-    result = outp.splitLines().mapIt(it.strip())
+    result = (parseTaggedVersions(outp), true)
   else:
-    result = @[]
+    result = (@[], false)
 
 proc currentGitCommit*(path: Path, errorReportLevel: MsgKind = Info): CommitHash =
   let (currentCommit, status) = exec(GitCurrentCommit, path, [], errorReportLevel)

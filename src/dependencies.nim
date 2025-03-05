@@ -183,7 +183,7 @@ proc addRelease(
     result.v = release.version
     warn dep.pkg.projectName, "updating release tag information:", $result
   elif release.version.string == "":
-    warn dep.pkg.projectName, "nimble file missing release information:", $result
+    warn dep.pkg.projectName, "nimble file missing version information:", $result
   elif vtag.v != release.version:
     warn dep.pkg.projectName, "version mismatch between:", $vtag.v, "nimble version:", $release.version
   

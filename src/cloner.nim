@@ -47,7 +47,12 @@ proc cloneUrl*(url: PkgUrl,
 
   # Checking repo with git
   let gitCmdStr = "git ls-remote --quiet --tags " & $modurl
-  var success = execCmdEx(gitCmdStr)[1] == QuitSuccess
+
+  var success = false
+  if not context().dumbProxy:
+    let res = gitops.listRemoteTags(dest, $modurl)
+    success = res[1]
+
   if not success and isGitHub:
     infoNow url.projectName, "Trying to clone url again: " & $modurl
     # retry multiple times to avoid annoying GitHub timeouts:
@@ -57,15 +62,7 @@ proc cloneUrl*(url: PkgUrl,
     if isGitHub:
       (NotFound, "Unable to identify url: " & $modurl)
     else:
-      # Checking repo with Mercurial
-      if retryUrl("hg identify " & $modurl, modurl, url.projectName, true):
-        (NotFound, "Unable to identify url: " & $modurl)
-      else:
-        let hgCmdStr = "hg clone " & $modurl & " " & $dest
-        if retryUrl(hgCmdStr, modurl, url.projectName, true):
-          (Ok, "")
-        else:
-          (OtherError, "exernal program failed: " & hgCmdStr)
+      (NotFound, "Unable to identify url: " & $modurl)
   else:
     if gitops.clone(url.url, dest, fullClones=true): # gitops.clone has buit-in retrying
       (Ok, "")
