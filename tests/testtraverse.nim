@@ -210,87 +210,6 @@ suite "test expand with git tags":
 
         let vt = toVersionTag
 
-        # block:
-        #   let sp = sp[0][1]
-        #   check sp.versions.len() == 1
-        #   check sp.versions[vt"#head@-"].status == Normal
-        #   check sp.versions[vt"#head@-"].deps.len() == 1
-        #   check $sp.versions[vt"#head@-"].deps[0][0] == "file://buildGraph/proj_a"
-        #   check $sp.versions[vt"#head@-"].deps[0][1] == "#head"
-
-        # block:
-        #   let sp = sp[1][1] # proj A
-        #   let v1 = projAtags[0]
-        #   let v2 = projAtags[1]
-        #   let v3 = projAtags[2]
-        #   check sp.versions.len() == 3
-        #   check sp.versions[v1].status == Normal
-        #   check sp.versions[v1].deps.len() == 1
-
-        #   check sp.versions[v2].status == Normal
-        #   check sp.versions[v2].deps.len() == 1
-
-        #   check $sp.versions[v1].deps[0][0] == "file://buildGraph/proj_b"
-        #   check $sp.versions[v1].deps[0][1] == ">= 1.1.0"
-
-        #   check $sp.versions[v2].deps[0][0] == "file://buildGraph/proj_b"
-        #   check $sp.versions[v2].deps[0][1] == ">= 1.0.0"
-
-        #   check $sp.versions[v3].deps[0][0] == "file://buildGraph/proj_b"
-        #   check $sp.versions[v3].deps[0][1] == ">= 1.0.0"
-
-        # block:
-        #   let sp = sp[2][1] # proj B
-        #   let v1 = projBtags[0]
-        #   let v2 = projBtags[1]
-        #   let v3 = projBtags[2]
-        #   check sp.versions.len() == 3
-        #   check sp.versions[v1].status == Normal
-        #   check sp.versions[v1].deps.len() == 1
-
-        #   check sp.versions[v2].status == Normal
-        #   check sp.versions[v2].deps.len() == 1
-
-        #   check $sp.versions[v1].deps[0][0] == "file://buildGraph/proj_c"
-        #   check $sp.versions[v1].deps[0][1] == ">= 1.1.0"
-
-        #   check $sp.versions[v2].deps[0][0] == "file://buildGraph/proj_c"
-        #   check $sp.versions[v2].deps[0][1] == ">= 1.0.0"
-
-        #   check $sp.versions[v3].deps[0][0] == "file://buildGraph/proj_c"
-        #   check $sp.versions[v3].deps[0][1] == ">= 1.0.0"
-
-        # block:
-        #   let sp = sp[3][1] # proj C
-        #   let v1 = projCtags[0]
-        #   let v2 = projCtags[1]
-        #   check sp.versions.len() == 2
-        #   check sp.versions[v1].status == Normal
-        #   check sp.versions[v1].deps.len() == 1
-
-        #   check sp.versions[v2].status == Normal
-        #   check sp.versions[v2].deps.len() == 1
-
-        #   check $sp.versions[v1].deps[0][0] == "file://buildGraph/proj_d"
-        #   check $sp.versions[v1].deps[0][1] == ">= 1.0.0"
-
-        #   check $sp.versions[v2].deps[0][0] == "file://buildGraph/proj_d"
-        #   check $sp.versions[v2].deps[0][1] == ">= 1.2.0"
-
-        # block:
-        #   let sp = sp[4][1] # proj D
-        #   let v1 = projDtags[0]
-        #   let v2 = projDtags[1]
-        #   check sp.versions.len() == 2
-        #   check sp.versions[v1].status == Normal
-        #   check sp.versions[v1].deps.len() == 1
-
-        #   check sp.versions[v2].status == Normal
-        #   check sp.versions[v2].deps.len() == 0
-
-        #   check $sp.versions[v1].deps[0][0] == "file://buildGraph/does_not_exist"
-        #   check $sp.versions[v1].deps[0][1] == ">= 1.2.0"
-
 suite "test expand with no git tags":
 
   setup:
@@ -415,39 +334,6 @@ suite "test expand with no git tags":
           ("file://buildGraphNoGitTags/does_not_exist", ">= 1.2.0"),
           ("", ""),
         ], true)
-
-        block:
-          let sp = sp[3][1] # proj C
-          let projCtags = projCtags.stripcommits()
-          let v1 = projCtags[0]
-          let v2 = projCtags[1]
-          check sp.versions.len() == 2
-          check sp.versions[v1].status == Normal
-          check sp.versions[v1].deps.len() == 1
-
-          check sp.versions[v2].status == Normal
-          check sp.versions[v2].deps.len() == 1
-
-          check $sp.versions[v1].deps[0][0] == "file://buildGraphNoGitTags/proj_d"
-          check $sp.versions[v1].deps[0][1] == ">= 1.0.0"
-
-          check $sp.versions[v2].deps[0][0] == "file://buildGraphNoGitTags/proj_d"
-          check $sp.versions[v2].deps[0][1] == ">= 1.2.0"
-
-        block:
-          let sp = sp[4][1] # proj D
-          let projDtags = projDtags.stripcommits()
-          let v1 = projDtags[0]
-          let v2 = projDtags[1]
-          check sp.versions.len() == 2
-          check sp.versions[v1].status == Normal
-          check sp.versions[v1].deps.len() == 1
-
-          check sp.versions[v2].status == Normal
-          check sp.versions[v2].deps.len() == 0
-
-          check $sp.versions[v1].deps[0][0] == "file://buildGraphNoGitTags/does_not_exist"
-          check $sp.versions[v1].deps[0][1] == ">= 1.2.0"
 
 
 infoNow "tester", "All tests run successfully"
