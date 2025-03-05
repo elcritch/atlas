@@ -55,6 +55,7 @@ type
     pluginsFile*: Path
     proxy*: Uri
     dumbProxy*: bool
+    forceGitToHttps*: bool
 
 var atlasContext = AtlasContext()
 

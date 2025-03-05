@@ -88,6 +88,16 @@ proc maybeUrlProxy*(url: Uri): Uri =
     result.query = url.query
     result.anchor = url.anchor
 
+  if url.scheme == "git":
+    if context().forceGitToHttps:
+      result.scheme = "https"
+    else:
+      result.scheme = ""
+
+  if result.hostname == "github.com":
+    result.path = result.path.strip(leading=false, trailing=true, {'/'})
+
+
 proc clone*(url: string, dest: Path; retries = 5; fullClones=false): bool =
   ## clone git repo.
   ##
