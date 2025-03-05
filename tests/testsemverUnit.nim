@@ -91,14 +91,18 @@ suite "graph solve":
 
   test "ws_testtraverse traverseDependency":
       # setAtlasVerbosity(Info)
-      withDir "tests/ws_testtraverse":
+      withDir "tests/ws_semver_unit":
         removeDir("deps")
         context().workspace = paths.getCurrentDir()
         context().flags = {UsesOverrides, KeepWorkspace, ListVersions, FullClones}
         context().defaultAlgo = SemVer
 
+        writeFile("ws_semver_unit.nimble", "requires \"proj_a\"\n")
         var nc = createNimbleContext()
-        discard nc.overrides.addPattern("$+", "file://./buildGraph/$#")
+        nc.nameToUrl["proj_a"] = toPkgUri(parseUri "https://example.com/buildGraph/proj_a")
+        nc.nameToUrl["proj_b"] = toPkgUri(parseUri "https://example.com/buildGraph/proj_b")
+        nc.nameToUrl["proj_c"] = toPkgUri(parseUri "https://example.com/buildGraph/proj_c")
+        nc.nameToUrl["proj_d"] = toPkgUri(parseUri "https://example.com/buildGraph/proj_d")
 
         let deps = setupGraph()
         let dir = paths.getCurrentDir().absolutePath
@@ -107,3 +111,4 @@ suite "graph solve":
 
         echo "\tspec:\n", specs.toJson(ToJsonOptions(enumMode: joptEnumString))
         let sp = specs.depsToSpecs.pairs().toSeq()
+
