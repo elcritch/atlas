@@ -33,8 +33,10 @@ proc status*(r: Requirements): RequirementStatus =
 
 # proc commit*(d: DepConstraint): CommitHash =
 #   result =
-#     if d.activeVersion >= 0 and d.activeVersion < d.releases.len: d.releases[d.activeVersion].vtag.commit()
-#     else: CommitHash(h: "")
+#     if d.activeVersion >= 0 and d.activeVersion < d.releases.len:
+#       d.releases[d.activeVersion].vtag.commit()
+#     else:
+#       CommitHash(h: "")
 
 proc toJsonHook*(vid: VarId): JsonNode = toJson($(int(vid)))
 proc toJsonHook*(p: Path): JsonNode = toJson($(p))
@@ -87,12 +89,12 @@ proc findDependencyForDep*(g: DepGraph; dep: PkgUrl): int {.inline.} =
   assert g.packageToDependency.hasKey(dep), $(dep, g.packageToDependency)
   result = g.packageToDependency.getOrDefault(dep)
 
-# iterator directDependencies*(g: DepGraph; d: DepConstraint): lent DepConstraint =
-#   if d.activeVersion >= 0 and d.activeVersion < d.versions.len:
-#     let deps {.cursor.} = g.reqs[d.versions[d.activeVersion].req].deps
-#     for dep in deps:
-#       let idx = findDependencyForDep(g, dep[0])
-#       yield g.nodes[idx]
+iterator directDependencies*(g: DepGraph; d: DepConstraint): lent DepConstraint =
+  if d.activeVersion >= 0 and d.activeVersion < d.versions.len:
+    let deps {.cursor.} = g.reqs[d.versions[d.activeVersion].req].releases
+    for dep in deps:
+      let idx = findDependencyForDep(g, dep[0])
+      yield g.nodes[idx]
 
 # proc getCfgPath*(g: DepGraph; d: DepConstraint): lent CfgPath =
 #   result = CfgPath g.reqs[d.versions[d.activeVersion].req].srcDir
