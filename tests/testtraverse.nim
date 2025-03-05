@@ -62,6 +62,7 @@ suite "test expand with git tags":
     context().overrides = Patterns()
     context().proxy = parseUri "http://localhost:4242"
     context().dumbProxy = true
+    context().depsDir = Path "deps"
 
     # These will change if atlas-tests is regnerated!
     # To update run and use commits not adding a proj_x.nim file
@@ -233,6 +234,7 @@ suite "test expand with no git tags":
     context().overrides = Patterns()
     context().proxy = parseUri "http://localhost:4242"
     context().dumbProxy = true
+    context().depsDir = Path "deps"
 
     # These will change if atlas-tests is regnerated!
     # To update run and use commits not adding a proj_x.nim file
