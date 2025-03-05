@@ -77,6 +77,7 @@ proc fillPackageLookupTable(c: var NimbleContext) =
 
 proc createNimbleContext*(): NimbleContext =
   result = NimbleContext()
+  result.overrides = context().overrides
   fillPackageLookupTable(result)
 
 proc collectNimbleVersions*(nc: NimbleContext; dep: Dependency): seq[VersionTag] =

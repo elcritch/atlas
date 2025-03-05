@@ -96,7 +96,7 @@ suite "test expand with git tags":
         # writeFile("ws_testtraverse.nimble", "requires \"proj_a\"\n")
 
         let deps = setupGraph()
-        var nc = NimbleContext()
+        var nc = createNimbleContext()
         # var graph = DepGraph(nodes: @[], reqs: defaultReqs())
         let pkg = nc.createUrl(dir, projectName = "ws_testtraverse")
 
@@ -128,7 +128,7 @@ suite "test expand with git tags":
         context().flags = {UsesOverrides, KeepWorkspace, ListVersions, FullClones}
         context().defaultAlgo = SemVer
 
-        var nc = NimbleContext()
+        var nc = createNimbleContext()
         discard nc.overrides.addPattern("$+", "file://buildGraph/$#")
 
         let deps = setupGraph()
@@ -186,7 +186,7 @@ suite "test expand with git tags":
         context().flags = {UsesOverrides, KeepWorkspace, ListVersions, FullClones}
         context().defaultAlgo = SemVer
 
-        var nc = NimbleContext()
+        var nc = createNimbleContext()
         discard context().overrides.addPattern("$+", "http://localhost:4242/buildGrap/$#")
 
         let pkgA = nc.createUrl("proj_a")
@@ -256,7 +256,7 @@ suite "test expand with no git tags":
         # writeFile("ws_testtraverse.nimble", "requires \"proj_a\"\n")
 
         let deps = setupGraph()
-        var nc = NimbleContext()
+        var nc = createNimbleContext()
         # var graph = DepGraph(nodes: @[], reqs: defaultReqs())
         let pkg = nc.createUrl(dir, projectName = "ws_testtraverse")
 
@@ -289,7 +289,7 @@ suite "test expand with no git tags":
         context().flags = {UsesOverrides, KeepWorkspace, ListVersions, FullClones}
         context().defaultAlgo = SemVer
 
-        var nc = NimbleContext()
+        var nc = createNimbleContext()
         discard nc.overrides.addPattern("$+", "file://buildGraphNoGitTags/$#")
 
         let deps = setupGraphNoGitTags()
