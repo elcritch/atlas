@@ -104,10 +104,11 @@ proc clone*(url: string, dest: Path; retries = 5; fullClones=false): bool =
   var url = maybeUrlProxy(url.parseUri())
 
   let cmd = $GitClone % [ "EXTRAARGS", extraArgs, "URL", quoteShell($url), "DEST", $dest]
+  const Pauses = [0, 1000, 2000, 3000, 4000, 6000]
   for i in 1..retries:
     if execShellCmd(cmd) == 0:
       return true
-    os.sleep(i*2_000)
+    os.sleep(min(i, Pauses.len()-1))
 
 proc gitDescribeRefTag*(path: Path, commit: string): string =
   let (lt, status) = exec(GitDescribe, path, ["--tags", commit])

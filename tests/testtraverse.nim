@@ -188,6 +188,7 @@ suite "test expand with git tags":
         context().workspace = paths.getCurrentDir()
         context().flags = {UsesOverrides, KeepWorkspace, ListVersions, FullClones}
         context().defaultAlgo = SemVer
+        context().depsDir = Path "deps_http"
 
         context().overrides = Patterns()
         discard context().overrides.addPattern("does_not_exist", "file://./buildGraph/does_not_exist")

@@ -45,26 +45,32 @@ proc cloneUrl*(url: PkgUrl,
     modurl.path = modurl.path.strip(leading=false, trailing=true, {'/'})
   infoNow url.projectName, "Cloning url: " & $modurl
 
-  # Checking repo with git
-  let gitCmdStr = "git ls-remote --quiet --tags " & $modurl
-
-  var success = false
-  if not context().dumbProxy:
-    let res = gitops.listRemoteTags(dest, $modurl)
-    success = res[1]
-
-  if not success and isGitHub:
-    infoNow url.projectName, "Trying to clone url again: " & $modurl
-    # retry multiple times to avoid annoying GitHub timeouts:
-    success = retryUrl(gitCmdStr, modurl, url.projectName, false)
-
-  if not success:
-    if isGitHub:
-      (NotFound, "Unable to identify url: " & $modurl)
-    else:
-      (NotFound, "Unable to identify url: " & $modurl)
+  if gitops.clone(url.url, dest, fullClones=true): # gitops.clone has buit-in retrying
+    return (Ok, "")
   else:
-    if gitops.clone(url.url, dest, fullClones=true): # gitops.clone has buit-in retrying
-      (Ok, "")
+    return (NotFound, "unable to clone url")
+
+
+when false:
+    ## NOTE: This seems to be from Nimble's support for Mercurial
+    ##       supporting mercurial in Atlas would require more work
+    # Checking repo with git
+    let gitCmdStr = "git ls-remote --quiet --tags " & $modurl
+    var success = false
+    if not context().dumbProxy:
+      let res = gitops.listRemoteTags(dest, $modurl)
+      success = res[1]
+    if not success and isGitHub:
+      infoNow url.projectName, "Trying to clone url again: " & $modurl
+      # retry multiple times to avoid annoying GitHub timeouts:
+      success = retryUrl(gitCmdStr, modurl, url.projectName, false)
+    if not success:
+      if isGitHub:
+        (NotFound, "Unable to identify url: " & $modurl)
+      else:
+        (NotFound, "Unable to identify url: " & $modurl)
     else:
-      (OtherError, "exernal program failed: " & $GitClone)
+      if gitops.clone(url.url, dest, fullClones=true): # gitops.clone has buit-in retrying
+        (Ok, "")
+      else:
+        (OtherError, "exernal program failed: " & $GitClone)
