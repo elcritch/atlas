@@ -14,14 +14,14 @@ else:
 
 iterator directDependencies*(graph: DepGraph; d: DepConstraint): lent DepConstraint =
   if d.activeVersion >= 0 and d.activeVersion < d.versions.len:
-    let deps {.cursor.} = graph.reqs[d.versions[d.activeVersion].req].release.deps
+    let deps {.cursor.} = graph.reqs[d.versions[d.activeVersion].reqIdx].release.deps
     for dep in deps:
       let idx = findDependencyForDep(graph, dep[0])
       yield graph.nodes[idx]
 
 iterator mvalidVersions*(pkg: var DepConstraint; graph: var DepGraph): var DepVersion =
   for ver in pkg.versions.mitems():
-    if graph.reqs[ver.req].status == Normal:
+    if graph.reqs[ver.reqIdx].status == Normal:
       yield ver
 
 type
@@ -76,23 +76,23 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
 
   for pkg in mitems(graph.nodes):
     for ver in mvalidVersions(pkg, graph):
-      if isValid(graph.reqs[ver.req].vid):
+      if isValid(graph.reqs[ver.reqIdx].vid):
         continue
       let eqVar = VarId(result.idgen)
-      graph.reqs[ver.req].vid = eqVar
+      graph.reqs[ver.reqIdx].vid = eqVar
       inc result.idgen
 
-      if graph.reqs[ver.req].release.deps.len == 0:
+      if graph.reqs[ver.reqIdx].release.deps.len == 0:
         continue
 
       let beforeEq = builder.getPatchPos()
 
       builder.openOpr(OrForm)
       builder.addNegated eqVar
-      if graph.reqs[ver.req].release.deps.len > 1:
+      if graph.reqs[ver.reqIdx].release.deps.len > 1:
         builder.openOpr(AndForm)
       var elementCount = 0
-      for dep, query in items graph.reqs[ver.req].release.deps:
+      for dep, query in items graph.reqs[ver.reqIdx].release.deps:
         let queryVer = if algo == SemVer: toSemVer(query) else: query
         let commit = extractSpecificCommit(queryVer)
         let availVer = graph[findDependencyForDep(graph, dep)]
@@ -125,17 +125,17 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
           builder.resetToPatchPos beforeExactlyOneOf
           builder.add falseLit()
 
-      if graph.reqs[ver.req].release.deps.len > 1: builder.closeOpr # AndForm
+      if graph.reqs[ver.reqIdx].release.deps.len > 1: builder.closeOpr # AndForm
       builder.closeOpr # EqForm
       if elementCount == 0:
         builder.resetToPatchPos beforeEq
 
   for pkg in mitems(graph.nodes):
     for ver in mvalidVersions(pkg, graph):
-      if graph.reqs[ver.req].release.deps.len > 0:
+      if graph.reqs[ver.reqIdx].release.deps.len > 0:
         builder.openOpr(OrForm)
         builder.addNegated ver.vid
-        builder.add graph.reqs[ver.req].vid
+        builder.add graph.reqs[ver.reqIdx].vid
         builder.closeOpr # OrForm
 
   builder.closeOpr # AndForm
@@ -156,7 +156,10 @@ proc runBuildSteps(graph: var DepGraph) =
       tryWithDir $dep.ondisk:
         # check for install hooks
         let activeVersion = graph[i].activeVersion
-        let reqIdx = if graph[i].versions.len == 0: -1 else: graph[i].versions[activeVersion].req
+        let reqIdx =
+          if graph[i].versions.len == 0: -1
+          else: graph[i].versions[activeVersion].reqIdx
+
         if reqIdx >= 0 and
             reqIdx < graph.reqs.len and
             graph.reqs[reqIdx].release.hasInstallHooks:

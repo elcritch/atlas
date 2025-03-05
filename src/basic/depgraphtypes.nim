@@ -9,7 +9,6 @@ type
     nodes*: seq[DepConstraint]
     reqs*: seq[Requirements]
     packageToDependency*: Table[PkgUrl, int]
-    ondisk*: OrderedTable[string, Path] # URL -> dirname mapping
     reqsByDeps*: Table[Requirements, int]
 
   DepConstraint* = object
@@ -18,10 +17,10 @@ type
     active*: bool
     versions*: seq[DepVersion]
 
-  DepVersion* = object  # Represents a specific version of a project.
+  DepVersion* = object # Represents a specific version of a project.
     vid*: VarId
     vtag*: VersionTag
-    req*: int # index into graph.reqs so that it can be shared between releases
+    reqIdx*: int # index into graph.reqs so that it can be shared between releases
 
   Requirements* = object
     vid*: VarId
@@ -74,7 +73,7 @@ proc sortDepVersions*(a, b: DepVersion): int =
   else: -1)
 
 proc initDepVersion*(version: Version, commit: CommitHash, req = EmptyReqs, vid = NoVar): DepVersion =
-  result = DepVersion(vtag: VersionTag(c: commit, v: version), req: req, vid: vid)
+  result = DepVersion(vtag: VersionTag(c: commit, v: version), reqIdx: req, vid: vid)
 
 proc enrichVersionsViaExplicitHash*(releases: var seq[DepVersion]; x: VersionInterval) =
   let commit = extractSpecificCommit(x)
@@ -111,7 +110,7 @@ proc findDependencyForDep*(g: DepGraph; dep: PkgUrl): int {.inline.} =
   result = g.packageToDependency.getOrDefault(dep)
 
 proc getCfgPath*(g: DepGraph; d: DepConstraint): lent CfgPath =
-  result = CfgPath g.reqs[d.versions[d.activeVersion].req].release.srcDir
+  result = CfgPath g.reqs[d.versions[d.activeVersion].reqIdx].release.srcDir
 
 # proc bestNimVersion*(g: DepGraph): Version =
 #   result = Version""

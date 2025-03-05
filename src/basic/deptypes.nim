@@ -20,17 +20,16 @@ type
     errors*: seq[string]
 
   DependencySpec* = object
-    # dep*: Dependency
     releases*: OrderedTable[VersionTag, NimbleRelease]
   
-  NimbleRelease* = object
+  NimbleRelease* = ref object
     version*: Version
+    nimVersion*: Version
     status*: RequirementStatus
     deps*: seq[(PkgUrl, VersionInterval)]
     nimbleHash*: SecureHash
     hasInstallHooks*: bool
     srcDir*: Path
-    nimVersion*: Version
     err*: string
 
   RequirementStatus* = enum
@@ -41,7 +40,6 @@ type
 
   DependencySpecs* = ref object
     depsToSpecs*: OrderedTable[PkgUrl, DependencySpec]
-    # nc*: NimbleContext
 
   NimbleContext* = object
     packageToDependency*: Table[PkgUrl, Dependency]
