@@ -221,7 +221,7 @@ suite "test expand with git tags":
 
         let sp0: DependencySpec = sp[0][1] # proj ws_testtraversal
         testRequirements(sp0, @[vt"#head@-"], [
-          ("http://localhost:4242/buildGraph/proj_a", "#head"),
+          ("https://example.com/buildGraph/proj_a", "#head"),
         ])
 
 
