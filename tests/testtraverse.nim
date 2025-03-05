@@ -38,6 +38,31 @@ suite "basic repo tests":
   setup:
     setAtlasVerbosity(Warning)
 
+    # These will change if atlas-tests is regnerated!
+    # To update run and use commits not adding a proj_x.nim file
+    #    curl http://localhost:4242/buildGraph/ws_generated-logs.txt
+    let projAHashes = dedent"""
+    e479b438015e734bea67a9c63d783e78cab5746e
+    7ca5581cd5355f6b5461a23f9683f19378bd268a
+    fb3804df03c3c414d98d1f57deeb44c8a223ba44
+    """.strip().splitLines()
+
+    let projBHashes = dedent"""
+    af4275109d60caaeacf2912a37c2339aca40a922
+    cd3ad76043e5f983f704be6bf61e57d187fe070f
+    ee875baecee161ed053b87b583b2f08526838bd6
+    """.strip().splitLines()
+
+    let projCHashes = dedent"""
+    c7540297c01dc57a98cb1fce7660ab6f2a0cee5f
+    9331e14f3fa20ed75b7d5c0ab93aa5fb0293192f
+    """.strip().splitLines()
+
+    let projDHashes = dedent"""
+    0dec9c9733129919972416f04e73b1fb2cbf3bd3
+    dd98f775ae33d450dc7f936f850e247e820e31ad
+    """.strip().splitLines()
+
   test "ws_testtraverse collect nimbles":
       withDir "tests/ws_testtraverse":
         removeDir("deps")
@@ -65,34 +90,13 @@ suite "basic repo tests":
         nc.loadDependency(dep3)
         nc.loadDependency(dep4)
 
-        # These will change if atlas-tests is regnerated!
-        # To update run and use commits not adding a proj_x.nim file
-        #    curl http://localhost:4242/buildGraph/ws_generated-logs.txt
         check collectNimbleVersions(nc, dep0) == newSeq[VersionTag]()
-        let vtags1 = dedent"""
-        e479b438015e734bea67a9c63d783e78cab5746e
-        7ca5581cd5355f6b5461a23f9683f19378bd268a
-        fb3804df03c3c414d98d1f57deeb44c8a223ba44
-        """.parseTaggedVersions(false)
-        check collectNimbleVersions(nc, dep1) == vtags1
+        let vtags1 = projAHashes.join("\n").parseTaggedVersions(false)
+        check collectNimbleVersions(nc, dep1) == projAHashes.join("\n").parseTaggedVersions(false)
 
-        let vtags2 = dedent"""
-        af4275109d60caaeacf2912a37c2339aca40a922
-        cd3ad76043e5f983f704be6bf61e57d187fe070f
-        ee875baecee161ed053b87b583b2f08526838bd6
-        """.parseTaggedVersions(false)
-        let vtags3 = dedent"""
-        c7540297c01dc57a98cb1fce7660ab6f2a0cee5f
-        9331e14f3fa20ed75b7d5c0ab93aa5fb0293192f
-        """.parseTaggedVersions(false)
-        let vtags4 = dedent"""
-        0dec9c9733129919972416f04e73b1fb2cbf3bd3
-        dd98f775ae33d450dc7f936f850e247e820e31ad
-        """.parseTaggedVersions(false)
-
-        check collectNimbleVersions(nc, dep2) == vtags2
-        check collectNimbleVersions(nc, dep3) == vtags3
-        check collectNimbleVersions(nc, dep4) == vtags4
+        check collectNimbleVersions(nc, dep2) == projBHashes.join("\n").parseTaggedVersions(false)
+        check collectNimbleVersions(nc, dep3) == projCHashes.join("\n").parseTaggedVersions(false)
+        check collectNimbleVersions(nc, dep4) == projDHashes.join("\n").parseTaggedVersions(false)
 
   test "ws_testtraverse traverseDependency":
       setAtlasVerbosity(Info)
