@@ -122,10 +122,13 @@ proc clone*(url: Uri, dest: Path; retries = 5; fullClones=false): (CloneStatus, 
 
   const Pauses = [0, 1000, 2000, 3000, 4000, 6000]
   for i in 1..retries:
-    os.sleep(min(i, Pauses.len()-1))
+    os.sleep(Pauses[min(i, Pauses.len()-1)])
     let (outp, status) = exec(GitClone, dest, [extraArgs, $url, $dest], Warning)
+    echo "CLONETEST: ", outp, " status: ", status
     if status == RES_OK:
       return (Ok, "")
+    elif "not found" in outp or "Not a git repo" in outp:
+      return (NotFound, "not found")
     else:
       result[1] = outp
 

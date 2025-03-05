@@ -275,7 +275,7 @@ proc loadDependency*(
       dep.state = Found
     else:
       dep.state = Error
-      dep.errors.add $status & ":" & msg
+      dep.errors.add $status & ": " & msg
   of DoNothing:
     if dep.ondisk.dirExists():
       dep.state = Found

@@ -183,7 +183,7 @@ suite "test expand with git tags":
 
   test "ws_testtraverse traverseDependency from http":
       withDir "tests/ws_testtraverse":
-        # setAtlasVerbosity(Trace)
+        setAtlasVerbosity(Trace)
         removeDir("deps")
         context().workspace = paths.getCurrentDir()
         context().flags = {UsesOverrides, KeepWorkspace, ListVersions, FullClones}
@@ -198,8 +198,7 @@ suite "test expand with git tags":
         nc.nameToUrl["proj_b"] = toPkgUri(parseUri "https://example.com/buildGraph/proj_b")
         nc.nameToUrl["proj_c"] = toPkgUri(parseUri "https://example.com/buildGraph/proj_c")
         nc.nameToUrl["proj_d"] = toPkgUri(parseUri "https://example.com/buildGraph/proj_d")
-        nc.nameToUrl["does_not_exist"] = toPkgUri(parseUri "file://./buildGraph/does_not_exist")
-        # discard context().overrides.addPattern("does_not_exist", "file://./buildGraph/does_not_exist")
+        # nc.nameToUrl["does_not_exist"] = toPkgUri(parseUri "https://example.com/buildGraph/does_not_exist")
 
         let pkgA = nc.createUrl("proj_a")
 
