@@ -19,12 +19,6 @@ type
     ondisk*: Path
     errors*: seq[string]
 
-  DepConstraint* = object
-    dep*: Dependency
-    activeVersion*: int
-    active*: bool
-    versions*: seq[DepVersion]
-
   DepVersion* = object  # Represents a specific version of a project.
     vtag*: VersionTag
     req*: int # index into graph.reqs so that it can be shared between versions
@@ -43,7 +37,6 @@ type
     srcDir*: Path
     nimVersion*: Version
     err*: string
-    vid*: VarId
 
   RequirementStatus* = enum
     Normal, HasBrokenRepo, HasBrokenNimbleFile, HasBrokenRelease, HasUnknownNimbleFile, HasBrokenDep

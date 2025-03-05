@@ -12,6 +12,14 @@ type
     ondisk*: OrderedTable[string, Path] # URL -> dirname mapping
     reqsByDeps*: Table[Requirements, int]
 
+  DepConstraint* = object
+    dep*: Dependency
+    activeVersion*: int
+    active*: bool
+    versions*: seq[DepVersion]
+
+  Requirements* = object
+
 const
   FileWorkspace* = "file://"
 
