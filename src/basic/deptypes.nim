@@ -19,10 +19,6 @@ type
     ondisk*: Path
     errors*: seq[string]
 
-  DependencySpec* = object
-    # dep*: Dependency
-    versions*: OrderedTable[VersionTag, Requirements]
-  
   DepConstraint* = object
     dep*: Dependency
     activeVersion*: int
@@ -34,6 +30,10 @@ type
     req*: int # index into graph.reqs so that it can be shared between versions
     vid*: VarId
 
+  DependencySpec* = object
+    # dep*: Dependency
+    versions*: OrderedTable[VersionTag, Requirements]
+  
   Requirements* = object
     version*: Version
     status*: RequirementStatus
@@ -162,9 +162,9 @@ proc `==`*(a, b: Requirements): bool =
 proc toJsonHook*(t: OrderedTable[VersionTag, Requirements], opt: ToJsonOptions): JsonNode =
   result = newJObject()
   for k, v in t:
-    result[$(k)] = toJson(v, opt)
+    result[repr(k)] = toJson(v, opt)
 
 proc toJsonHook*(t: OrderedTable[PkgUrl, DependencySpec], opt: ToJsonOptions): JsonNode =
   result = newJObject()
   for k, v in t:
-    result[$(k)] = toJson(v, opt)
+    result[repr(k)] = toJson(v, opt)

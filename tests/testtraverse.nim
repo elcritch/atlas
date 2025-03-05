@@ -119,13 +119,27 @@ suite "basic repo tests":
         check $sp[3][0] == "file://buildGraph/proj_c"
         check $sp[4][0] == "file://buildGraph/proj_d"
 
-        let sp0 = sp[0][1]
-        check sp0.versions.len() == 1
-        let sp0v0 = toVersionTag("#head@-")
-        echo "sp0v0 ", repr sp0v0
-        echo "sp0v0 ", repr sp0.versions.pairs().toSeq()[0][0]
-        check $sp0.versions[sp0v0] == "#head@-"
-        # check $proj1Spec[0][0] == "#head@-"
+        let vt = toVersionTag
+
+        block:
+          let sp = sp[0][1]
+          check sp.versions.len() == 1
+          check sp.versions[vt"#head@-"].status == Normal
+          check sp.versions[vt"#head@-"].deps.len() == 1
+          check $sp.versions[vt"#head@-"].deps[0][0] == "file://buildGraph/proj_a"
+          check $sp.versions[vt"#head@-"].deps[0][1] == "#head"
+
+        block:
+          let sp = sp[1][1]
+          let req1 = vt"1.1.0@fb3804df03c3c414d98d1f57deeb44c8a223ba44"
+          let req2 = vt"1.0.0@e479b438015e734bea67a9c63d783e78cab5746e"
+          let req3 = vt"~@7ca5581cd5355f6b5461a23f9683f19378bd268a"
+          check sp.versions.len() == 3
+          check sp.versions[req1].status == Normal
+          check sp.versions[req1].deps.len() == 1
+          check $sp.versions[req1].deps[0][0] == "file://buildGraph/proj_b"
+          check $sp.versions[req1].deps[0][1] == ">= 1.1.0"
+
 
   test "ws_testtraverse collectNimble no git tags":
     when false:
