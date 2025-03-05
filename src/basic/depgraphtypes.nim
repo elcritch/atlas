@@ -20,13 +20,16 @@ type
 
   Requirements* = object
     vid*: VarId
-    releases*: NimbleRelease
+    release*: NimbleRelease
 
 proc `[]`*(g: DepGraph, idx: int): DepConstraint =
   g.nodes[idx]
 
 proc `[]`*(g: var DepGraph, idx: int): var DepConstraint =
   g.nodes[idx]
+
+proc status*(r: Requirements): RequirementStatus =
+  r.release.status
 
 # proc commit*(d: DepConstraint): CommitHash =
 #   result =
@@ -46,8 +49,10 @@ proc toJsonHook*(t: Table[Requirements, int], opt: ToJsonOptions): JsonNode =
     # result.add(%* {"req": toJson(k), "idx": toJson(v) })
     result.add(%* [toJson(k, opt), toJson(v, opt)] )
 
-# proc defaultReqs*(): seq[Requirements] =
-#   @[Requirements(deps: @[], vid: NoVar), Requirements(status: HasUnknownNimbleFile, vid: NoVar)]
+proc defaultReqs*(): seq[Requirements] =
+  let emptyReq = Requirements(release: NimbleRelease(deps: @[]), vid: NoVar)
+  let unknownReq = Requirements(release: NimbleRelease(status: HasUnknownNimbleFile), vid: NoVar)
+  result = @[emptyReq, unknownReq]
 
 proc toJsonHook*(d: DepGraph, opt: ToJsonOptions): JsonNode =
   result = newJObject()
@@ -82,22 +87,22 @@ proc findDependencyForDep*(g: DepGraph; dep: PkgUrl): int {.inline.} =
   assert g.packageToDependency.hasKey(dep), $(dep, g.packageToDependency)
   result = g.packageToDependency.getOrDefault(dep)
 
-iterator directDependencies*(g: DepGraph; d: DepConstraint): lent DepConstraint =
-  if d.activeVersion >= 0 and d.activeVersion < d.versions.len:
-    let deps {.cursor.} = g.reqs[d.versions[d.activeVersion].req].deps
-    for dep in deps:
-      let idx = findDependencyForDep(g, dep[0])
-      yield g.nodes[idx]
+# iterator directDependencies*(g: DepGraph; d: DepConstraint): lent DepConstraint =
+#   if d.activeVersion >= 0 and d.activeVersion < d.versions.len:
+#     let deps {.cursor.} = g.reqs[d.versions[d.activeVersion].req].deps
+#     for dep in deps:
+#       let idx = findDependencyForDep(g, dep[0])
+#       yield g.nodes[idx]
 
-proc getCfgPath*(g: DepGraph; d: DepConstraint): lent CfgPath =
-  result = CfgPath g.reqs[d.versions[d.activeVersion].req].srcDir
+# proc getCfgPath*(g: DepGraph; d: DepConstraint): lent CfgPath =
+#   result = CfgPath g.reqs[d.versions[d.activeVersion].req].srcDir
 
-proc bestNimVersion*(g: DepGraph): Version =
-  result = Version""
-  for n in allNodes(g):
-    if n.active and g.reqs[n.versions[n.activeVersion].req].nimVersion != Version"":
-      let v = g.reqs[n.versions[n.activeVersion].req].nimVersion
-      if v > result: result = v
+# proc bestNimVersion*(g: DepGraph): Version =
+#   result = Version""
+#   for n in allNodes(g):
+#     if n.active and g.reqs[n.versions[n.activeVersion].req].nimVersion != Version"":
+#       let v = g.reqs[n.versions[n.activeVersion].req].nimVersion
+#       if v > result: result = v
 
 proc readOnDisk(result: var DepGraph) =
   let configFile = context().workspace / AtlasWorkspace
