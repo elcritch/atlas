@@ -1,6 +1,6 @@
 # Small program that runs the test cases
 
-import std / [strutils, os, osproc, jsonutils, json, tables, sequtils, strformat, unittest]
+import std / [strutils, os, osproc, jsonutils, json, tables, sequtils, algorithm, strformat, unittest]
 import basic/[sattypes, context, gitops, reporters, nimbleparser, pkgurls, compiledpatterns, versions]
 import basic/deptypes
 import dependencies
@@ -41,27 +41,27 @@ suite "basic repo tests":
     # These will change if atlas-tests is regnerated!
     # To update run and use commits not adding a proj_x.nim file
     #    curl http://localhost:4242/buildGraph/ws_generated-logs.txt
-    let projAHashes = dedent"""
-    e479b438015e734bea67a9c63d783e78cab5746e
+    let projAtags = dedent"""
+    fb3804df03c3c414d98d1f57deeb44c8a223ba44 1.1.0
     7ca5581cd5355f6b5461a23f9683f19378bd268a
-    fb3804df03c3c414d98d1f57deeb44c8a223ba44
-    """.strip().splitLines()
+    e479b438015e734bea67a9c63d783e78cab5746e 1.0.0
+    """.parseTaggedVersions(false)
 
-    let projBHashes = dedent"""
-    af4275109d60caaeacf2912a37c2339aca40a922
+    let projBtags = dedent"""
+    ee875baecee161ed053b87b583b2f08526838bd6 1.1.0
     cd3ad76043e5f983f704be6bf61e57d187fe070f
-    ee875baecee161ed053b87b583b2f08526838bd6
-    """.strip().splitLines()
+    af4275109d60caaeacf2912a37c2339aca40a922 1.0.0
+    """.parseTaggedVersions(false)
 
-    let projCHashes = dedent"""
+    let projCtags = dedent"""
+    9331e14f3fa20ed75b7d5c0ab93aa5fb0293192f 1.2.0
     c7540297c01dc57a98cb1fce7660ab6f2a0cee5f
-    9331e14f3fa20ed75b7d5c0ab93aa5fb0293192f
-    """.strip().splitLines()
+    """.parseTaggedVersions(false)
 
-    let projDHashes = dedent"""
-    0dec9c9733129919972416f04e73b1fb2cbf3bd3
-    dd98f775ae33d450dc7f936f850e247e820e31ad
-    """.strip().splitLines()
+    let projDtags = dedent"""
+    dd98f775ae33d450dc7f936f850e247e820e31ad 2.0.0
+    0dec9c9733129919972416f04e73b1fb2cbf3bd3 1.0.0
+    """.parseTaggedVersions(false)
 
   test "ws_testtraverse collect nimbles":
       withDir "tests/ws_testtraverse":
@@ -91,12 +91,12 @@ suite "basic repo tests":
         nc.loadDependency(dep4)
 
         check collectNimbleVersions(nc, dep0) == newSeq[VersionTag]()
-        let vtags1 = projAHashes.join("\n").parseTaggedVersions(false)
-        check collectNimbleVersions(nc, dep1) == projAHashes.join("\n").parseTaggedVersions(false)
+        proc tolist(tags: seq[VersionTag]): seq[string] = tags.mapIt($VersionTag(v: Version"", c: it.c)).sorted()
 
-        check collectNimbleVersions(nc, dep2) == projBHashes.join("\n").parseTaggedVersions(false)
-        check collectNimbleVersions(nc, dep3) == projCHashes.join("\n").parseTaggedVersions(false)
-        check collectNimbleVersions(nc, dep4) == projDHashes.join("\n").parseTaggedVersions(false)
+        check collectNimbleVersions(nc, dep1).tolist() == projAtags.tolist()
+        check collectNimbleVersions(nc, dep2).tolist() == projBtags.tolist()
+        check collectNimbleVersions(nc, dep3).tolist() == projCtags.tolist()
+        check collectNimbleVersions(nc, dep4).tolist() == projDtags.tolist()
 
   test "ws_testtraverse traverseDependency":
       setAtlasVerbosity(Info)
@@ -135,14 +135,22 @@ suite "basic repo tests":
 
         block:
           let sp = sp[1][1]
-          let req1 = vt"1.1.0@fb3804df03c3c414d98d1f57deeb44c8a223ba44"
-          let req2 = vt"1.0.0@e479b438015e734bea67a9c63d783e78cab5746e"
-          let req3 = vt"~@7ca5581cd5355f6b5461a23f9683f19378bd268a"
+          let v1 = projAtags[0]
+          let v2 = projAtags[1]
+          let v3 = projAtags[2]
           check sp.versions.len() == 3
-          check sp.versions[req1].status == Normal
-          check sp.versions[req1].deps.len() == 1
-          check $sp.versions[req1].deps[0][0] == "file://buildGraph/proj_b"
-          check $sp.versions[req1].deps[0][1] == ">= 1.1.0"
+          check sp.versions[v1].status == Normal
+          check sp.versions[v1].deps.len() == 1
+
+          check sp.versions[v2].status == Normal
+          check sp.versions[v2].deps.len() == 1
+
+          check $sp.versions[v1].deps[0][0] == "file://buildGraph/proj_b"
+          check $sp.versions[v1].deps[0][1] == ">= 1.1.0"
+
+          check $sp.versions[v2].deps[0][0] == "file://buildGraph/proj_b"
+          check $sp.versions[v2].deps[0][1] == ">= 1.0.0"
+
 
 
   test "ws_testtraverse collectNimble no git tags":

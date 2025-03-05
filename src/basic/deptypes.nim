@@ -32,7 +32,7 @@ type
 
   DependencySpec* = object
     # dep*: Dependency
-    versions*: OrderedTable[VersionTag, Requirements]
+    versions*: Table[VersionTag, Requirements]
   
   Requirements* = object
     version*: Version
@@ -159,7 +159,7 @@ proc `==`*(a, b: Requirements): bool =
       a.srcDir == b.srcDir and a.nimVersion == b.nimVersion
   #and a.version == b.version
 
-proc toJsonHook*(t: OrderedTable[VersionTag, Requirements], opt: ToJsonOptions): JsonNode =
+proc toJsonHook*(t: Table[VersionTag, Requirements], opt: ToJsonOptions): JsonNode =
   result = newJObject()
   for k, v in t:
     result[repr(k)] = toJson(v, opt)
