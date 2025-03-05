@@ -139,7 +139,7 @@ suite "test expand with git tags":
 
         let specs: DependencySpecs = expand(nc, AllReleases, dir)
 
-        echo "\tspec:\n", specs.toJson(ToJsonOptions(enumMode: joptEnumString))
+        # echo "\tspec:\n", specs.toJson(ToJsonOptions(enumMode: joptEnumString))
         let sp = specs.depsToSpecs.pairs().toSeq()
 
         check $sp[0][0] == "file://$1" % [$dir]
@@ -183,7 +183,7 @@ suite "test expand with git tags":
 
   test "ws_testtraverse traverseDependency from http":
       withDir "tests/ws_testtraverse":
-        setAtlasVerbosity(Trace)
+        # setAtlasVerbosity(Trace)
         removeDir("deps")
         context().workspace = paths.getCurrentDir()
         context().flags = {UsesOverrides, KeepWorkspace, ListVersions, FullClones}
@@ -209,7 +209,7 @@ suite "test expand with git tags":
 
         let specs: DependencySpecs = expand(nc, AllReleases, dir)
 
-        echo "\tspec:\n", specs.toJson(ToJsonOptions(enumMode: joptEnumString))
+        # echo "\tspec:\n", specs.toJson(ToJsonOptions(enumMode: joptEnumString))
         let sp = specs.depsToSpecs.pairs().toSeq()
         let vt = toVersionTag
 
@@ -313,7 +313,7 @@ suite "test expand with no git tags":
 
         let specs: DependencySpecs = expand(nc, AllReleases, dir)
 
-        echo "\tspec:\n", specs.toJson(ToJsonOptions(enumMode: joptEnumString))
+        # echo "\tspec:\n", specs.toJson(ToJsonOptions(enumMode: joptEnumString))
         let sp = specs.depsToSpecs.pairs().toSeq()
 
         check $sp[0][0] == "file://$1" % [$dir]
