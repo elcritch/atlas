@@ -174,7 +174,7 @@ suite "test expand with git tags":
 
         let sp4 = sp[4][1] # proj C
         testRequirements(sp4, projDtags, [
-          ("file://buildGraphNoGitTags/does_not_exist", ">= 1.2.0"),
+          ("file://buildGraph/does_not_exist", ">= 1.2.0"),
           ("", ""),
         ], true)
 
@@ -274,7 +274,7 @@ suite "test expand with no git tags":
 
 
   test "ws_testtraverse traverseDependency no git tags":
-      setAtlasVerbosity(Info)
+      # setAtlasVerbosity(Info)
       withDir "tests/ws_testtraverse":
         removeDir("deps")
         context().workspace = paths.getCurrentDir()

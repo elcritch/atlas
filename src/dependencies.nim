@@ -174,17 +174,17 @@ proc addRelease(
     dep: Dependency,
     vtag: VersionTag
 ): VersionTag =
-  var vtag = vtag
+  result = vtag
   info dep.pkg.projectName, "Adding Nimble version:", $vtag
   let release = nc.processNimbleRelease(dep, vtag)
 
   if vtag.v.string == "":
-    vtag.v = release.version
-    warn dep.pkg.projectName, "updating release tag information:", $vtag
+    result.v = release.version
+    warn dep.pkg.projectName, "updating release tag information:", $result
   elif vtag.v != release.version:
     warn dep.pkg.projectName, "version mismatch between:", $vtag.v, "nimble version:", $release.version
   
-  spec.releases[vtag] = release
+  spec.releases[result] = release
 
 proc traverseDependency*(
     nc: var NimbleContext;
@@ -228,14 +228,14 @@ proc traverseDependency*(
             not version.commit.isEmpty() and
             not uniqueCommits.containsOrIncl(version.commit):
             let vtag = VersionTag(v: Version"", c: version.commit)
-            assert vtag.commit.orig == FromDep, "maybe this needs to be overriden like before"
+            assert vtag.commit.orig == FromDep, "maybe this needs to be overriden like before: " & $vtag.commit.orig
             discard result.addRelease(nc, dep, vtag)
 
       let tags = collectTaggedVersions(dep.ondisk)
       for tag in tags:
         if not uniqueCommits.containsOrIncl(tag.c):
           let tag = result.addRelease(nc, dep, tag)
-          assert tag.commit.orig == FromGitTag, "maybe this needs to be overriden like before"
+          assert tag.commit.orig == FromGitTag, "maybe this needs to be overriden like before: " & $tag.commit.orig
 
       for tag in nimbleCommits:
         if not uniqueCommits.containsOrIncl(tag.c):
