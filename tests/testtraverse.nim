@@ -59,6 +59,7 @@ template testRequirements(sp: DependencySpec,
 suite "test expand with git tags":
   setup:
     setAtlasVerbosity(Warning)
+    context().overrides = Patterns()
 
     # These will change if atlas-tests is regnerated!
     # To update run and use commits not adding a proj_x.nim file
@@ -129,7 +130,7 @@ suite "test expand with git tags":
         context().defaultAlgo = SemVer
 
         var nc = createNimbleContext()
-        discard nc.overrides.addPattern("$+", "file://buildGraph/$#")
+        discard nc.overrides.addPattern("$+", "file://./buildGraph/$#")
 
         let deps = setupGraph()
         let dir = paths.getCurrentDir().absolutePath
@@ -161,9 +162,9 @@ suite "test expand with git tags":
 
         let sp2 = sp[2][1] # proj B
         testRequirements(sp2, projBtags, [
-          ("file://.///buildGraph/proj_c", ">= 1.1.0"),
-          ("file://.///buildGraph/proj_c", ">= 1.0.0"),
-          ("file://.///buildGraph/proj_c", ">= 1.0.0"),
+          ("file://./buildGraph/proj_c", ">= 1.1.0"),
+          ("file://./buildGraph/proj_c", ">= 1.0.0"),
+          ("file://./buildGraph/proj_c", ">= 1.0.0"),
         ])
 
         let sp3 = sp[3][1] # proj C
@@ -186,12 +187,14 @@ suite "test expand with git tags":
         context().flags = {UsesOverrides, KeepWorkspace, ListVersions, FullClones}
         context().defaultAlgo = SemVer
 
-        discard context().overrides.addPattern("$+", "http://localhost:4242/buildGrap/$#")
+        context().overrides = Patterns()
+        discard context().overrides.addPattern("does_not_exist", "file://./buildGraph/does_not_exist")
+        discard context().overrides.addPattern("$+", "http://localhost:4242/buildGraph/$#")
         var nc = createNimbleContext()
 
         let pkgA = nc.createUrl("proj_a")
 
-        check $pkgA == "http://localhost:4242/buildGrap/proj_a"
+        check $pkgA == "http://localhost:4242/buildGraph/proj_a"
 
         # let deps = setupGraph()
         let dir = paths.getCurrentDir().absolutePath
@@ -211,7 +214,7 @@ suite "test expand with git tags":
 
         let sp0: DependencySpec = sp[0][1] # proj ws_testtraversal
         testRequirements(sp0, @[vt"#head@-"], [
-          ("file://buildGraphNoGitTags/proj_a", "#head"),
+          ("http://localhost:4242/buildGraph/proj_a", "#head"),
         ])
 
 
@@ -219,6 +222,7 @@ suite "test expand with no git tags":
 
   setup:
     setAtlasVerbosity(Error)
+    context().overrides = Patterns()
 
     # These will change if atlas-tests is regnerated!
     # To update run and use commits not adding a proj_x.nim file
@@ -250,6 +254,7 @@ suite "test expand with no git tags":
         removeDir("deps")
         context().flags = {UsesOverrides, KeepWorkspace, ListVersions, FullClones}
         context().defaultAlgo = SemVer
+
         discard context().overrides.addPattern("$+", "file://./buildGraphNoGitTags/$#")
 
         let dir = ospaths2.getCurrentDir()
@@ -290,7 +295,7 @@ suite "test expand with no git tags":
         context().defaultAlgo = SemVer
 
         var nc = createNimbleContext()
-        discard nc.overrides.addPattern("$+", "file://buildGraphNoGitTags/$#")
+        discard nc.overrides.addPattern("$+", "file://./buildGraphNoGitTags/$#")
 
         let deps = setupGraphNoGitTags()
         let dir = paths.getCurrentDir().absolutePath
@@ -323,9 +328,9 @@ suite "test expand with no git tags":
 
         let sp2 = sp[2][1] # proj B
         testRequirements(sp2, projBtags, [
-          ("file://.///buildGraphNoGitTags/proj_c", ">= 1.1.0"),
-          ("file://.///buildGraphNoGitTags/proj_c", ">= 1.0.0"),
-          ("file://.///buildGraphNoGitTags/proj_c", ">= 1.0.0"),
+          ("file://./buildGraphNoGitTags/proj_c", ">= 1.1.0"),
+          ("file://./buildGraphNoGitTags/proj_c", ">= 1.0.0"),
+          ("file://./buildGraphNoGitTags/proj_c", ">= 1.0.0"),
         ])
 
         let sp3 = sp[3][1] # proj C
