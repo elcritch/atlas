@@ -322,7 +322,7 @@ proc expand*(nc: var NimbleContext; mode: TraversalMode, path: Path): Dependency
         discard
 
   for pkg, spec in specs.depsToSpecs:
-    warn pkg.projectName, "Processed:", $pkg.url()
+    info pkg.projectName, "Processed:", $pkg.url()
     for vtag, reqs in spec.releases:
       info pkg.projectName, "spec version:", $vtag, "reqs:", reqs.deps.mapIt($(it[0].projectName) & " " & $(it[1])).join(", "), "status:", $reqs.status
 

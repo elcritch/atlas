@@ -183,7 +183,7 @@ suite "test expand with git tags":
 
   test "ws_testtraverse traverseDependency from http":
       withDir "tests/ws_testtraverse":
-        setAtlasVerbosity(Trace)
+        # setAtlasVerbosity(Trace)
         removeDir("deps")
         context().workspace = paths.getCurrentDir()
         context().flags = {UsesOverrides, KeepWorkspace, ListVersions, FullClones}
@@ -228,7 +228,7 @@ suite "test expand with git tags":
 suite "test expand with no git tags":
 
   setup:
-    setAtlasVerbosity(Error)
+    setAtlasVerbosity(Warning)
     context().overrides = Patterns()
     context().proxy = parseUri "http://localhost:4242"
     context().dumbProxy = true
