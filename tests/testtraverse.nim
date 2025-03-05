@@ -1,7 +1,7 @@
 # Small program that runs the test cases
 
-import std / [strutils, os, uri, osproc, jsonutils, json, tables, sequtils, algorithm, strformat, unittest]
-import basic/[sattypes, context, gitops, reporters, nimbleparser, pkgurls, compiledpatterns, versions]
+import std / [strutils, os, uri, jsonutils, json, tables, sequtils, algorithm, strformat, unittest]
+import basic/[sattypes, context, reporters, pkgurls, compiledpatterns, versions]
 import basic/deptypes
 import dependencies
 import testerutils
