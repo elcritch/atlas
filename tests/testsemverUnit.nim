@@ -97,7 +97,6 @@ suite "graph solve":
         context().flags = {UsesOverrides, KeepWorkspace, ListVersions, FullClones}
         context().defaultAlgo = SemVer
 
-        writeFile("ws_semver_unit.nimble", "requires \"proj_a\"\n")
         var nc = createNimbleContext()
         nc.nameToUrl["proj_a"] = toPkgUri(parseUri "https://example.com/buildGraph/proj_a")
         nc.nameToUrl["proj_b"] = toPkgUri(parseUri "https://example.com/buildGraph/proj_b")
