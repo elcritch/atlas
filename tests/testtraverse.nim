@@ -263,7 +263,7 @@ suite "test expand with no git tags":
 
   test "ws_testtraverse collect nimbles":
       withDir "tests/ws_testtraverse":
-        setAtlasVerbosity(Trace)
+        # setAtlasVerbosity(Trace)
         removeDir("deps")
         context().flags = {UsesOverrides, KeepWorkspace, ListVersions, FullClones}
         context().defaultAlgo = SemVer
