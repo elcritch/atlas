@@ -1,6 +1,6 @@
 # Small program that runs the test cases
 
-import std / [strutils, os, osproc, jsonutils, json, tables, sequtils, algorithm, strformat, unittest]
+import std / [strutils, os, uri, osproc, jsonutils, json, tables, sequtils, algorithm, strformat, unittest]
 import basic/[sattypes, context, gitops, reporters, nimbleparser, pkgurls, compiledpatterns, versions]
 import basic/deptypes
 import dependencies
@@ -60,6 +60,8 @@ suite "test expand with git tags":
   setup:
     setAtlasVerbosity(Warning)
     context().overrides = Patterns()
+    context().proxy = parseUri "http://localhost:4242"
+    context().dumbProxy = true
 
     # These will change if atlas-tests is regnerated!
     # To update run and use commits not adding a proj_x.nim file
@@ -223,6 +225,8 @@ suite "test expand with no git tags":
   setup:
     setAtlasVerbosity(Error)
     context().overrides = Patterns()
+    context().proxy = parseUri "http://localhost:4242"
+    context().dumbProxy = true
 
     # These will change if atlas-tests is regnerated!
     # To update run and use commits not adding a proj_x.nim file
