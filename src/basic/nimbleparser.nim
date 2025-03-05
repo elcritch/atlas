@@ -40,6 +40,7 @@ proc parseNimbleFile*(nc: NimbleContext; nimbleFile: Path; p: Patterns): NimbleR
       let query = parseVersionInterval(r, i, err) # update err
       if err:
         if result.status != HasBrokenDep:
+          warn nimbleFile, "broken nimble file: " & name
           result.status = HasBrokenNimbleFile
           result.err.addError $nimbleFile, "invalid 'requires' syntax in nimble file: " & r
       else:
@@ -50,8 +51,9 @@ proc parseNimbleFile*(nc: NimbleContext; nimbleFile: Path; p: Patterns): NimbleR
         else:
           result.deps.add (url, query)
     except ValueError, IOError, OSError:
+      let err = getCurrentExceptionMsg()
       result.status = HasBrokenDep
-      warn nimbleFile, "cannot resolve dependency package name: " & name
+      warn nimbleFile, "cannot resolve dependency package name: " & name & " error: " & $err
       result.err.addError $nimbleFile, "cannot resolve package name: " & name
 
 proc genRequiresLine(u: string): string = "requires \"$1\"\n" % u.escape("", "")

@@ -178,7 +178,6 @@ suite "test expand with git tags":
           ("", ""),
         ], true)
 
-
   test "ws_testtraverse traverseDependency from http":
       setAtlasVerbosity(Info)
       withDir "tests/ws_testtraverse":
@@ -190,22 +189,31 @@ suite "test expand with git tags":
         var nc = NimbleContext()
         discard context().overrides.addPattern("$+", "http://localhost:4242/buildGrap/$#")
 
-        let deps = setupGraph()
+        let pkgA = nc.createUrl("proj_a")
+
+        check $pkgA == "http://localhost:4242/buildGrap/proj_a"
+
+        # let deps = setupGraph()
         let dir = paths.getCurrentDir().absolutePath
 
         let specs: DependencySpecs = expand(nc, AllReleases, dir)
 
         echo "\tspec:\n", specs.toJson(ToJsonOptions(enumMode: joptEnumString))
         let sp = specs.depsToSpecs.pairs().toSeq()
+        let vt = toVersionTag
 
         check sp.len() == 5
-        # check $sp[0][0] == "file://$1" % [$dir]
+        check $sp[0][0] == "file://$1" % [$dir]
         # check $sp[1][0] == "file://buildGraph/proj_a"
         # check $sp[2][0] == "file://buildGraph/proj_b"
         # check $sp[3][0] == "file://buildGraph/proj_c"
         # check $sp[4][0] == "file://buildGraph/proj_d"
 
-        let vt = toVersionTag
+        let sp0: DependencySpec = sp[0][1] # proj ws_testtraversal
+        testRequirements(sp0, @[vt"#head@-"], [
+          ("file://buildGraphNoGitTags/proj_a", "#head"),
+        ])
+
 
 suite "test expand with no git tags":
 
