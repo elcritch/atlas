@@ -30,11 +30,11 @@ proc setupGraphNoGitTags*(): seq[string] =
     createDir "buildGraphNoGitTags"
     withDir "buildGraphNoGitTags":
       for proj in projs:
-        exec("git clone http://localhost:4242/buildGraph/$1" % [proj])
+        exec("git clone http://localhost:4242/buildGraphNoGitTags/$1" % [proj])
   for proj in projs:
     result.add(ospaths2.getCurrentDir() / "buildGraphNoGitTags" / proj)
 
-suite "basic repo tests":
+suite "test expand with git tags":
   setup:
     setAtlasVerbosity(Warning)
 
@@ -99,7 +99,7 @@ suite "basic repo tests":
         check collectNimbleVersions(nc, dep4).tolist() == projDtags.tolist()
 
   test "ws_testtraverse traverseDependency":
-      setAtlasVerbosity(Info)
+      # setAtlasVerbosity(Info)
       withDir "tests/ws_testtraverse":
         removeDir("deps")
         context().workspace = paths.getCurrentDir()
@@ -114,7 +114,7 @@ suite "basic repo tests":
 
         let specs: DependencySpecs = expand(nc, AllReleases, dir)
 
-        echo "\tspec:\n", specs.toJson(ToJsonOptions(enumMode: joptEnumString))
+        # echo "\tspec:\n", specs.toJson(ToJsonOptions(enumMode: joptEnumString))
         let sp = specs.depsToSpecs.pairs().toSeq()
 
         check $sp[0][0] == "file://$1" % [$dir]
@@ -206,38 +206,186 @@ suite "basic repo tests":
           check $sp.versions[v1].deps[0][0] == "file://buildGraph/does_not_exist"
           check $sp.versions[v1].deps[0][1] == ">= 1.2.0"
 
+suite "test expand with no git tags":
 
-  test "ws_testtraverse collectNimble no git tags":
-    when false:
+  setup:
+    setAtlasVerbosity(Warning)
+
+    # These will change if atlas-tests is regnerated!
+    # To update run and use commits not adding a proj_x.nim file
+    #    curl http://localhost:4242/buildGraph/ws_generated-logs.txt
+    let projAtags = dedent"""
+    61eacba5453392d06ed0e839b52cf17462d94648 1.1.0
+    6a1cc178670d372f21c21329d35579e96283eab0
+    88d1801bff2e72cdaf2d29b438472336df6aa66d 1.0.0
+    """.parseTaggedVersions(false)
+
+    let projBtags = dedent"""
+    c70824d8b9b669cc37104d35055fd8c11ecdd680 1.1.0
+    bbb208a9cad0d58f85bd00339c85dfeb8a4f7ac0
+    289ae9eea432cdab9d681ab69444ae9d439eb6ae 1.0.0
+    """.parseTaggedVersions(false)
+
+    let projCtags = dedent"""
+    d6c04d67697df7807b8e2b6028d167b517d13440 1.2.0
+    8756fa4575bf750d4472ac78ba91520f05a1de60
+    """.parseTaggedVersions(false)
+
+    let projDtags = dedent"""
+    7ee36fecb09ef33024d3aa198ed87d18c28b3548 2.0.0
+    0bd0e77a8cbcc312185c2a1334f7bf2eb7b1241f 1.0.0
+    """.parseTaggedVersions(false)
+
+  test "ws_testtraverse collect nimbles":
       withDir "tests/ws_testtraverse":
-        let deps = setupGraphNoGitTags()
+        removeDir("deps")
+        context().flags = {UsesOverrides, KeepWorkspace, ListVersions, FullClones}
+        context().defaultAlgo = SemVer
+        discard context().overrides.addPattern("$+", "file://./buildGraphNoGitTags/$#")
+
+        let dir = ospaths2.getCurrentDir()
+        # writeFile("ws_testtraverse.nimble", "requires \"proj_a\"\n")
+
+        let deps = setupGraph()
         var nc = NimbleContext()
-        var graph = createGraph(createUrlSkipPatterns(ospaths2.getCurrentDir()))
-        graph[0].ondisk = paths.getCurrentDir()
-        graph[0].state = Found
+        # var graph = DepGraph(nodes: @[], reqs: defaultReqs())
+        let pkg = nc.createUrl(dir, projectName = "ws_testtraverse")
 
-        for dep in deps:
-          let url = createUrlSkipPatterns(dep)
-          graph.nodes.add Dependency(
-            pkg: url, versions: @[], isRoot: false, isTopLevel: false, activeVersion: -1,
-            ondisk: Path(dep),
-            state: Found
-          )
+        var dep0 = Dependency(pkg: pkg, isRoot: true, isTopLevel: true)
+        var dep1 = Dependency(pkg: nc.createUrl("file://./buildGraphNoGitTags/proj_a"), isRoot: true)
+        var dep2 = Dependency(pkg: nc.createUrl("file://./buildGraphNoGitTags/proj_b"), isRoot: true)
+        var dep3 = Dependency(pkg: nc.createUrl("file://./buildGraphNoGitTags/proj_c"), isRoot: true)
+        var dep4 = Dependency(pkg: nc.createUrl("file://./buildGraphNoGitTags/proj_d"), isRoot: true)
 
-        dumpJson graph
-        check graph[0].pkg.projectName == "ws_testtraverse"
-        check endsWith($(graph[0].pkg), "atlas/tests/ws_testtraverse")
-        check graph[0].isRoot == true
-        check graph[0].isTopLevel == true
+        nc.loadDependency(dep0)
+        nc.loadDependency(dep1)
+        nc.loadDependency(dep2)
+        nc.loadDependency(dep3)
+        nc.loadDependency(dep4)
 
-        for i in 0..<graph.nodes.len():
-          traverseDependency(nc, graph, i, TraversalMode.AllReleases)
+        check collectNimbleVersions(nc, dep0) == newSeq[VersionTag]()
+        proc tolist(tags: seq[VersionTag]): seq[string] = tags.mapIt($VersionTag(v: Version"", c: it.c)).sorted()
 
-        check graph[0].versions.len() == 1
-        check graph[1].versions.len() == 2
+        check collectNimbleVersions(nc, dep1).tolist() == projAtags.tolist()
+        check collectNimbleVersions(nc, dep2).tolist() == projBtags.tolist()
+        check collectNimbleVersions(nc, dep3).tolist() == projCtags.tolist()
+        check collectNimbleVersions(nc, dep4).tolist() == projDtags.tolist()
 
-        echo "\nGRAPH:POST:"
-        dumpJson graph
+
+  test "ws_testtraverse traverseDependency no git tags":
+      setAtlasVerbosity(Info)
+      withDir "tests/ws_testtraverse":
+        removeDir("deps")
+        context().workspace = paths.getCurrentDir()
+        context().flags = {UsesOverrides, KeepWorkspace, ListVersions, FullClones}
+        context().defaultAlgo = SemVer
+
+        var nc = NimbleContext()
+        discard nc.overrides.addPattern("$+", "file://buildGraphNoGitTags/$#")
+
+        let deps = setupGraphNoGitTags()
+        let dir = paths.getCurrentDir().absolutePath
+
+        let specs: DependencySpecs = expand(nc, AllReleases, dir)
+
+        # echo "\tspec:\n", specs.toJson(ToJsonOptions(enumMode: joptEnumString))
+        let sp = specs.depsToSpecs.pairs().toSeq()
+
+        check $sp[0][0] == "file://$1" % [$dir]
+        check $sp[1][0] == "file://buildGraphNoGitTags/proj_a"
+        check $sp[2][0] == "file://buildGraphNoGitTags/proj_b"
+        check $sp[3][0] == "file://buildGraphNoGitTags/proj_c"
+        check $sp[4][0] == "file://buildGraphNoGitTags/proj_d"
+
+        let vt = toVersionTag
+
+        block:
+          let sp = sp[0][1]
+          check sp.versions.len() == 1
+          check sp.versions[vt"#head@-"].status == Normal
+          check sp.versions[vt"#head@-"].deps.len() == 1
+          check $sp.versions[vt"#head@-"].deps[0][0] == "file://buildGraphNoGitTags/proj_a"
+          check $sp.versions[vt"#head@-"].deps[0][1] == "#head"
+
+        proc stripcommits(tags: seq[VersionTag]): seq[VersionTag] = tags.mapIt(VersionTag(v: Version"", c: it.c))
+
+        block:
+          let sp = sp[1][1] # proj A
+          let projAtags = projAtags.stripcommits()
+          let v1 = projAtags[0]
+          let v2 = projAtags[1]
+          let v3 = projAtags[2]
+          check sp.versions.len() == 3
+          check sp.versions[v1].status == Normal
+          check sp.versions[v1].deps.len() == 1
+
+          check sp.versions[v2].status == Normal
+          check sp.versions[v2].deps.len() == 1
+
+          check $sp.versions[v1].deps[0][0] == "file://buildGraphNoGitTags/proj_b"
+          check $sp.versions[v1].deps[0][1] == ">= 1.1.0"
+
+          check $sp.versions[v2].deps[0][0] == "file://buildGraphNoGitTags/proj_b"
+          check $sp.versions[v2].deps[0][1] == ">= 1.0.0"
+
+          check $sp.versions[v3].deps[0][0] == "file://buildGraphNoGitTags/proj_b"
+          check $sp.versions[v3].deps[0][1] == ">= 1.0.0"
+
+        block:
+          let sp = sp[2][1] # proj B
+          let projBtags = projBtags.stripcommits()
+          let v1 = projBtags[0]
+          let v2 = projBtags[1]
+          let v3 = projBtags[2]
+          check sp.versions.len() == 3
+          check sp.versions[v1].status == Normal
+          check sp.versions[v1].deps.len() == 1
+
+          check sp.versions[v2].status == Normal
+          check sp.versions[v2].deps.len() == 1
+
+          check $sp.versions[v1].deps[0][0] == "file://buildGraphNoGitTags/proj_c"
+          check $sp.versions[v1].deps[0][1] == ">= 1.1.0"
+
+          check $sp.versions[v2].deps[0][0] == "file://buildGraphNoGitTags/proj_c"
+          check $sp.versions[v2].deps[0][1] == ">= 1.0.0"
+
+          check $sp.versions[v3].deps[0][0] == "file://buildGraphNoGitTags/proj_c"
+          check $sp.versions[v3].deps[0][1] == ">= 1.0.0"
+
+        block:
+          let sp = sp[3][1] # proj C
+          let projCtags = projCtags.stripcommits()
+          let v1 = projCtags[0]
+          let v2 = projCtags[1]
+          check sp.versions.len() == 2
+          check sp.versions[v1].status == Normal
+          check sp.versions[v1].deps.len() == 1
+
+          check sp.versions[v2].status == Normal
+          check sp.versions[v2].deps.len() == 1
+
+          check $sp.versions[v1].deps[0][0] == "file://buildGraphNoGitTags/proj_d"
+          check $sp.versions[v1].deps[0][1] == ">= 1.0.0"
+
+          check $sp.versions[v2].deps[0][0] == "file://buildGraphNoGitTags/proj_d"
+          check $sp.versions[v2].deps[0][1] == ">= 1.2.0"
+
+        block:
+          let sp = sp[4][1] # proj D
+          let projDtags = projDtags.stripcommits()
+          let v1 = projDtags[0]
+          let v2 = projDtags[1]
+          check sp.versions.len() == 2
+          check sp.versions[v1].status == Normal
+          check sp.versions[v1].deps.len() == 1
+
+          check sp.versions[v2].status == Normal
+          check sp.versions[v2].deps.len() == 0
+
+          check $sp.versions[v1].deps[0][0] == "file://buildGraphNoGitTags/does_not_exist"
+          check $sp.versions[v1].deps[0][1] == ">= 1.2.0"
+
 
 
 infoNow "tester", "All tests run successfully"
