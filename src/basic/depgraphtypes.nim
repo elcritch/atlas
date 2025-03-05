@@ -9,7 +9,6 @@ type
     nodes*: seq[DepConstraint]
     reqs*: seq[Requirements]
     packageToDependency*: Table[PkgUrl, int]
-    reqsByDeps*: Table[Requirements, int]
 
   DepConstraint* = object
     dep*: Dependency

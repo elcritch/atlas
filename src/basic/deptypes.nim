@@ -21,6 +21,8 @@ type
 
   DependencySpec* = object
     releases*: OrderedTable[VersionTag, NimbleRelease]
+    activeVersion*: int
+    active*: bool
   
   NimbleRelease* = ref object
     version*: Version
