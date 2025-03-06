@@ -80,8 +80,8 @@ suite "graph solve":
 
         let dir = paths.getCurrentDir().absolutePath
 
-        let specs: DepGraph = expand(nc, AllReleases, dir)
+        let graph: DepGraph = expand(nc, AllReleases, dir)
 
-        echo "\tspec:\n", specs.toJson(ToJsonOptions(enumMode: joptEnumString))
-        let sp = specs.pkgsToSpecs.pairs().toSeq()
+        echo "\tspec:\n", graph.toJson(ToJsonOptions(enumMode: joptEnumString))
+        let sp = graph.pkgs.values().toSeq()
 
