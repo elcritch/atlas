@@ -88,3 +88,10 @@ suite "graph solve":
 
         let form = graph.toFormular(SemVer)
 
+        context().dumpGraphs = true
+        var sol: Solution
+
+        echo "FORM: ", form.formula
+        for key, value in pairs(form.mapping):
+          echo "v", key.int, ": ", value
+

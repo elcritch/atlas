@@ -12,6 +12,8 @@ when defined(nimAtlasBootstrap):
 else:
   import sat/[sat, satvars]
 
+export sat
+
 iterator directDependencies*(graph: DepGraph; pkg: Package): lent Package =
   if pkg.activeRelease != nil:
     for (durl, _) in pkg.activeRelease.requirements:
@@ -30,13 +32,13 @@ proc sortDepVersions(a, b: (PackageVersion, NimbleRelease)): int =
 
 type
   SatVarInfo* = object # attached information for a SAT variable
-    pkg: Package
-    vtag: VersionTag
-    index: int
+    pkg*: Package
+    vtag*: VersionTag
+    index*: int
 
   Form* = object
-    formula: Formular
-    mapping: Table[VarId, SatVarInfo]
+    formula*: Formular
+    mapping*: Table[VarId, SatVarInfo]
     idgen: int32
 
 proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
@@ -206,7 +208,7 @@ proc runBuildSteps(graph: var DepGraph) =
           if fileExists(builderFile):
             runNimScriptBuilder pattern, pkg.projectName
 
-proc debugFormular(graph: var DepGraph; form: Form; solution: Solution) =
+proc debugFormular*(graph: var DepGraph; form: Form; solution: Solution) =
   echo "FORM: ", form.formula
   for key, value in pairs(form.mapping):
     echo "v", key.int, ": ", value
