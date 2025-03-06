@@ -34,7 +34,7 @@ proc setupGraphNoGitTags*(): seq[string] =
   for proj in projs:
     result.add(ospaths2.getCurrentDir() / "buildGraphNoGitTags" / proj)
 
-template testRequirements(sp: PackageReleases,
+template testRequirements(sp: PackageSpecs,
                           projTags: seq[VersionTag],
                           vers: openArray[(string, string)];
                           skipCount = false) =
@@ -144,7 +144,7 @@ suite "test expand with git tags":
         let deps = setupGraph()
         let dir = paths.getCurrentDir().absolutePath
 
-        let specs: DepGraph = expand(nc, AllReleases, dir)
+        let specs: Packages = expand(nc, AllReleases, dir)
 
         echo "\tspec:\n", specs.toJson(ToJsonOptions(enumMode: joptEnumString))
         let sp = specs.pkgsToSpecs
@@ -157,13 +157,13 @@ suite "test expand with git tags":
 
         let vt = toVersionTag
 
-        let sp0: PackageReleases = sp[0] # proj ws_testtraversal
+        let sp0: PackageSpecs = sp[0] # proj ws_testtraversal
         testRequirements(sp0, @[vt"#head@-"], [
           ("file://./buildGraph/proj_a", "#head"),
         ])
 
 
-        let sp1: PackageReleases = sp[1] # proj A
+        let sp1: PackageSpecs = sp[1] # proj A
         # verify that the duplicate releases have been "reduced"
         # check sp1.releases[projAtags[1]] == sp1.releases[projAtags[2]]
         # check cast[pointer](sp1.releases[projAtags[1]]) == cast[pointer](sp1.releases[projAtags[2]])
@@ -217,7 +217,7 @@ suite "test expand with git tags":
         # let deps = setupGraph()
         let dir = paths.getCurrentDir().absolutePath
 
-        let specs: DepGraph = expand(nc, AllReleases, dir)
+        let specs: Packages = expand(nc, AllReleases, dir)
 
         echo "\tspec:\n", specs.toJson(ToJsonOptions(enumMode: joptEnumString))
         let sp = specs.pkgsToSpecs
@@ -230,7 +230,7 @@ suite "test expand with git tags":
         # check $sp[3][0] == "file://buildGraph/proj_c"
         # check $sp[4][0] == "file://buildGraph/proj_d"
 
-        let sp0: PackageReleases = sp[0] # proj ws_testtraversal
+        let sp0: PackageSpecs = sp[0] # proj ws_testtraversal
         testRequirements(sp0, @[vt"#head@-"], [
           ("https://example.com/buildGraph/proj_a", "#head"),
         ])
@@ -322,7 +322,7 @@ suite "test expand with no git tags":
         let deps = setupGraphNoGitTags()
         let dir = paths.getCurrentDir().absolutePath
 
-        let specs: DepGraph = expand(nc, AllReleases, dir)
+        let specs: Packages = expand(nc, AllReleases, dir)
 
         echo "\tspec:\n", specs.toJson(ToJsonOptions(enumMode: joptEnumString))
         let sp = specs.pkgsToSpecs
@@ -336,7 +336,7 @@ suite "test expand with no git tags":
         let vt = toVersionTag
         proc stripcommits(tags: seq[VersionTag]): seq[VersionTag] = tags.mapIt(VersionTag(v: Version"", c: it.c))
 
-        let sp0: PackageReleases = sp[0] # proj ws_testtraversal
+        let sp0: PackageSpecs = sp[0] # proj ws_testtraversal
         testRequirements(sp0, @[vt"#head@-"], [
           ("file://./buildGraphNoGitTags/proj_a", "#head"),
         ])

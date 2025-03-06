@@ -171,7 +171,7 @@ proc processNimbleRelease(
 
 proc addRelease(
     releases: var seq[(VersionTag, NimbleRelease)],
-    # spec: var PackageReleases,
+    # spec: var PackageSpecs,
     nc: var NimbleContext;
     pkg: Package,
     vtag: VersionTag
@@ -196,10 +196,10 @@ proc traverseDependency*(
     pkg: var Package,
     mode: TraversalMode;
     versions: seq[VersionTag];
-): PackageReleases =
-  doAssert pkg.ondisk.dirExists() and pkg.state != NotInitialized, "PackageReleases should've been found or cloned at this point"
+): PackageSpecs =
+  doAssert pkg.ondisk.dirExists() and pkg.state != NotInitialized, "PackageSpecs should've been found or cloned at this point"
 
-  result = PackageReleases(url: pkg.url)
+  result = PackageSpecs(url: pkg.url)
   var releases: seq[(VersionTag, NimbleRelease)]
 
   let currentCommit = currentGitCommit(pkg.ondisk, Warning)
@@ -312,7 +312,7 @@ proc loadDependency*(
       pkg.state = Error
       pkg.errors.add "ondisk location missing"
 
-proc expand*(nc: var NimbleContext; mode: TraversalMode, path: Path): DepGraph =
+proc expand*(nc: var NimbleContext; mode: TraversalMode, path: Path): Packages =
   ## Expand the graph by adding all dependencies.
   
   let url = nc.createUrl(path)
@@ -321,7 +321,7 @@ proc expand*(nc: var NimbleContext; mode: TraversalMode, path: Path): DepGraph =
   # nc.loadDependency(pkg)
 
   var processed = initHashSet[PkgUrl]()
-  var specs = DepGraph()
+  var specs = Packages()
   nc.packageToDependency[pkg.url] = pkg
 
   var processing = true

@@ -19,17 +19,6 @@ type
     ondisk*: Path
     errors*: seq[string]
 
-  PackageVersion* = object
-    vtag*: VersionTag
-    vid*: VarId
-    release*: NimbleRelease
-
-  PackageReleases* = object
-    url*: PkgUrl
-    releases*: OrderedTable[VersionTag, NimbleRelease]
-    activeVersion*: int
-    active*: bool
-  
   NimbleRelease* = ref object
     version*: Version
     nimVersion*: Version
@@ -41,14 +30,28 @@ type
     err*: string
     requirementsId*: VarId
 
+  PackageVersion* = object
+    vtag*: VersionTag
+    vid*: VarId
+    release*: NimbleRelease
+
+  PackageSpecs* = object
+    url*: PkgUrl
+    releases*: OrderedTable[VersionTag, NimbleRelease]
+    activeVersion*: int
+    active*: bool
+  
   RequirementStatus* = enum
     Normal, HasBrokenRepo, HasBrokenNimbleFile, HasBrokenRelease, HasUnknownNimbleFile, HasBrokenDep
 
   CommitOrigin = enum
     FromHead, FromGitTag, FromDep, FromNimbleFile
 
+  Packages* = object
+    pkgsToSpecs*: seq[PackageSpecs]
+
   DepGraph* = object
-    pkgsToSpecs*: seq[PackageReleases]
+    pkgsToSpecs*: seq[PackageSpecs]
 
   NimbleContext* = object
     packageToDependency*: Table[PkgUrl, Package]
@@ -154,7 +157,7 @@ proc toJsonHook*(t: OrderedTable[VersionTag, NimbleRelease], opt: ToJsonOptions)
   for k, v in t:
     result[repr(k)] = toJson(v, opt)
 
-proc toJsonHook*(t: OrderedTable[PkgUrl, PackageReleases], opt: ToJsonOptions): JsonNode =
+proc toJsonHook*(t: OrderedTable[PkgUrl, PackageSpecs], opt: ToJsonOptions): JsonNode =
   result = newJObject()
   for k, v in t:
     result[$(k)] = toJson(v, opt)
