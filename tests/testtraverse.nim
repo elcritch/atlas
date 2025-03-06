@@ -144,7 +144,7 @@ suite "test expand with git tags":
         let deps = setupGraph()
         let dir = paths.getCurrentDir().absolutePath
 
-        let specs: PackageGraph = expand(nc, AllReleases, dir)
+        let specs: DepGraph = expand(nc, AllReleases, dir)
 
         echo "\tspec:\n", specs.toJson(ToJsonOptions(enumMode: joptEnumString))
         let sp = specs.pkgsToSpecs
@@ -217,7 +217,7 @@ suite "test expand with git tags":
         # let deps = setupGraph()
         let dir = paths.getCurrentDir().absolutePath
 
-        let specs: PackageGraph = expand(nc, AllReleases, dir)
+        let specs: DepGraph = expand(nc, AllReleases, dir)
 
         echo "\tspec:\n", specs.toJson(ToJsonOptions(enumMode: joptEnumString))
         let sp = specs.pkgsToSpecs
@@ -322,7 +322,7 @@ suite "test expand with no git tags":
         let deps = setupGraphNoGitTags()
         let dir = paths.getCurrentDir().absolutePath
 
-        let specs: PackageGraph = expand(nc, AllReleases, dir)
+        let specs: DepGraph = expand(nc, AllReleases, dir)
 
         echo "\tspec:\n", specs.toJson(ToJsonOptions(enumMode: joptEnumString))
         let sp = specs.pkgsToSpecs

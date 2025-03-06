@@ -47,7 +47,7 @@ type
   CommitOrigin = enum
     FromHead, FromGitTag, FromDep, FromNimbleFile
 
-  PackageGraph* = object
+  DepGraph* = object
     pkgsToSpecs*: seq[PackageReleases]
 
   NimbleContext* = object
