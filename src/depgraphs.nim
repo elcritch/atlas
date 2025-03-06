@@ -1,4 +1,4 @@
-import std / [sets, paths, dirs, files, tables, os, strutils, streams, json, jsonutils, algorithm]
+import std / [sets, tables, paths, dirs, files, tables, os, strutils, streams, json, jsonutils, algorithm]
 
 import basic/[deptypes, versions, depgraphtypes, osutils, context, gitops, reporters, nimbleparser, pkgurls, versions]
 import dependencies, runners 
@@ -12,17 +12,21 @@ when defined(nimAtlasBootstrap):
 else:
   import sat/[sat, satvars]
 
-iterator directDependencies*(graph: DepGraph; d: DepConstraint): lent DepConstraint =
-  if d.activeVersion >= 0 and d.activeVersion < d.versions.len:
-    let deps {.cursor.} = graph.reqs[d.versions[d.activeVersion].reqIdx].release.deps
-    for dep in deps:
-      let idx = findDependencyForDep(graph, dep[0])
-      yield graph.nodes[idx]
+iterator directDependencies*(graph: DepGraph; pkg: Package): lent Package =
+  if pkg.activeVersion != nil:
+    for (durl, _) in pkg.activeVersion.requirements:
+      # let idx = findDependencyForDep(graph, dep[0])
+      yield graph.pkgs[durl]
 
-iterator mvalidVersions*(pkg: var DepConstraint; graph: var DepGraph): var DepVersion =
-  for ver in pkg.versions.mitems():
-    if graph.reqs[ver.reqIdx].status == Normal:
+iterator validVersions*(pkg: var Package; graph: var DepGraph): PackageVersion =
+  for ver, rel in pkg.versions:
+    if rel.status == Normal:
       yield ver
+
+proc sortDepVersions(a, b: (PackageVersion, NimbleRelease)): int =
+      (if a[0].vtag.version < b[0].vtag.version: 1
+      elif a[0].vtag.version == b[0].vtag.version: 0
+      else: -1)
 
 type
   SatVarInfo* = object # attached information for a SAT variable
@@ -41,15 +45,15 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
   builder.openOpr(AndForm)
 
   # This loop processes each package to set up version selection constraints
-  for p in mitems(graph.nodes):
+  for pkgUrl, p in mpairs(graph.pkgs):
     if p.versions.len == 0: continue
 
-    # Sort versions in descending order (newer versions first)
+    # # Sort versions in descending order (newer versions first)
     p.versions.sort(sortDepVersions)
 
     # Assign a unique SAT variable to each version of the package
     var i = 0
-    for ver in p.versions.mitems():
+    for ver in p.versions:
       ver.vid = VarId(result.idgen)
       # Map the SAT variable to package information for result interpretation
       result.mapping[ver.vid] = SatVarInfo(

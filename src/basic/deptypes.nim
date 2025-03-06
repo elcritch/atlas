@@ -17,7 +17,7 @@ type
   Package* = ref object
     url*: PkgUrl
     state*: PackageState
-    versions*: OrderedTable[PackageVersion, NimbleRelease]
+    versions*: seq[(PackageVersion, NimbleRelease)]
     activeVersion*: NimbleRelease
     ondisk*: Path
     active*: bool
