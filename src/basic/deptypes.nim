@@ -17,7 +17,7 @@ type
   Package* = ref object
     url*: PkgUrl
     state*: PackageState
-    versions*: seq[(PackageVersion, NimbleRelease)]
+    versions*: OrderedTable[PackageVersion, NimbleRelease]
     activeVersion*: NimbleRelease
     ondisk*: Path
     active*: bool
@@ -35,7 +35,7 @@ type
     err*: string
     rid*: VarId
 
-  PackageVersion* = object
+  PackageVersion* = ref object
     vtag*: VersionTag
     vid*: VarId
 
@@ -141,6 +141,14 @@ proc `==`*(a, b: NimbleRelease): bool =
   result = result and a.srcDir == b.srcDir
   result = result and a.err == b.err
   result = result and a.status == b.status
+
+proc `$`*(r: PackageVersion): string =
+  result = $(r.vtag)
+
+proc hash*(r: PackageVersion): Hash =
+  result = hash(r.vtag)
+proc `==`*(a, b: PackageVersion): bool =
+  result = a.vtag == b.vtag
 
 proc toJsonHook*(t: Table[VersionTag, NimbleRelease], opt: ToJsonOptions): JsonNode =
   result = newJObject()

@@ -266,21 +266,22 @@ proc traverseDependency*(
   pkg.state = Processed
 
   var uniqueReleases: Table[NimbleRelease, NimbleRelease]
-  for (vtag, rel) in versions:
+
+  for (ver, rel) in versions:
     if rel notin uniqueReleases:
-      trace pkg.url.projectName, "found unique release requirements at:", $vtag
+      trace pkg.url.projectName, "found unique release requirements at:", $ver.vtag
       uniqueReleases[rel] = rel
     else:
-      trace pkg.url.projectName, "found duplicate release requirements at:", $vtag
+      trace pkg.url.projectName, "found duplicate release requirements at:", $ver.vtag
 
   info pkg.url.projectName, "unique versions found:", uniqueReleases.values().toSeq().mapIt($it.version).join(", ")
-  for (vtag, rel) in versions:
-    if vtag in result.versions:
-      error pkg.url.projectName, "duplicate release found:", $vtag, "new:", repr(rel)
-      error pkg.url.projectName, "... existing: ", repr(result.versions[vtag])
-      error pkg.url.projectName, "duplicate release found:", $vtag, "new:", repr(rel), " existing: ", repr(result.versions[vtag])
+  for (ver, rel) in versions:
+    if ver in result.versions:
+      error pkg.url.projectName, "duplicate release found:", $ver.vtag, "new:", repr(rel)
+      error pkg.url.projectName, "... existing: ", repr(result.versions[ver])
+      error pkg.url.projectName, "duplicate release found:", $ver.vtag, "new:", repr(rel), " existing: ", repr(result.versions[ver])
       error pkg.url.projectName, "versions table:", $result.versions.keys().toSeq()
-    result.versions[vtag] = uniqueReleases[rel]
+    result.versions[ver] = uniqueReleases[rel]
   
   # TODO: filter by unique versions first?
   # result.versions.sort(sortVersions)
