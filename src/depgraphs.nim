@@ -34,7 +34,7 @@ type
   SatVarInfo* = object # attached information for a SAT variable
     pkg*: Package
     vtag*: VersionTag
-    index*: int
+    # index*: int
 
   Form* = object
     formula*: Formular
@@ -61,7 +61,7 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
       result.mapping[ver.vid] = SatVarInfo(
         pkg: p,
         vtag: ver.vtag,
-        index: i
+        # index: i
       )
       inc result.idgen
       inc i
