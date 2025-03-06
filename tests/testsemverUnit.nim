@@ -103,7 +103,6 @@ suite "graph solve":
         nc.nameToUrl["proj_c"] = toPkgUri(parseUri "https://example.com/buildGraph/proj_c")
         nc.nameToUrl["proj_d"] = toPkgUri(parseUri "https://example.com/buildGraph/proj_d")
 
-        let deps = setupGraph()
         let dir = paths.getCurrentDir().absolutePath
 
         let specs: DependencySpecs = expand(nc, AllReleases, dir)
