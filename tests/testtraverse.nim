@@ -147,7 +147,7 @@ suite "test expand with git tags":
         let specs: PackageSpecs = expand(nc, AllReleases, dir)
 
         echo "\tspec:\n", specs.toJson(ToJsonOptions(enumMode: joptEnumString))
-        let sp = specs.depsToSpecs.pairs().toSeq()
+        let sp = specs.pkgsToSpecs.pairs().toSeq()
 
         check $sp[0][0] == "file://$1" % [$dir]
         check $sp[1][0] == "file://./buildGraph/proj_a"
@@ -220,7 +220,7 @@ suite "test expand with git tags":
         let specs: PackageSpecs = expand(nc, AllReleases, dir)
 
         echo "\tspec:\n", specs.toJson(ToJsonOptions(enumMode: joptEnumString))
-        let sp = specs.depsToSpecs.pairs().toSeq()
+        let sp = specs.pkgsToSpecs.pairs().toSeq()
         let vt = toVersionTag
 
         check sp.len() == 5
@@ -325,7 +325,7 @@ suite "test expand with no git tags":
         let specs: PackageSpecs = expand(nc, AllReleases, dir)
 
         echo "\tspec:\n", specs.toJson(ToJsonOptions(enumMode: joptEnumString))
-        let sp = specs.depsToSpecs.pairs().toSeq()
+        let sp = specs.pkgsToSpecs.pairs().toSeq()
 
         check $sp[0][0] == "file://$1" % [$dir]
         check $sp[1][0] == "file://./buildGraphNoGitTags/proj_a"

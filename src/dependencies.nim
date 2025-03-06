@@ -345,12 +345,12 @@ proc expand*(nc: var NimbleContext; mode: TraversalMode, path: Path): PackageSpe
         # debug pkg.projectName, "processed spec:", $spec
         for vtag, reqs in spec.releases:
           debug pkg.projectName, "spec version:", $vtag, "reqs:", $(toJsonHook(reqs))
-        specs.depsToSpecs[pkg] = spec
+        specs.pkgsToSpecs[pkg] = spec
         processing = true
       else:
         discard
 
-  for pkg, spec in specs.depsToSpecs:
+  for pkg, spec in specs.pkgsToSpecs:
     info pkg.projectName, "Processed:", $pkg.url()
     for vtag, reqs in spec.releases:
       info pkg.projectName, "spec version:", $vtag, "reqs:", reqs.deps.mapIt($(it[0].projectName) & " " & $(it[1])).join(", "), "status:", $reqs.status

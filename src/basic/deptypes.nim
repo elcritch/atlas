@@ -47,7 +47,7 @@ type
     FromHead, FromGitTag, FromDep, FromNimbleFile
 
   PackageSpecs* = ref object
-    depsToSpecs*: OrderedTable[PkgUrl, PackageSpec]
+    pkgsToSpecs*: OrderedTable[PkgUrl, PackageSpec]
 
   NimbleContext* = object
     packageToDependency*: Table[PkgUrl, Package]

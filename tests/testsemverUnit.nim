@@ -83,5 +83,5 @@ suite "graph solve":
         let specs: PackageSpecs = expand(nc, AllReleases, dir)
 
         echo "\tspec:\n", specs.toJson(ToJsonOptions(enumMode: joptEnumString))
-        let sp = specs.depsToSpecs.pairs().toSeq()
+        let sp = specs.pkgsToSpecs.pairs().toSeq()
 
