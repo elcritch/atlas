@@ -187,6 +187,8 @@ proc hash*(a: Version): Hash {.borrow.}
 proc `==`*(a, b: VersionInterval): bool {.inline.} = system.`==`(a, b)
 proc hash*(a: VersionInterval): Hash {.inline.} = hashes.hash(a)
 
+proc isInterval*(a: VersionInterval): bool {.inline.} = a.isInterval
+
 proc parseVer(s: string; start: var int): Version =
   if start < s.len and s[start] == '#':
     var i = start

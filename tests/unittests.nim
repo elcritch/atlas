@@ -191,3 +191,144 @@ suite "versions":
 
     let v4 = VersionTag(v: Version"#head", c: initCommitHash("", FromGitTag))
     check v4 == v3
+
+import basic/[versions]
+
+template v(x): untyped = Version(x)
+
+suite "version interval matches":
+
+  proc p(s: string): VersionInterval =
+    var err = false
+    result = parseVersionInterval(s, 0, err)
+    # assert not err
+
+  test "simple equality match":
+    let interval = p"1.0.0"
+    check interval.matches(v"1.0.0") == true
+    check interval.matches(v"1.0.1") == false
+    check interval.matches(v"0.9.9") == false
+  
+  test "greater than or equal":
+    let interval = p">= 1.0.0"
+    check interval.matches(v"1.0.0") == true
+    check interval.matches(v"1.0.1") == true
+    check interval.matches(v"2.0.0") == true
+    check interval.matches(v"0.9.9") == false
+  
+  test "greater than":
+    let interval = p"> 1.0.0"
+    check interval.matches(v"1.0.0") == false
+    check interval.matches(v"1.0.1") == true
+    check interval.matches(v"2.0.0") == true
+    check interval.matches(v"0.9.9") == false
+  
+  test "less than or equal":
+    let interval = p"<= 1.0.0"
+    check interval.matches(v"1.0.0") == true
+    check interval.matches(v"0.9.9") == true
+    check interval.matches(v"0.1.0") == true
+    check interval.matches(v"1.0.1") == false
+  
+  test "less than":
+    let interval = p"< 1.0.0"
+    check interval.matches(v"1.0.0") == false
+    check interval.matches(v"0.9.9") == true
+    check interval.matches(v"0.1.0") == true
+    check interval.matches(v"1.0.1") == false
+  
+  test "any version":
+    let interval = p"*"
+    check interval.matches(v"1.0.0") == true
+    check interval.matches(v"0.0.1") == true
+    check interval.matches(v"99.99.99") == true
+  
+  test "version range with ampersand":
+    let interval = p">= 1.0.0 & <= 2.0.0"
+    check interval.matches(v"0.9.9") == false
+    check interval.matches(v"1.0.0") == true
+    check interval.matches(v"1.5.0") == true
+    check interval.matches(v"2.0.0") == true
+    check interval.matches(v"2.0.1") == false
+  
+  test "version range with comma":
+    # The code notes that Nimble doesn't use this syntax, but it's supported
+    let interval = p">= 1.0.0, < 2.0.0"
+    check interval.matches(v"0.9.9") == false
+    check interval.matches(v"1.0.0") == true
+    check interval.matches(v"1.5.0") == true
+    check interval.matches(v"2.0.0") == false
+  
+  test "tight version range":
+    let interval = p"> 1.0.0 & < 1.1.0"
+    check interval.matches(v"1.0.0") == false
+    check interval.matches(v"1.0.1") == true
+    check interval.matches(v"1.0.9") == true
+    check interval.matches(v"1.1.0") == false
+  
+  test "special version #head":
+    let interval = p"#head"
+    check interval.matches(v"#head") == true
+    check interval.matches(v"1.0.0") == false
+  
+  test "special version with and without hash":
+    let specialInterval = p"#branch"
+    check specialInterval.matches(v"#branch") == true
+    check specialInterval.matches(v"branch") == true  # According to the matching logic
+    
+    let noHashInterval = p"branch"
+    check noHashInterval.matches(v"#branch") == true  # According to the matching logic
+  
+  test "commit hash matching":
+    # Create version tags for testing
+    let commit1 = initCommitHash("abcdef123456", FromGitTag)
+    let commit2 = initCommitHash("123456abcdef", FromGitTag)
+    
+    let tag1 = VersionTag(c: commit1, v: v"1.0.0")
+    let tag2 = VersionTag(c: commit2, v: v"2.0.0")
+    
+    # Test commit matching with version intervals
+    let specificCommit = p"#abcdef"
+    check specificCommit.matches(tag1) == true
+    check specificCommit.matches(tag2) == false
+    
+    # Test regular version matching with tags
+    let regularVersion = p"1.0.0"
+    check regularVersion.matches(tag1) == true
+    check regularVersion.matches(tag2) == false
+  
+  test "invalid interval":
+    # Test >= 2.0.0 & <= 1.0.0 (invalid interval, should match nothing)
+    let invalidInterval = p">= 2.0.0 & <= 1.0.0"
+    check invalidInterval.matches(v"1.5.0") == false
+    check invalidInterval.matches(v"0.5.0") == false
+    check invalidInterval.matches(v"2.5.0") == false
+  
+  test "semver-style matching":
+    # Testing how toSemVer works with matches
+    let interval = p">= 1.0.0"
+    let semVerInterval = interval.toSemVer()
+    
+    # SemVer should convert >= 1.0.0 to >= 1.0.0 & < 2.0.0
+    check semVerInterval.isInterval == true
+    check semVerInterval.matches(v"1.0.0") == true
+    check semVerInterval.matches(v"1.9.9") == true
+    check semVerInterval.matches(v"2.0.0") == false
+  
+  test "special version comparison":
+    # Special versions should be sorted below regular versions
+    check not (v"#head" < v"#head")
+    check not (v"#head" < v"1.0")
+    check v"1.0" < v"#head"
+    check v"#branch" < v"#head"
+    check v"#branch" < v"1.0" # This is expected behavior based on existing tests
+    
+  test "version matching with extractSpecificCommit":
+    let specificCommitInterval = p"#abcdef"
+    let extractedCommit = extractSpecificCommit(specificCommitInterval)
+    check extractedCommit.h == "abcdef"
+    
+    # Test a non-specific commit interval
+    let regularInterval = p">= 1.0.0"
+    let noCommit = extractSpecificCommit(regularInterval)
+    check noCommit.h == ""
