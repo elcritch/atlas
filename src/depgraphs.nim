@@ -235,56 +235,60 @@ proc solve*(graph: var DepGraph; form: Form) =
     debugFormular graph, form, solution
 
   if satisfiable(form.formula, solution):
-    for node in mitems graph.nodes:
-      if node.dep.isRoot: node.active = true
+    graph.root.active = true
     for varIdx in 0 ..< maxVar:
       let vid = VarId varIdx
       if vid in form.mapping:
         let mapInfo = form.mapping[vid]
-        info mapInfo.url.projectName, "v" & $varIdx & " sat var: " & $solution.getVar(vid).toPretty()
+        info mapInfo.pkg.projectName, "v" & $varIdx & " sat var: " & $solution.getVar(vid).toPretty()
 
       if solution.isTrue(VarId(varIdx)) and form.mapping.hasKey(VarId varIdx):
         let mapInfo = form.mapping[VarId varIdx]
-        let i = findDependencyForDep(graph, mapInfo.url)
-        graph[i].active = true
-        assert graph[i].activeRelease == -1, "too bad: " & graph[i].dep.url.url
-        graph[i].activeRelease = mapInfo.index
-        debug mapInfo.url.projectName, "package satisfiable"
-        if not mapInfo.vtag.commit.isEmpty() and graph[i].dep.state == Processed:
-          assert graph[i].dep.ondisk.string.len > 0, "Missing ondisk location for: " & $(graph[i].dep.url, i)
-          let res = checkoutGitCommit(graph[i].dep.ondisk, mapInfo.vtag.commit)
+        # let i = findDependencyForDep(graph, mapInfo.url)
+        let pkg = mapInfo.pkg
+        let ver = mapInfo.version
+        pkg.active = true
+        assert pkg.activeRelease == nil, "too bad: " & $pkg.url
+        pkg.activeRelease = mapInfo.release
+        debug pkg.url.projectName, "package satisfiable"
+        if not mapInfo.version.vtag.commit.isEmpty() and pkg.state == Processed:
+          if pkg.ondisk.string.len == 0:
+            error pkg.url.projectName, "Missing ondisk location for:", $(pkg.url)
+          else:
+            let res = checkoutGitCommit(pkg.ondisk, ver.vtag.commit)
 
     if NoExec notin context().flags:
       runBuildSteps(graph)
 
     if ListVersions in context().flags:
       info "../resolve", "selected:"
-      for node in items graph.nodes:
-        if not node.dep.isTopLevel:
-          for ver in items(node.versions):
+      for pkg in values(graph.pkgs):
+        if not pkg.isRoot:
+          for ver in pkg.versions.keys():
             let item = form.mapping[ver.vid]
+            doAssert pkg.url == item.pkg.url
             if solution.isTrue(ver.vid):
-              info item.url.projectName, "[x] " & toString item
+              info item.pkg.url.projectName, "[x] " & toString item
             else:
-              info item.url.projectName, "[ ] " & toString item
+              info item.pkg.url.projectName, "[ ] " & toString item
       info "../resolve", "end of selection"
   else:
     var notFoundCount = 0
-    for node in mitems(graph.nodes):
-      if node.dep.isRoot and node.dep.state != Processed:
-        error context().workspace, "invalid find package: " & node.dep.url.projectName & " in state: " & $node.dep.state & " error: " & $node.dep.errors
+    for pkg in values(graph.pkgs):
+      if pkg.isRoot and pkg.state != Processed:
+        error context().workspace, "invalid find package: " & pkg.url.projectName & " in state: " & $pkg.state & " error: " & $pkg.errors
         inc notFoundCount
     if notFoundCount > 0:
       return
     error context().workspace, "version conflict; for more information use --showGraph"
-    for node in mitems(graph.nodes):
+    for pkg in mvalues(graph.pkgs):
       var usedVersionCount = 0
-      for ver in mvalidVersions(node, graph):
+      for (ver, rel) in validVersions(pkg, graph):
         if solution.isTrue(ver.vid): inc usedVersionCount
       if usedVersionCount > 1:
-        for ver in mvalidVersions(node, graph):
+        for (ver, rel) in validVersions(pkg, graph):
           if solution.isTrue(ver.vid):
-            error node.dep.url.projectName, string(ver.vtag.version) & " required"
+            error pkg.url.projectName, string(ver.vtag.version) & " required"
   if context().dumpGraphs:
     dumpJson(graph, "graph-solved.json")
 
