@@ -39,23 +39,28 @@ template testRequirements(sp: Package,
                           projTags: seq[VersionTag],
                           vers: openArray[(string, string)];
                           skipCount = false) =
+  echo "Checking Requirements: " & astToStr(sp)
   if not skipCount:
-    check sp.releases.len() == vers.len()
+    check sp.versions.len() == vers.len()
 
   for idx, vt in projTags:
     # let vt = projTags[idx]
-    echo "checking versiontag: " & $vt & " item: " & $vers[idx]
+    let vt = vt.toPkgVer
+    echo "Checking requirements item: " & $vers[idx] & " version: " & $vt
+    check idx < vers.len()
     let (url, ver) = vers[idx]
-    check vt in sp.releases
-    if vt in sp.releases:
-      check sp.releases[vt].status == Normal
+    check sp.state == Processed
+    check vt in sp.versions
+    if vt in sp.versions:
+      check sp.versions[vt].status == Normal
       if not skipCount:
-        check sp.releases[vt].deps.len() == 1
+        check sp.versions[vt].requirements.len() == 1
 
       if url != "":
-        check $sp.releases[vt].deps[0][0] == url
+        check $sp.versions[vt].requirements[0][0] == url
       if ver != "":
-        check $sp.releases[vt].deps[0][1] == ver
+        check $sp.versions[vt].requirements[0][1] == ver
+
 
 suite "graph solve":
   setup:
@@ -83,8 +88,14 @@ suite "graph solve":
 
         var graph: DepGraph = expand(nc, AllReleases, dir)
 
-        echo "\tspec:\n", graph.toJson(ToJsonOptions(enumMode: joptEnumString))
         let sp = graph.pkgs.values().toSeq()
+        let sp0: Package = sp[0] # proj ws_testtraversal
+        let vt = toVersionTag
+        testRequirements(sp0, @[vt"#head@-"], [
+          ("file://./buildGraph/proj_a", "~"),
+        ])
+
+        echo "\tspec:\n", graph.toJson(ToJsonOptions(enumMode: joptEnumString))
 
         let form = graph.toFormular(SemVer)
         var formStr = $form.formula

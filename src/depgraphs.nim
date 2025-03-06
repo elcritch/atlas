@@ -133,6 +133,7 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
         var matchCount = 0
 
         if not commit.isEmpty():
+          info pkg.url.projectName, "adding requirements selections by specific commit:", $dep.projectName, "commit:", $commit
           # Match by specific commit if specified
           for depVer in availVer.versions.keys():
             if queryVer.matches(depVer.vtag.version) or commit == depVer.vtag.commit:
@@ -141,12 +142,14 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
               break
         elif algo == MinVer:
           # For MinVer algorithm, try to find the minimum version that satisfies the requirement
+          info pkg.url.projectName, "adding requirements selections by MinVer:", $dep.projectName
           for depVer in availVer.versions.keys():
             if queryVer.matches(depVer.vtag.version):
               builder.add depVer.vid
               inc matchCount
         else:
           # For other algorithms (like SemVer), try to find the maximum version that satisfies
+          info pkg.url.projectName, "adding requirements selections by SemVer:", $dep.projectName
           var revVers = availVer.versions.keys().toSeq()
           revVers.reverse()
           for depVer in revVers:

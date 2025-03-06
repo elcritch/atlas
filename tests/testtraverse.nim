@@ -161,7 +161,7 @@ suite "test expand with git tags":
 
         let sp0: Package = sp[0] # proj ws_testtraversal
         testRequirements(sp0, @[vt"#head@-"], [
-          ("file://./buildGraph/proj_a", "#head"),
+          ("file://./buildGraph/proj_a", "~"),
         ])
 
 
