@@ -170,7 +170,7 @@ proc processNimbleRelease(
           # enrichVersionsViaExplicitHash graph[depIdx].versions, interval
 
 proc addRelease(
-    releases: var seq[(VersionTag, NimbleRelease)],
+    versions: var seq[(PackageVersion, NimbleRelease)],
     # spec: var Package,
     nc: var NimbleContext;
     pkg: Package,
@@ -189,7 +189,7 @@ proc addRelease(
   elif vtag.v != release.version:
     warn pkg.url.projectName, "version mismatch between:", $vtag.v, "nimble version:", $release.version
   
-  releases.add((result, release,))
+  versions.add((result, release,))
 
 proc traverseDependency*(
     nc: var NimbleContext;
@@ -200,19 +200,19 @@ proc traverseDependency*(
   doAssert pkg.ondisk.dirExists() and pkg.state != NotInitialized, "Package should've been found or cloned at this point"
 
   result = Package(url: pkg.url)
-  var releases: seq[(VersionTag, NimbleRelease)]
+  var versions: seq[(PackageVersion, NimbleRelease)]
 
   let currentCommit = currentGitCommit(pkg.ondisk, Warning)
   if mode == CurrentCommit and currentCommit.isEmpty():
     # let vtag = VersionTag(v: Version"#head", c: initCommitHash("", FromHead))
-    # releases.add((vtag, NimbleRelease(version: vtag.version, status: Normal)))
+    # versions.add((vtag, NimbleRelease(version: vtag.version, status: Normal)))
     # pkg.state = Processed
     # info pkg.url.projectName, "traversing dependency using current commit:", $vtag
     discard
   elif currentCommit.isEmpty():
     warn pkg.url.projectName, "traversing dependency unable to find git current version at ", $pkg.ondisk
     let vtag = VersionTag(v: Version"#head", c: initCommitHash("", FromHead))
-    releases.add((vtag, NimbleRelease(version: vtag.version, status: HasBrokenRepo)))
+    versions.add((vtag, NimbleRelease(version: vtag.version, status: HasBrokenRepo)))
     pkg.state = Error
     return
   else:
@@ -222,7 +222,7 @@ proc traverseDependency*(
   of CurrentCommit:
     trace pkg.url.projectName, "traversing dependency for only current commit"
     let vtag = VersionTag(v: Version"#head", c: initCommitHash(currentCommit, FromHead))
-    discard releases.addRelease(nc, pkg, vtag)
+    discard versions.addRelease(nc, pkg, vtag)
 
   of AllReleases:
     try:
@@ -236,14 +236,14 @@ proc traverseDependency*(
             not uniqueCommits.containsOrIncl(version.commit):
             let vtag = VersionTag(v: Version"", c: version.commit)
             assert vtag.commit.orig == FromDep, "maybe this needs to be overriden like before: " & $vtag.commit.orig
-            discard releases.addRelease(nc, pkg, vtag)
+            discard versions.addRelease(nc, pkg, vtag)
 
       ## Note: always prefer tagged versions
       let tags = collectTaggedVersions(pkg.ondisk)
       info pkg.url.projectName, "traverseDependency nimble tags:", $tags
       for tag in tags:
         if not uniqueCommits.containsOrIncl(tag.c):
-          let tag = releases.addRelease(nc, pkg, tag)
+          let tag = versions.addRelease(nc, pkg, tag)
           assert tag.commit.orig == FromGitTag, "maybe this needs to be overriden like before: " & $tag.commit.orig
 
       if tags.len() == 0 or context().includeTagsAndNimbleCommits:
@@ -252,38 +252,38 @@ proc traverseDependency*(
         info pkg.url.projectName, "traverseDependency nimble commits:", $nimbleCommits
         for tag in nimbleCommits:
           if not uniqueCommits.containsOrIncl(tag.c):
-            discard releases.addRelease(nc, pkg, tag)
+            discard versions.addRelease(nc, pkg, tag)
 
-      if releases.len() == 0:
+      if versions.len() == 0:
         let vtag = VersionTag(v: Version"#head", c: initCommitHash(currentCommit, FromHead))
         info pkg.url.projectName, "traverseDependency no versions found, using default #head", "at", $pkg.ondisk
-        discard releases.addRelease(nc, pkg, vtag)
+        discard versions.addRelease(nc, pkg, vtag)
 
     finally:
       if not checkoutGitCommit(pkg.ondisk, currentCommit, Warning):
-        info pkg.url.projectName, "traverseDependency error loading releases reverting to ", $currentCommit
+        info pkg.url.projectName, "traverseDependency error loading versions reverting to ", $currentCommit
 
   pkg.state = Processed
 
   var uniqueReleases: Table[NimbleRelease, NimbleRelease]
-  for (vtag, rel) in releases:
+  for (vtag, rel) in versions:
     if rel notin uniqueReleases:
       trace pkg.url.projectName, "found unique release requirements at:", $vtag
       uniqueReleases[rel] = rel
     else:
       trace pkg.url.projectName, "found duplicate release requirements at:", $vtag
 
-  info pkg.url.projectName, "unique releases found:", uniqueReleases.values().toSeq().mapIt($it.version).join(", ")
-  for (vtag, rel) in releases:
-    if vtag in result.releases:
+  info pkg.url.projectName, "unique versions found:", uniqueReleases.values().toSeq().mapIt($it.version).join(", ")
+  for (vtag, rel) in versions:
+    if vtag in result.versions:
       error pkg.url.projectName, "duplicate release found:", $vtag, "new:", repr(rel)
-      error pkg.url.projectName, "... existing: ", repr(result.releases[vtag])
-      error pkg.url.projectName, "duplicate release found:", $vtag, "new:", repr(rel), " existing: ", repr(result.releases[vtag])
-      error pkg.url.projectName, "releases table:", $result.releases.keys().toSeq()
-    result.releases[vtag] = uniqueReleases[rel]
+      error pkg.url.projectName, "... existing: ", repr(result.versions[vtag])
+      error pkg.url.projectName, "duplicate release found:", $vtag, "new:", repr(rel), " existing: ", repr(result.versions[vtag])
+      error pkg.url.projectName, "versions table:", $result.versions.keys().toSeq()
+    result.versions[vtag] = uniqueReleases[rel]
   
   # TODO: filter by unique versions first?
-  result.releases.sort(sortVersions)
+  result.versions.sort(sortVersions)
 
 proc loadDependency*(
     nc: NimbleContext,
@@ -343,7 +343,7 @@ proc expand*(nc: var NimbleContext; mode: TraversalMode, path: Path): Packages =
         let mode = if pkg.isRoot: CurrentCommit else: mode
         let spec = nc.traverseDependency(pkg, mode, @[])
         # debug pkg.projectName, "processed spec:", $spec
-        for vtag, reqs in spec.releases:
+        for vtag, reqs in spec.versions:
           debug pkg.projectName, "spec version:", $vtag, "reqs:", $(toJsonHook(reqs))
         specs.pkgsToSpecs.add(spec)
         processing = true
@@ -352,7 +352,7 @@ proc expand*(nc: var NimbleContext; mode: TraversalMode, path: Path): Packages =
 
   for spec in specs.pkgsToSpecs:
     info spec.url.projectName, "Processed:", $spec.url.url
-    for vtag, reqs in spec.releases:
+    for vtag, reqs in spec.versions:
       info spec.url.projectName, "spec version:", $vtag, "reqs:", reqs.deps.mapIt($(it[0].projectName) & " " & $(it[1])).join(", "), "status:", $reqs.status
 
   result = specs

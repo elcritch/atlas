@@ -5,16 +5,19 @@ export sha1, tables
 
 type
 
-  DependencyState* = enum
+  PackageState* = enum
     NotInitialized
     Found
     Processed
     Error
 
-  Package* = object
+  ReleaseStatus* = enum
+    Normal, HasBrokenRepo, HasBrokenNimbleFile, HasBrokenRelease, HasUnknownNimbleFile, HasBrokenDep
+
+  Package* = ref object
     url*: PkgUrl
-    state*: DependencyState
-    releases*: OrderedTable[VersionTag, NimbleRelease]
+    state*: PackageState
+    releases*: OrderedTable[PackageVersion, NimbleRelease]
     activeVersion*: int
     ondisk*: Path
     active*: bool
@@ -26,25 +29,19 @@ type
     version*: Version
     nimVersion*: Version
     status*: ReleaseStatus
-    deps*: seq[(PkgUrl, VersionInterval)]
+    requirements*: seq[(PkgUrl, VersionInterval)]
     hasInstallHooks*: bool
     srcDir*: Path
     err*: string
-    requirementsId*: VarId
+    rid*: VarId
 
   PackageVersion* = object
     vtag*: VersionTag
     vid*: VarId
-    release*: NimbleRelease
-
-  ReleaseStatus* = enum
-    Normal, HasBrokenRepo, HasBrokenNimbleFile, HasBrokenRelease, HasUnknownNimbleFile, HasBrokenDep
-
-  Packages* = object
-    pkgsToSpecs*: seq[Package]
 
   DepGraph* = object
-    pkgsToSpecs*: seq[Package]
+    root*: Package
+    pkgs*: Table[PkgUrl, Package]
 
   NimbleContext* = object
     packageToDependency*: Table[PkgUrl, Package]
@@ -57,6 +54,9 @@ const
   UnknownReqs* = 1
 
   FileWorkspace* = "file://"
+
+proc toPkgVer*(vtag: VersionTag): PackageVersion =
+  result = PackageVersion(vtag: vtag)
 
 proc createUrl*(nc: NimbleContext, orig: Path): PkgUrl =
   var didReplace = false
@@ -102,9 +102,9 @@ proc toJsonHook*(v: (PkgUrl, VersionInterval), opt: ToJsonOptions): JsonNode =
 
 proc toJsonHook*(r: NimbleRelease, opt: ToJsonOptions = ToJsonOptions()): JsonNode =
   result = newJObject()
-  result["deps"] = toJson(r.deps, opt)
+  result["requirements"] = toJson(r.requirements, opt)
   if r.hasInstallHooks:
-    result["deps"] = toJson(r.hasInstallHooks, opt)
+    result["hasInstallHooks"] = toJson(r.hasInstallHooks, opt)
   if r.srcDir != Path "":
     result["srcDir"] = toJson(r.srcDir, opt)
   # if r.version != Version"":
@@ -122,7 +122,7 @@ proc hash*(r: Package): Hash =
 proc hash*(r: NimbleRelease): Hash =
   var h: Hash = 0
   h = h !& hash(r.version)
-  h = h !& hash(r.deps)
+  h = h !& hash(r.requirements)
   h = h !& hash(r.nimVersion)
   h = h !& hash(r.hasInstallHooks)
   h = h !& hash($r.srcDir)
@@ -133,7 +133,7 @@ proc hash*(r: NimbleRelease): Hash =
 proc `==`*(a, b: NimbleRelease): bool =
   result = true
   result = result and a.version == b.version
-  result = result and a.deps == b.deps
+  result = result and a.requirements == b.requirements
   result = result and a.nimVersion == b.nimVersion
   result = result and a.hasInstallHooks == b.hasInstallHooks
   result = result and a.srcDir == b.srcDir

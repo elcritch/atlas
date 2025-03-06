@@ -51,7 +51,7 @@ proc parseNimbleFile*(nc: NimbleContext;
           if v != Version"":
             result.nimVersion = v
         else:
-          result.deps.add (url, query)
+          result.requirements.add (url, query)
     except ValueError, IOError, OSError:
       let err = getCurrentExceptionMsg()
       result.status = HasBrokenDep
@@ -79,9 +79,9 @@ proc patchNimbleFile*(nc: var NimbleContext;
 
   echo "NIMBLEFILE: ", $nimbleFile
   echo "NIMBLEFILE: ", $nimbleFile.absolutePath
-  let req = parseNimbleFile(nc, nimbleFile, p)
+  let release = parseNimbleFile(nc, nimbleFile, p)
   # see if we have this requirement already listed. If so, do nothing:
-  for d in req.deps:
+  for d in release.requirements:
     if d[0].url == u:
       info(nimbleFile, "up to date")
       return
