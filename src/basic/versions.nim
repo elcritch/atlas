@@ -187,6 +187,8 @@ proc hash*(a: Version): Hash {.borrow.}
 proc `==`*(a, b: VersionInterval): bool {.inline.} = system.`==`(a, b)
 proc hash*(a: VersionInterval): Hash {.inline.} = hashes.hash(a)
 
+proc isHead*(a: VersionInterval): bool {.inline.} = a.a.v.isHead
+proc isSpecial*(a: VersionInterval): bool {.inline.} = a.a.v.isSpecial
 proc isInterval*(a: VersionInterval): bool {.inline.} = a.isInterval
 
 proc parseVer(s: string; start: var int): Version =
@@ -250,7 +252,7 @@ proc parseVersionInterval*(s: string; start: int; err: var bool): VersionInterva
     of '*': result = VersionInterval(a: VersionReq(r: verAny, v: Version""))
     of '#', '0'..'9':
       result = VersionInterval(a: VersionReq(r: verEq, v: parseVer(s, i)))
-      if result.a.v.isHead: result.a.r = verAny
+      # if result.a.v.isHead: result.a.r = verAny
       err = i < s.len
     of '=':
       inc i
