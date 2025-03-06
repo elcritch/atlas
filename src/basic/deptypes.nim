@@ -33,11 +33,11 @@ type
     hasInstallHooks*: bool
     srcDir*: Path
     err*: string
-    rid*: VarId
+    rid*: VarId = NoVar
 
   PackageVersion* = ref object
     vtag*: VersionTag
-    vid*: VarId
+    vid*: VarId = NoVar
 
   DepGraph* = object
     root*: Package

@@ -173,41 +173,19 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
   for pkg in mvalues(graph.pkgs):
     for ver, rel in validVersions(pkg, graph):
       if rel.requirements.len > 0:
+        info pkg.url.projectName, "adding package requirements restraint:", $ver, "vid: ", $ver.vid.int, "rel:", $rel.rid.int
         builder.openOpr(OrForm)
         builder.addNegated ver.vid
         builder.add rel.rid
         builder.closeOpr # OrForm
+      else:
+        info pkg.url.projectName, "not adding pacakge requirements restraint:", $ver
 
   builder.closeOpr # AndForm
   result.formula = toForm(builder)
 
 proc toString(info: SatVarInfo): string =
   "(" & info.pkg.url.projectName & ", " & $info.version & ")"
-
-proc runBuildSteps(graph: var DepGraph) =
-  ## execute build steps for the dependency graph
-  ##
-  ## `countdown` suffices to give us some kind of topological sort:
-  ##
-  var revPkgs = graph.pkgs.values().toSeq()
-  revPkgs.reverse()
-
-  # for i in countdown(graph.pkgs.len-1, 0):
-  for pkg in revPkgs:
-    if pkg.active:
-      doAssert pkg != nil
-      tryWithDir $pkg.ondisk:
-        # check for install hooks
-        if not pkg.activeRelease.isNil and
-            pkg.activeRelease.hasInstallHooks:
-          let nimbleFiles = findNimbleFile(pkg)
-          if nimbleFiles.len() == 1:
-            runNimScriptInstallHook nimbleFiles[0], pkg.projectName
-        # check for nim script builders
-        for pattern in mitems context().plugins.builderPatterns:
-          let builderFile = pattern[0] % pkg.projectName
-          if fileExists(builderFile):
-            runNimScriptBuilder pattern, pkg.projectName
 
 proc sortVersionTags*(a, b: VersionTag): int =
   (if a.v < b.v: 1
@@ -267,8 +245,8 @@ proc solve*(graph: var DepGraph; form: Form) =
           else:
             let res = checkoutGitCommit(pkg.ondisk, ver.vtag.commit)
 
-    if NoExec notin context().flags:
-      runBuildSteps(graph)
+    # if NoExec notin context().flags:
+    #   runBuildSteps(graph)
 
     if ListVersions in context().flags:
       info "../resolve", "selected:"
@@ -310,3 +288,28 @@ proc traverseLoop*(nc: var NimbleContext, path: Path): seq[CfgPath] =
   solve(graph, form)
   for dep in allActiveNodes(graph):
     result.add CfgPath(toDestDir(graph, dep) / getCfgPath(graph, dep).Path)
+
+proc runBuildSteps*(graph: var DepGraph) =
+  ## execute build steps for the dependency graph
+  ##
+  ## `countdown` suffices to give us some kind of topological sort:
+  ##
+  var revPkgs = graph.pkgs.values().toSeq()
+  revPkgs.reverse()
+
+  # for i in countdown(graph.pkgs.len-1, 0):
+  for pkg in revPkgs:
+    if pkg.active:
+      doAssert pkg != nil
+      tryWithDir $pkg.ondisk:
+        # check for install hooks
+        if not pkg.activeRelease.isNil and
+            pkg.activeRelease.hasInstallHooks:
+          let nimbleFiles = findNimbleFile(pkg)
+          if nimbleFiles.len() == 1:
+            runNimScriptInstallHook nimbleFiles[0], pkg.projectName
+        # check for nim script builders
+        for pattern in mitems context().plugins.builderPatterns:
+          let builderFile = pattern[0] % pkg.projectName
+          if fileExists(builderFile):
+            runNimScriptBuilder pattern, pkg.projectName
