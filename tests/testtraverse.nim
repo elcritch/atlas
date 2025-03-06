@@ -46,7 +46,6 @@ template testRequirements(sp: DependencySpec,
     # let vt = projTags[idx]
     echo "CHECKING VERSIONTAG: " & $vt & " item: " & $vers[idx]
     check idx < vers.len()
-    echo "CHECKING item: " & $vers[idx]
     let (url, ver) = vers[idx]
     check vt in sp.releases
     if vt in sp.releases:
