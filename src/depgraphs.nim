@@ -215,16 +215,18 @@ proc sortVersionTags*(a, b: VersionTag): int =
   else: -1)
 
 proc debugFormular*(graph: var DepGraph; form: Form; solution: Solution) =
-  echo "FORM: ", form.formula
+  echo "FORM:\n\t", form.formula
   var keys = form.mapping.keys().toSeq()
   keys.sort(proc (a, b: VarId): int = cmp(a.int, b.int))
   for key in keys:
     let value = form.mapping[key]
-    echo "v", key.int, ": ", value
+    echo "\tv", key.int, ": ", value
   let maxVar = maxVariable(form.formula)
+  echo "solutions:"
   for varIdx in 0 ..< maxVar:
     if solution.isTrue(VarId(varIdx)):
-      echo "v", varIdx, ": T"
+      echo "\tv", varIdx, ": T"
+  echo ""
 
 proc toPretty*(v: uint64): string = 
   if v == DontCare: "X"

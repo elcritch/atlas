@@ -91,10 +91,6 @@ suite "graph solve":
         context().dumpGraphs = true
         var sol: Solution
 
-        echo "\nFORM: ", form.formula
-        for key, value in pairs(form.mapping):
-          echo "\tv", key.int, ": ", value
-
         let formStr = "(&(1==v0) (1>=v1 v2) (1>=v3 v4) (1>=v5) (1>=v6 v7) (|(~v0) v0) (|(~v1) v0) (|(~v2) v0) (|(~v3) v0) (|(~v4) v0) (|(~v5) v0))"
 
         solve(graph, form)
