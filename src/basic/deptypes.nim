@@ -18,7 +18,7 @@ type
     url*: PkgUrl
     state*: PackageState
     versions*: OrderedTable[PackageVersion, NimbleRelease]
-    activeVersion*: int
+    activeVersion*: NimbleRelease
     ondisk*: Path
     active*: bool
     isRoot*: bool
@@ -156,8 +156,3 @@ proc toJsonHook*(t: OrderedTable[PkgUrl, Package], opt: ToJsonOptions): JsonNode
   result = newJObject()
   for k, v in t:
     result[$(k)] = toJson(v, opt)
-
-# proc toJsonHook*(d: DepGraph, opt: ToJsonOptions): JsonNode =
-#   result = newJObject()
-#   result["root"] = toJson(d.root, opt)
-#   result["pkgs"] = toJson(d.pkgs, opt)
