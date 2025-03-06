@@ -34,7 +34,7 @@ proc setupGraphNoGitTags*(): seq[string] =
   for proj in projs:
     result.add(ospaths2.getCurrentDir() / "buildGraphNoGitTags" / proj)
 
-template testRequirements(sp: DependencySpec,
+template testRequirements(sp: PackageSpec,
                           projTags: seq[VersionTag],
                           vers: openArray[(string, string)];
                           skipCount = false) =
@@ -80,7 +80,7 @@ suite "graph solve":
 
         let dir = paths.getCurrentDir().absolutePath
 
-        let specs: DependencySpecs = expand(nc, AllReleases, dir)
+        let specs: PackageSpecs = expand(nc, AllReleases, dir)
 
         echo "\tspec:\n", specs.toJson(ToJsonOptions(enumMode: joptEnumString))
         let sp = specs.depsToSpecs.pairs().toSeq()

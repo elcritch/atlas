@@ -19,12 +19,12 @@ type
     ondisk*: Path
     errors*: seq[string]
 
-  DependencyVersion* = object
+  PackageVersion* = object
     vtag*: VersionTag
     vid*: VarId
     release*: NimbleRelease
 
-  DependencySpec* = object
+  PackageSpec* = object
     releases*: OrderedTable[VersionTag, NimbleRelease]
     activeVersion*: int
     active*: bool
@@ -46,8 +46,8 @@ type
   CommitOrigin = enum
     FromHead, FromGitTag, FromDep, FromNimbleFile
 
-  DependencySpecs* = ref object
-    depsToSpecs*: OrderedTable[PkgUrl, DependencySpec]
+  PackageSpecs* = ref object
+    depsToSpecs*: OrderedTable[PkgUrl, PackageSpec]
 
   NimbleContext* = object
     packageToDependency*: Table[PkgUrl, Package]
@@ -153,7 +153,7 @@ proc toJsonHook*(t: OrderedTable[VersionTag, NimbleRelease], opt: ToJsonOptions)
   for k, v in t:
     result[repr(k)] = toJson(v, opt)
 
-proc toJsonHook*(t: OrderedTable[PkgUrl, DependencySpec], opt: ToJsonOptions): JsonNode =
+proc toJsonHook*(t: OrderedTable[PkgUrl, PackageSpec], opt: ToJsonOptions): JsonNode =
   result = newJObject()
   for k, v in t:
     result[$(k)] = toJson(v, opt)
