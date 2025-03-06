@@ -54,8 +54,9 @@ type
     overridesFile*: Path
     pluginsFile*: Path
     proxy*: Uri
-    dumbProxy*: bool
-    forceGitToHttps*: bool
+    dumbProxy*: bool = false
+    forceGitToHttps*: bool = false
+    includeTagsAndNimbleCommits*: bool = false
 
 var atlasContext = AtlasContext()
 

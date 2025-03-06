@@ -56,7 +56,7 @@ proc extractVersion*(s: string): string =
   while i < s.len and s[i] notin {'0'..'9'}: inc i
   result = s.substr(i)
 
-proc exec(gitCmd: Command;
+proc exec*(gitCmd: Command;
            path: Path;
            args: openArray[string],
            errorReportLevel: MsgKind = Error,

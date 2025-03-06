@@ -58,7 +58,7 @@ template testRequirements(sp: DependencySpec,
 
 suite "test expand with git tags":
   setup:
-    setAtlasVerbosity(Warning)
+    setAtlasVerbosity(Info)
     context().overrides = Patterns()
     context().proxy = parseUri "http://localhost:4242"
     context().dumbProxy = true
@@ -157,6 +157,11 @@ suite "test expand with git tags":
         ])
 
         let sp1: DependencySpec = sp[1][1] # proj A
+
+        # verify that the duplicate releases have been "reduced"
+        check sp1.releases[projAtags[1]] == sp1.releases[projAtags[2]]
+        check cast[pointer](sp1.releases[projAtags[1]]) == cast[pointer](sp1.releases[projAtags[2]])
+
         testRequirements(sp1, projAtags, [
           ("file://./buildGraph/proj_b", ">= 1.1.0"),
           ("file://./buildGraph/proj_b", ">= 1.0.0"),

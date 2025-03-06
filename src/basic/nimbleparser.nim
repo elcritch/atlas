@@ -16,15 +16,17 @@ proc addError*(err: var string; nimbleFile: string; msg: string) =
 
 proc isUrl(s: string): bool {.inline.} = s.len > 5 and s.contains "://"
 
-proc parseNimbleFile*(nc: NimbleContext; nimbleFile: Path; p: Patterns): NimbleRelease =
+proc parseNimbleFile*(nc: NimbleContext;
+                      nimbleFile: Path;
+                      p: Patterns): NimbleRelease =
   let nimbleInfo = extractRequiresInfo(nimbleFile)
-  let nimbleHash = secureHashFile($nimbleFile)
+  # let nimbleHash = secureHashFile($nimbleFile)
 
   result = NimbleRelease(
     hasInstallHooks: nimbleInfo.hasInstallHooks,
     srcDir: nimbleInfo.srcDir,
     status: if nimbleInfo.hasErrors: HasBrokenNimbleFile else: Normal,
-    nimbleHash: nimbleHash,
+    # nimbleHash: nimbleHash,
     version: parseExplicitVersion(nimbleInfo.version)
   )
 

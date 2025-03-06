@@ -29,7 +29,7 @@ type
     nimVersion*: Version
     status*: RequirementStatus
     deps*: seq[(PkgUrl, VersionInterval)]
-    nimbleHash*: SecureHash
+    # nimbleHash*: SecureHash
     hasInstallHooks*: bool
     srcDir*: Path
     err*: string
@@ -76,6 +76,11 @@ proc createUrl*(nc: NimbleContext, nameOrig: string; projectName: string = ""): 
   if projectName != "":
     result.projectName = projectName
 
+proc sortVersionTags*(a, b: VersionTag): int =
+  (if a.v < b.v: 1
+  elif a.v == b.v: 0
+  else: -1)
+
 proc sortVersions*(a, b: (VersionTag, NimbleRelease)): int =
   (if a[0].v < b[0].v: 1
   elif a[0].v == b[0].v: 0
@@ -99,8 +104,8 @@ proc toJsonHook*(r: NimbleRelease, opt: ToJsonOptions = ToJsonOptions()): JsonNo
     result["deps"] = toJson(r.hasInstallHooks, opt)
   if r.srcDir != Path "":
     result["srcDir"] = toJson(r.srcDir, opt)
-  if r.version != Version"":
-    result["version"] = toJson(r.version, opt)
+  # if r.version != Version"":
+  result["version"] = toJson(r.version, opt)
   # if r.vid != NoVar:
   #   result["varId"] = toJson(r.vid, opt)
   result["status"] = toJson(r.status, opt)
@@ -110,26 +115,27 @@ proc hash*(r: Dependency): Hash =
   var h: Hash = 0
   h = h !& hash(r.pkg)
   result = !$h
-  # pkg*: PkgUrl
-  # state*: DependencyState
-  # isRoot*: bool
-  # isTopLevel*: bool
-  # ondisk*: Path
-  # errors*: seq[string]
 
 proc hash*(r: NimbleRelease): Hash =
   var h: Hash = 0
+  h = h !& hash(r.version)
   h = h !& hash(r.deps)
+  h = h !& hash(r.nimVersion)
   h = h !& hash(r.hasInstallHooks)
   h = h !& hash($r.srcDir)
-  #h = h !& hash(r.version)
-  h = h !& hash(r.nimVersion)
+  h = h !& hash($r.err)
+  h = h !& hash($r.status)
   result = !$h
 
 proc `==`*(a, b: NimbleRelease): bool =
-  result = a.deps == b.deps and a.hasInstallHooks == b.hasInstallHooks and
-      a.srcDir == b.srcDir and a.nimVersion == b.nimVersion
-  #and a.version == b.version
+  result = true
+  result = result and a.version == b.version
+  result = result and a.deps == b.deps
+  result = result and a.nimVersion == b.nimVersion
+  result = result and a.hasInstallHooks == b.hasInstallHooks
+  result = result and a.srcDir == b.srcDir
+  result = result and a.err == b.err
+  result = result and a.status == b.status
 
 proc toJsonHook*(t: Table[VersionTag, NimbleRelease], opt: ToJsonOptions): JsonNode =
   result = newJObject()
