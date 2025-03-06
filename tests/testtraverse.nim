@@ -38,13 +38,13 @@ template testRequirements(sp: DependencySpec,
                           projTags: seq[VersionTag],
                           vers: openArray[(string, string)];
                           skipCount = false) =
-  echo "CHECKING Requirements: " & astToStr(sp)
+  echo "Checking Requirements: " & astToStr(sp)
   if not skipCount:
     check sp.releases.len() == vers.len()
 
   for idx, vt in projTags:
     # let vt = projTags[idx]
-    echo "CHECKING VERSIONTAG: " & $vt & " item: " & $vers[idx]
+    echo "Checking requirements item: " & $vers[idx] & " version: " & $vt
     check idx < vers.len()
     let (url, ver) = vers[idx]
     check vt in sp.releases
