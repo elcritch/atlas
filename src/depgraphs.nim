@@ -209,9 +209,17 @@ proc runBuildSteps(graph: var DepGraph) =
           if fileExists(builderFile):
             runNimScriptBuilder pattern, pkg.projectName
 
+proc sortVersionTags*(a, b: VersionTag): int =
+  (if a.v < b.v: 1
+  elif a.v == b.v: 0
+  else: -1)
+
 proc debugFormular*(graph: var DepGraph; form: Form; solution: Solution) =
   echo "FORM: ", form.formula
-  for key, value in pairs(form.mapping):
+  var keys = form.mapping.keys().toSeq()
+  keys.sort(proc (a, b: VarId): int = cmp(a.int, b.int))
+  for key in keys:
+    let value = form.mapping[key]
     echo "v", key.int, ": ", value
   let maxVar = maxVariable(form.formula)
   for varIdx in 0 ..< maxVar:
