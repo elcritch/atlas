@@ -195,11 +195,10 @@ proc runBuildSteps(graph: var DepGraph) =
   # for i in countdown(graph.pkgs.len-1, 0):
   for pkg in revPkgs:
     if pkg.active:
+      doAssert pkg != nil
       tryWithDir $pkg.ondisk:
         # check for install hooks
-        let activeRelease = pkg.activeRelease
-
-        if pkg.activeRelease != nil and
+        if not pkg.activeRelease.isNil and
             pkg.activeRelease.hasInstallHooks:
           let nimbleFiles = findNimbleFile(pkg)
           if nimbleFiles.len() == 1:
@@ -248,7 +247,8 @@ proc solve*(graph: var DepGraph; form: Form) =
         let pkg = mapInfo.pkg
         let ver = mapInfo.version
         pkg.active = true
-        assert pkg.activeRelease == nil, "too bad: " & $pkg.url
+        assert pkg != nil, "too bad: " & $pkg.url
+        # assert mapInfo.pkg.activeRelease != nil, "too bad: " & $pkg.url
         pkg.activeRelease = mapInfo.release
         debug pkg.url.projectName, "package satisfiable"
         if not mapInfo.version.vtag.commit.isEmpty() and pkg.state == Processed:
