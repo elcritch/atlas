@@ -22,7 +22,7 @@ proc `[]`*(g: DepGraph, idx: int): DepConstraint =
 proc `[]`*(g: var DepGraph, idx: int): var DepConstraint =
   g.nodes[idx]
 
-proc status*(r: Requirements): RequirementStatus =
+proc status*(r: Requirements): ReleaseStatus =
   r.release.status
 
 # proc commit*(d: DepConstraint): CommitHash =

@@ -171,7 +171,7 @@ proc processNimbleRelease(
 
 proc addRelease(
     releases: var seq[(VersionTag, NimbleRelease)],
-    # spec: var PackageSpecs,
+    # spec: var Package,
     nc: var NimbleContext;
     pkg: Package,
     vtag: VersionTag
@@ -196,10 +196,10 @@ proc traverseDependency*(
     pkg: var Package,
     mode: TraversalMode;
     versions: seq[VersionTag];
-): PackageSpecs =
-  doAssert pkg.ondisk.dirExists() and pkg.state != NotInitialized, "PackageSpecs should've been found or cloned at this point"
+): Package =
+  doAssert pkg.ondisk.dirExists() and pkg.state != NotInitialized, "Package should've been found or cloned at this point"
 
-  result = PackageSpecs(url: pkg.url)
+  result = Package(url: pkg.url)
   var releases: seq[(VersionTag, NimbleRelease)]
 
   let currentCommit = currentGitCommit(pkg.ondisk, Warning)
