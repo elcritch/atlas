@@ -25,6 +25,7 @@ type
     release*: NimbleRelease
 
   PackageReleases* = object
+    url*: PkgUrl
     releases*: OrderedTable[VersionTag, NimbleRelease]
     activeVersion*: int
     active*: bool
@@ -46,8 +47,8 @@ type
   CommitOrigin = enum
     FromHead, FromGitTag, FromDep, FromNimbleFile
 
-  PackageGraph* = ref object
-    pkgsToSpecs*: OrderedTable[PkgUrl, PackageReleases]
+  PackageGraph* = object
+    pkgsToSpecs*: seq[PackageReleases]
 
   NimbleContext* = object
     packageToDependency*: Table[PkgUrl, Package]
@@ -93,10 +94,10 @@ proc sortVersions*(a, b: (VersionTag, NimbleRelease)): int =
   else: -1)
 
 proc `$`*(d: Package): string =
-  d.pkg.projectName
+  d.url.projectName
 
 proc projectName*(d: Package): string =
-  d.pkg.projectName
+  d.url.projectName
 
 proc toJsonHook*(v: (PkgUrl, VersionInterval), opt: ToJsonOptions): JsonNode =
   result = newJObject()
@@ -119,7 +120,7 @@ proc toJsonHook*(r: NimbleRelease, opt: ToJsonOptions = ToJsonOptions()): JsonNo
 proc hash*(r: Package): Hash =
   ## use pkg name and url for identification and lookups
   var h: Hash = 0
-  h = h !& hash(r.pkg)
+  h = h !& hash(r.url)
   result = !$h
 
 proc hash*(r: NimbleRelease): Hash =

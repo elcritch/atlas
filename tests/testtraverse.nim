@@ -108,13 +108,13 @@ suite "test expand with git tags":
         let deps = setupGraph()
         var nc = createNimbleContext()
         # var graph = DepGraph(nodes: @[], reqs: defaultReqs())
-        let pkg = nc.createUrl(dir, projectName = "ws_testtraverse")
+        let url = nc.createUrl(dir, projectName = "ws_testtraverse")
 
-        var dep0 = Package(pkg: pkg, isRoot: true, isTopLevel: true)
-        var dep1 = Package(pkg: nc.createUrl("proj_a"), isRoot: true)
-        var dep2 = Package(pkg: nc.createUrl("proj_b"), isRoot: true)
-        var dep3 = Package(pkg: nc.createUrl("proj_c"), isRoot: true)
-        var dep4 = Package(pkg: nc.createUrl("proj_d"), isRoot: true)
+        var dep0 = Package(url: url, isRoot: true, isTopLevel: true)
+        var dep1 = Package(url: nc.createUrl("proj_a"), isRoot: true)
+        var dep2 = Package(url: nc.createUrl("proj_b"), isRoot: true)
+        var dep3 = Package(url: nc.createUrl("proj_c"), isRoot: true)
+        var dep4 = Package(url: nc.createUrl("proj_d"), isRoot: true)
 
         nc.loadDependency(dep0)
         nc.loadDependency(dep1)
@@ -147,23 +147,23 @@ suite "test expand with git tags":
         let specs: PackageGraph = expand(nc, AllReleases, dir)
 
         echo "\tspec:\n", specs.toJson(ToJsonOptions(enumMode: joptEnumString))
-        let sp = specs.pkgsToSpecs.pairs().toSeq()
+        let sp = specs.pkgsToSpecs
 
-        check $sp[0][0] == "file://$1" % [$dir]
-        check $sp[1][0] == "file://./buildGraph/proj_a"
-        check $sp[2][0] == "file://./buildGraph/proj_b"
-        check $sp[3][0] == "file://./buildGraph/proj_c"
-        check $sp[4][0] == "file://./buildGraph/proj_d"
+        check $sp[0].url == "file://$1" % [$dir]
+        check $sp[1].url == "file://./buildGraph/proj_a"
+        check $sp[2].url == "file://./buildGraph/proj_b"
+        check $sp[3].url == "file://./buildGraph/proj_c"
+        check $sp[4].url == "file://./buildGraph/proj_d"
 
         let vt = toVersionTag
 
-        let sp0: PackageReleases = sp[0][1] # proj ws_testtraversal
+        let sp0: PackageReleases = sp[0] # proj ws_testtraversal
         testRequirements(sp0, @[vt"#head@-"], [
           ("file://./buildGraph/proj_a", "#head"),
         ])
 
 
-        let sp1: PackageReleases = sp[1][1] # proj A
+        let sp1: PackageReleases = sp[1] # proj A
         # verify that the duplicate releases have been "reduced"
         # check sp1.releases[projAtags[1]] == sp1.releases[projAtags[2]]
         # check cast[pointer](sp1.releases[projAtags[1]]) == cast[pointer](sp1.releases[projAtags[2]])
@@ -173,19 +173,19 @@ suite "test expand with git tags":
           ("file://./buildGraph/proj_b", ">= 1.0.0"),
         ])
 
-        let sp2 = sp[2][1] # proj B
+        let sp2 = sp[2] # proj B
         testRequirements(sp2, projBtags, [
           ("file://./buildGraph/proj_c", ">= 1.1.0"),
           # ("file://./buildGraph/proj_c", ">= 1.0.0"),
           ("file://./buildGraph/proj_c", ">= 1.0.0"),
         ])
 
-        let sp3 = sp[3][1] # proj C
+        let sp3 = sp[3] # proj C
         testRequirements(sp3, projCtags, [
           ("file://./buildGraph/proj_d", ">= 1.0.0"),
         ])
 
-        let sp4 = sp[4][1] # proj C
+        let sp4 = sp[4] # proj C
         testRequirements(sp4, projDtags, [
           ("file://./buildGraph/does_not_exist", ">= 1.2.0"),
           ("", ""),
@@ -220,17 +220,17 @@ suite "test expand with git tags":
         let specs: PackageGraph = expand(nc, AllReleases, dir)
 
         echo "\tspec:\n", specs.toJson(ToJsonOptions(enumMode: joptEnumString))
-        let sp = specs.pkgsToSpecs.pairs().toSeq()
+        let sp = specs.pkgsToSpecs
         let vt = toVersionTag
 
         check sp.len() == 5
-        check $sp[0][0] == "file://$1" % [$dir]
+        check $sp[0].url == "file://$1" % [$dir]
         # check $sp[1][0] == "file://buildGraph/proj_a"
         # check $sp[2][0] == "file://buildGraph/proj_b"
         # check $sp[3][0] == "file://buildGraph/proj_c"
         # check $sp[4][0] == "file://buildGraph/proj_d"
 
-        let sp0: PackageReleases = sp[0][1] # proj ws_testtraversal
+        let sp0: PackageReleases = sp[0] # proj ws_testtraversal
         testRequirements(sp0, @[vt"#head@-"], [
           ("https://example.com/buildGraph/proj_a", "#head"),
         ])
@@ -285,13 +285,13 @@ suite "test expand with no git tags":
         let deps = setupGraphNoGitTags()
         var nc = createNimbleContext()
         # var graph = DepGraph(nodes: @[], reqs: defaultReqs())
-        let pkg = nc.createUrl(dir, projectName = "ws_testtraverse")
+        let url = nc.createUrl(dir, projectName = "ws_testtraverse")
 
-        var dep0 = Package(pkg: pkg, isRoot: true, isTopLevel: true)
-        var dep1 = Package(pkg: nc.createUrl("proj_a"), isRoot: true)
-        var dep2 = Package(pkg: nc.createUrl("proj_b"), isRoot: true)
-        var dep3 = Package(pkg: nc.createUrl("proj_c"), isRoot: true)
-        var dep4 = Package(pkg: nc.createUrl("proj_d"), isRoot: true)
+        var dep0 = Package(url: url, isRoot: true, isTopLevel: true)
+        var dep1 = Package(url: nc.createUrl("proj_a"), isRoot: true)
+        var dep2 = Package(url: nc.createUrl("proj_b"), isRoot: true)
+        var dep3 = Package(url: nc.createUrl("proj_c"), isRoot: true)
+        var dep4 = Package(url: nc.createUrl("proj_d"), isRoot: true)
 
         nc.loadDependency(dep0)
         nc.loadDependency(dep1)
@@ -325,43 +325,43 @@ suite "test expand with no git tags":
         let specs: PackageGraph = expand(nc, AllReleases, dir)
 
         echo "\tspec:\n", specs.toJson(ToJsonOptions(enumMode: joptEnumString))
-        let sp = specs.pkgsToSpecs.pairs().toSeq()
+        let sp = specs.pkgsToSpecs
 
-        check $sp[0][0] == "file://$1" % [$dir]
-        check $sp[1][0] == "file://./buildGraphNoGitTags/proj_a"
-        check $sp[2][0] == "file://./buildGraphNoGitTags/proj_b"
-        check $sp[3][0] == "file://./buildGraphNoGitTags/proj_c"
-        check $sp[4][0] == "file://./buildGraphNoGitTags/proj_d"
+        check $sp[0].url == "file://$1" % [$dir]
+        check $sp[1].url == "file://./buildGraphNoGitTags/proj_a"
+        check $sp[2].url == "file://./buildGraphNoGitTags/proj_b"
+        check $sp[3].url == "file://./buildGraphNoGitTags/proj_c"
+        check $sp[4].url == "file://./buildGraphNoGitTags/proj_d"
 
         let vt = toVersionTag
         proc stripcommits(tags: seq[VersionTag]): seq[VersionTag] = tags.mapIt(VersionTag(v: Version"", c: it.c))
 
-        let sp0: PackageReleases = sp[0][1] # proj ws_testtraversal
+        let sp0: PackageReleases = sp[0] # proj ws_testtraversal
         testRequirements(sp0, @[vt"#head@-"], [
           ("file://./buildGraphNoGitTags/proj_a", "#head"),
         ])
 
-        let sp1 = sp[1][1] # proj A
+        let sp1 = sp[1] # proj A
         testRequirements(sp1, projAtags, [
           ("file://./buildGraphNoGitTags/proj_b", ">= 1.1.0"),
           ("file://./buildGraphNoGitTags/proj_b", ">= 1.0.0"),
           ("file://./buildGraphNoGitTags/proj_b", ">= 1.0.0"),
         ])
 
-        let sp2 = sp[2][1] # proj B
+        let sp2 = sp[2] # proj B
         testRequirements(sp2, projBtags, [
           ("file://./buildGraphNoGitTags/proj_c", ">= 1.1.0"),
           ("file://./buildGraphNoGitTags/proj_c", ">= 1.0.0"),
           ("file://./buildGraphNoGitTags/proj_c", ">= 1.0.0"),
         ])
 
-        let sp3 = sp[3][1] # proj C
+        let sp3 = sp[3] # proj C
         testRequirements(sp3, projCtags, [
           ("file://./buildGraphNoGitTags/proj_d", ">= 1.0.0"),
           ("file://./buildGraphNoGitTags/proj_d", ">= 1.2.0"),
         ])
 
-        let sp4 = sp[4][1] # proj C
+        let sp4 = sp[4] # proj C
         testRequirements(sp4, projDtags, [
           ("file://./buildGraphNoGitTags/does_not_exist", ">= 1.2.0"),
           ("", ""),

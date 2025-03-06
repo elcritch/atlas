@@ -122,7 +122,7 @@ proc tag(field: Natural) =
 
 proc generateDepGraph(g: DepGraph) =
   proc repr(w: Package): string =
-    $(w.pkg.url / w.commit)
+    $(w.url.url / w.commit)
 
   var dotGraph = ""
   for n in allNodes(g):

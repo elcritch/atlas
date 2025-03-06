@@ -38,9 +38,9 @@ proc fromPrefixedPath*(path: Path): Path =
     return context().depsDir / path
 
 proc genLockEntry(lf: var LockFile; w: Package) =
-  lf.items[w.pkg.projectName] = LockFileEntry(
+  lf.items[w.url.projectName] = LockFileEntry(
     dir: prefixedPath(w.ondisk),
-    url: w.pkg.url,
+    url: w.url.url,
     commit: currentGitCommit(w.ondisk),
     version: ""
   )
@@ -98,17 +98,17 @@ proc genLockEntry(
     if nimbleFiles.len() == 1:
       nimbleFiles[0]
     else:
-      error w.pkg.projectName, "Couldn't find nimble file at " & $w.ondisk
+      error w.url.projectName, "Couldn't find nimble file at " & $w.ondisk
       return
 
   let info = extractRequiresInfo(nimbleFile)
   let commit = currentGitCommit(w.ondisk)
-  infoNow w.pkg.projectName, "calculating nimble checksum"
-  let chk = nimbleChecksum(w.pkg.projectName, w.ondisk)
-  lf.packages[w.pkg.projectName] = NimbleLockFileEntry(
+  infoNow w.url.projectName, "calculating nimble checksum"
+  let chk = nimbleChecksum(w.url.projectName, w.ondisk)
+  lf.packages[w.url.projectName] = NimbleLockFileEntry(
     version: info.version,
     vcsRevision: commit,
-    url: w.pkg.url,
+    url: w.url.url,
     downloadMethod: "git",
     dependencies: deps.mapIt(it),
     checksums: {"sha1": chk}.toTable
@@ -122,7 +122,7 @@ proc expandWithoutClone*(g: var DepGraph; nc: NimbleContext) =
   var processed = initHashSet[PkgUrl]()
   var i = 0
   while i < g.nodes.len:
-    if not processed.containsOrIncl(g.nodes[i].pkg):
+    if not processed.containsOrIncl(g.nodes[i].url):
       let (dest, todo) = pkgUrlToDirname(g, g.nodes[i])
       if todo == DoNothing:
         withDir $dest:
@@ -152,10 +152,10 @@ proc pinGraph*(g: var DepGraph; lockFile: Path; exportNimble = false) =
       else:
         # handle exports for Nimble; these require looking up a bit more info
         for nx in directDependencies(g, w):
-          nimbleDeps.mgetOrPut(w.pkg.projectName,
-                              initHashSet[string]()).incl(nx.pkg.projectName)
-        trace w.pkg.projectName, "exporting nimble " & w.pkg.url
-        let deps = nimbleDeps.getOrDefault(w.pkg.projectName)
+          nimbleDeps.mgetOrPut(w.url.projectName,
+                              initHashSet[string]()).incl(nx.url.projectName)
+        trace w.url.projectName, "exporting nimble " & w.url.url
+        let deps = nimbleDeps.getOrDefault(w.url.projectName)
         genLockEntry nlf, w, getCfgPath(g, w), deps
 
   let nimcfgPath = context().currentDir / NimCfg

@@ -53,7 +53,7 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
       ver.vid = VarId(result.idgen)
       # Map the SAT variable to package information for result interpretation
       result.mapping[ver.vid] = SatVarInfo(
-        pkg: p.dep.pkg,
+        pkg: p.dep.url,
         vtag: ver.vtag,
         index: i
       )
@@ -172,7 +172,7 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
   result.formula = toForm(builder)
 
 proc toString(info: SatVarInfo): string =
-  "(" & info.pkg.projectName & ", " & $info.vtag & ")"
+  "(" & info.url.projectName & ", " & $info.vtag & ")"
 
 proc runBuildSteps(graph: var DepGraph) =
   ## execute build steps for the dependency graph
@@ -182,7 +182,7 @@ proc runBuildSteps(graph: var DepGraph) =
   for i in countdown(graph.nodes.len-1, 0):
     if graph[i].active:
       let dep = graph[i].dep
-      let pkg = dep.pkg
+      let pkg = dep.url
       tryWithDir $dep.ondisk:
         # check for install hooks
         let activeVersion = graph[i].activeVersion
@@ -233,17 +233,17 @@ proc solve*(graph: var DepGraph; form: Form) =
       let vid = VarId varIdx
       if vid in form.mapping:
         let mapInfo = form.mapping[vid]
-        info mapInfo.pkg.projectName, "v" & $varIdx & " sat var: " & $solution.getVar(vid).toPretty()
+        info mapInfo.url.projectName, "v" & $varIdx & " sat var: " & $solution.getVar(vid).toPretty()
 
       if solution.isTrue(VarId(varIdx)) and form.mapping.hasKey(VarId varIdx):
         let mapInfo = form.mapping[VarId varIdx]
-        let i = findDependencyForDep(graph, mapInfo.pkg)
+        let i = findDependencyForDep(graph, mapInfo.url)
         graph[i].active = true
-        assert graph[i].activeVersion == -1, "too bad: " & graph[i].dep.pkg.url
+        assert graph[i].activeVersion == -1, "too bad: " & graph[i].dep.url.url
         graph[i].activeVersion = mapInfo.index
-        debug mapInfo.pkg.projectName, "package satisfiable"
+        debug mapInfo.url.projectName, "package satisfiable"
         if not mapInfo.vtag.commit.isEmpty() and graph[i].dep.state == Processed:
-          assert graph[i].dep.ondisk.string.len > 0, "Missing ondisk location for: " & $(graph[i].dep.pkg, i)
+          assert graph[i].dep.ondisk.string.len > 0, "Missing ondisk location for: " & $(graph[i].dep.url, i)
           let res = checkoutGitCommit(graph[i].dep.ondisk, mapInfo.vtag.commit)
 
     if NoExec notin context().flags:
@@ -256,15 +256,15 @@ proc solve*(graph: var DepGraph; form: Form) =
           for ver in items(node.versions):
             let item = form.mapping[ver.vid]
             if solution.isTrue(ver.vid):
-              info item.pkg.projectName, "[x] " & toString item
+              info item.url.projectName, "[x] " & toString item
             else:
-              info item.pkg.projectName, "[ ] " & toString item
+              info item.url.projectName, "[ ] " & toString item
       info "../resolve", "end of selection"
   else:
     var notFoundCount = 0
     for node in mitems(graph.nodes):
       if node.dep.isRoot and node.dep.state != Processed:
-        error context().workspace, "invalid find package: " & node.dep.pkg.projectName & " in state: " & $node.dep.state & " error: " & $node.dep.errors
+        error context().workspace, "invalid find package: " & node.dep.url.projectName & " in state: " & $node.dep.state & " error: " & $node.dep.errors
         inc notFoundCount
     if notFoundCount > 0:
       return
@@ -276,7 +276,7 @@ proc solve*(graph: var DepGraph; form: Form) =
       if usedVersionCount > 1:
         for ver in mvalidVersions(node, graph):
           if solution.isTrue(ver.vid):
-            error node.dep.pkg.projectName, string(ver.vtag.version) & " required"
+            error node.dep.url.projectName, string(ver.vtag.version) & " required"
   if context().dumpGraphs:
     dumpJson(graph, "graph-solved.json")
 

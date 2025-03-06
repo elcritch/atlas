@@ -121,11 +121,11 @@ proc readOnDisk(result: var DepGraph) =
     if n.isNil: return
     let nodes = jsonTo(n, typeof(result.nodes))
     for n in nodes:
-      # result.ondisk[n.pkg.url] = n.ondisk
+      # result.ondisk[n.url.url] = n.ondisk
       if dirExists(n.dep.ondisk):
         if n.dep.isRoot:
-          if not result.packageToDependency.hasKey(n.dep.pkg):
-            result.packageToDependency[n.dep.pkg] = result.nodes.len
+          if not result.packageToDependency.hasKey(n.dep.url):
+            result.packageToDependency[n.dep.url] = result.nodes.len
             result.nodes.add DepConstraint(dep: n.dep, activeVersion: -1)
   except:
     warn configFile, "couldn't load graph from: " & $configFile
@@ -153,6 +153,6 @@ proc createGraphFromWorkspace*(): DepGraph =
     result.reqs = jsonTo(g["reqs"], typeof(result.reqs))
 
     for i, n in mpairs(result.nodes):
-      result.packageToDependency[n.dep.pkg] = i
+      result.packageToDependency[n.dep.url] = i
   except:
     warn configFile, "couldn't load graph from: " & $configFile

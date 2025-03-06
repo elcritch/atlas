@@ -96,7 +96,7 @@ type
 
 proc pkgUrlToDirname*(pkg: Package): (Path, PackageAction) =
   # XXX implement namespace support here
-  # var dest = Path g.ondisk.getOrDefault(d.pkg.url)
+  # var dest = Path g.ondisk.getOrDefault(d.url.url)
   var dest = Path ""
   if pkg.isTopLevel:
     trace pkg.url.projectName, "pkgUrlToDirName topLevel= " & $pkg.isTopLevel
@@ -164,7 +164,7 @@ proc processNimbleRelease(
         # var pkgDep = specs.packageToDependency.getOrDefault(pkgUrl, nil)
         if pkgUrl notin nc.packageToDependency:
           debug pkg.url.projectName, "Found new pkg:", pkgUrl.projectName, "url:", pkgUrl.url()
-          let pkgDep = Package(pkg: pkgUrl, state: NotInitialized)
+          let pkgDep = Package(url: pkgUrl, state: NotInitialized)
           nc.packageToDependency[pkgUrl] = pkgDep
           # TODO: enrich versions with hashes when added
           # enrichVersionsViaExplicitHash graph[depIdx].versions, interval
@@ -199,7 +199,7 @@ proc traverseDependency*(
 ): PackageReleases =
   doAssert pkg.ondisk.dirExists() and pkg.state != NotInitialized, "PackageReleases should've been found or cloned at this point"
 
-  result = PackageReleases()
+  result = PackageReleases(url: pkg.url)
   var releases: seq[(VersionTag, NimbleRelease)]
 
   let currentCommit = currentGitCommit(pkg.ondisk, Warning)
@@ -315,9 +315,9 @@ proc loadDependency*(
 proc expand*(nc: var NimbleContext; mode: TraversalMode, path: Path): PackageGraph =
   ## Expand the graph by adding all dependencies.
   
-  let pkg = nc.createUrl(path)
-  warn pkg.projectName, "expanding root package at:", $pkg
-  var pkg = Package(pkg: pkg, isRoot: true, isTopLevel: true)
+  let url = nc.createUrl(path)
+  warn url.projectName, "expanding root package at:", $url
+  var pkg = Package(url: url, isRoot: true, isTopLevel: true)
   # nc.loadDependency(pkg)
 
   var processed = initHashSet[PkgUrl]()
@@ -345,15 +345,15 @@ proc expand*(nc: var NimbleContext; mode: TraversalMode, path: Path): PackageGra
         # debug pkg.projectName, "processed spec:", $spec
         for vtag, reqs in spec.releases:
           debug pkg.projectName, "spec version:", $vtag, "reqs:", $(toJsonHook(reqs))
-        specs.pkgsToSpecs[pkg] = spec
+        specs.pkgsToSpecs.add(spec)
         processing = true
       else:
         discard
 
-  for pkg, spec in specs.pkgsToSpecs:
-    info pkg.projectName, "Processed:", $pkg.url()
+  for spec in specs.pkgsToSpecs:
+    info spec.url.projectName, "Processed:", $spec.url.url
     for vtag, reqs in spec.releases:
-      info pkg.projectName, "spec version:", $vtag, "reqs:", reqs.deps.mapIt($(it[0].projectName) & " " & $(it[1])).join(", "), "status:", $reqs.status
+      info spec.url.projectName, "spec version:", $vtag, "reqs:", reqs.deps.mapIt($(it[0].projectName) & " " & $(it[1])).join(", "), "status:", $reqs.status
 
   result = specs
 
