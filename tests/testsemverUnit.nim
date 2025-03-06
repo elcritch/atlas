@@ -59,7 +59,7 @@ template testRequirements(sp: Package,
 
 suite "graph solve":
   setup:
-    setAtlasVerbosity(Warning)
+    setAtlasVerbosity(Debug)
     context().overrides = Patterns()
     context().proxy = parseUri "http://localhost:4242"
     context().dumbProxy = true
