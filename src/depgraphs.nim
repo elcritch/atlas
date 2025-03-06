@@ -18,10 +18,10 @@ iterator directDependencies*(graph: DepGraph; pkg: Package): lent Package =
       # let idx = findDependencyForDep(graph, dep[0])
       yield graph.pkgs[durl]
 
-iterator validVersions*(pkg: var Package; graph: var DepGraph): PackageVersion =
-  for ver, rel in pkg.versions:
+iterator validVersions*(pkg: var Package; graph: var DepGraph): (PackageVersion, var NimbleRelease) =
+  for ver, rel in mpairs(pkg.versions):
     if rel.status == Normal:
-      yield ver
+      yield (ver, rel)
 
 proc sortDepVersions(a, b: (PackageVersion, NimbleRelease)): int =
       (if a[0].vtag.version < b[0].vtag.version: 1
@@ -53,55 +53,55 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
 
     # Assign a unique SAT variable to each version of the package
     var i = 0
-    for ver in p.versions:
+    for ver, rel in p.versions:
       ver.vid = VarId(result.idgen)
       # Map the SAT variable to package information for result interpretation
       result.mapping[ver.vid] = SatVarInfo(
-        pkg: p.dep.url,
+        pkg: p.url,
         vtag: ver.vtag,
         index: i
       )
       inc result.idgen
       inc i
 
-    doAssert p.dep.state != NotInitialized
+    doAssert p.state != NotInitialized
 
     # Add constraints based on the package status
-    if p.dep.state == Error:
+    if p.state == Error:
       # If package is broken, enforce that none of its versions can be selected
       builder.openOpr(AndForm)
-      for ver in mitems(p.versions):
+      for ver in p.versions.keys():
         builder.addNegated ver.vid
       builder.closeOpr # AndForm
-    elif p.dep.isRoot:
+    elif p.isRoot:
       # If it's a root package, enforce that exactly one version must be selected
       builder.openOpr(ExactlyOneOfForm)
-      for ver in mitems(p.versions):
+      for ver in p.versions.keys():
         builder.add ver.vid
       builder.closeOpr # ExactlyOneOfForm
     else:
       # For non-root packages, they can either have one version selected or none at all
       builder.openOpr(ZeroOrOneOfForm)
-      for ver in mitems(p.versions):
+      for ver in p.versions.keys():
         builder.add ver.vid
       builder.closeOpr # ExactlyOneOfForm
 
   # This loop sets up the dependency relationships in the SAT formula
   # It creates constraints for each package's requirements
-  for pkg in mitems(graph.nodes):
-    for ver in mvalidVersions(pkg, graph):
+  for pkg in graph.pkgs.mvalues():
+    for ver, rel in validVersions(pkg, graph):
 
       # Skip if this requirement has already been processed
-      if isValid(graph.reqs[ver.reqIdx].vid):
+      if isValid(rel.rid): # if isValid(graph.reqs[ver.reqIdx].vid):
         continue
 
       # Assign a unique SAT variable to this requirement set
       let eqVar = VarId(result.idgen)
-      graph.reqs[ver.reqIdx].vid = eqVar
+      rel.rid = eqVar
       inc result.idgen
 
       # Skip empty requirement sets
-      if graph.reqs[ver.reqIdx].release.deps.len == 0:
+      if rel.requirements.len == 0:
         continue
 
       let beforeEq = builder.getPatchPos()
@@ -110,15 +110,16 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
       #    if this requirement is true, then all its dependencies must be satisfied
       builder.openOpr(OrForm)
       builder.addNegated eqVar
-      if graph.reqs[ver.reqIdx].release.deps.len > 1:
+      if rel.requirements.len > 1:
         builder.openOpr(AndForm)
       var elementCount = 0
     
       # For each dependency in the requirement, create version matching constraints
-      for dep, query in items graph.reqs[ver.reqIdx].release.deps:
+      for dep, query in items rel.requirements:
         let queryVer = if algo == SemVer: toSemVer(query) else: query
         let commit = extractSpecificCommit(queryVer)
-        let availVer = graph[findDependencyForDep(graph, dep)]
+        # let availVer = graph[findDependencyForDep(graph, dep)]
+        let availVer = graph.pkgs[dep]
         if availVer.versions.len == 0:
           continue
 
@@ -129,10 +130,9 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
 
         if not commit.isEmpty():
           # Match by specific commit if specified
-          for verIdx in countup(0, availVer.versions.len-1):
-            if queryVer.matches(availVer.versions[verIdx].vtag.version) or
-                commit == availVer.versions[verIdx].vtag.commit:
-              builder.add availVer.versions[verIdx].vid
+          for depVer in availVer.versions.keys():
+            if queryVer.matches(depVer.vtag.version) or commit == depVer.vtag.commit:
+              builder.add depVer.vid
               inc matchCount
               break
         elif algo == MinVer:
