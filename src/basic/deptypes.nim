@@ -18,7 +18,7 @@ type
     url*: PkgUrl
     state*: PackageState
     versions*: OrderedTable[PackageVersion, NimbleRelease]
-    activeVersion*: NimbleRelease
+    activeRelease*: NimbleRelease
     ondisk*: Path
     active*: bool
     isRoot*: bool

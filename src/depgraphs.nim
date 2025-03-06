@@ -1,4 +1,4 @@
-import std / [sets, tables, paths, dirs, files, tables, os, strutils, streams, json, jsonutils, algorithm]
+import std / [sets, tables, sequtils, paths, dirs, files, tables, os, strutils, streams, json, jsonutils, algorithm]
 
 import basic/[deptypes, versions, depgraphtypes, osutils, context, gitops, reporters, nimbleparser, pkgurls, versions]
 import dependencies, runners 
@@ -13,8 +13,8 @@ else:
   import sat/[sat, satvars]
 
 iterator directDependencies*(graph: DepGraph; pkg: Package): lent Package =
-  if pkg.activeVersion != nil:
-    for (durl, _) in pkg.activeVersion.requirements:
+  if pkg.activeRelease != nil:
+    for (durl, _) in pkg.activeRelease.requirements:
       # let idx = findDependencyForDep(graph, dep[0])
       yield graph.pkgs[durl]
 
@@ -30,7 +30,7 @@ proc sortDepVersions(a, b: (PackageVersion, NimbleRelease)): int =
 
 type
   SatVarInfo* = object # attached information for a SAT variable
-    pkg: PkgUrl
+    pkg: Package
     vtag: VersionTag
     index: int
 
@@ -57,7 +57,7 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
       ver.vid = VarId(result.idgen)
       # Map the SAT variable to package information for result interpretation
       result.mapping[ver.vid] = SatVarInfo(
-        pkg: p.url,
+        pkg: p,
         vtag: ver.vtag,
         index: i
       )
@@ -137,15 +137,17 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
               break
         elif algo == MinVer:
           # For MinVer algorithm, try to find the minimum version that satisfies the requirement
-          for verIdx in countup(0, availVer.versions.len-1):
-            if queryVer.matches(availVer.versions[verIdx].vtag.version):
-              builder.add availVer.versions[verIdx].vid
+          for depVer in availVer.versions.keys():
+            if queryVer.matches(depVer.vtag.version):
+              builder.add depVer.vid
               inc matchCount
         else:
           # For other algorithms (like SemVer), try to find the maximum version that satisfies
-          for verIdx in countdown(availVer.versions.len-1, 0):
-            if queryVer.matches(availVer.versions[verIdx].vtag.version):
-              builder.add availVer.versions[verIdx].vid
+          var revVers = availVer.versions.keys().toSeq()
+          revVers.reverse()
+          for depVer in revVers:
+            if queryVer.matches(depVer.vtag.version):
+              builder.add depVer.vid
               inc matchCount
 
         builder.closeOpr # ExactlyOneOfForm
@@ -155,7 +157,7 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
           builder.resetToPatchPos beforeExactlyOneOf
           builder.add falseLit()
 
-      if graph.reqs[ver.reqIdx].release.deps.len > 1: builder.closeOpr # AndForm
+      if rel.requirements.len > 1: builder.closeOpr # AndForm
       builder.closeOpr # EqForm
 
       # If no dependencies were processed, reset the formula position
@@ -164,39 +166,39 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
 
   # This final loop links package versions to their requirements
   # It enforces that if a version is selected, its requirements must be satisfied
-  for pkg in mitems(graph.nodes):
-    for ver in mvalidVersions(pkg, graph):
-      if graph.reqs[ver.reqIdx].release.deps.len > 0:
+  for pkg in mvalues(graph.pkgs):
+    for ver, rel in validVersions(pkg, graph):
+      if rel.requirements.len > 0:
         builder.openOpr(OrForm)
         builder.addNegated ver.vid
-        builder.add graph.reqs[ver.reqIdx].vid
+        builder.add rel.rid
         builder.closeOpr # OrForm
 
   builder.closeOpr # AndForm
   result.formula = toForm(builder)
 
 proc toString(info: SatVarInfo): string =
-  "(" & info.url.projectName & ", " & $info.vtag & ")"
+  "(" & info.pkg.url.projectName & ", " & $info.vtag & ")"
 
 proc runBuildSteps(graph: var DepGraph) =
   ## execute build steps for the dependency graph
   ##
   ## `countdown` suffices to give us some kind of topological sort:
   ##
-  for i in countdown(graph.nodes.len-1, 0):
-    if graph[i].active:
-      let dep = graph[i].dep
+  var revPkgs = graph.pkgs.pairs().toSeq()
+  revPkgs.reverse()
+
+  # for i in countdown(graph.pkgs.len-1, 0):
+  for pkg in revPkgs:
+    if pkg.active:
+      let dep = pkg.dep
       let pkg = dep.url
       tryWithDir $dep.ondisk:
         # check for install hooks
-        let activeVersion = graph[i].activeVersion
-        let reqIdx =
-          if graph[i].versions.len == 0: -1
-          else: graph[i].versions[activeVersion].reqIdx
+        let activeRelease = pkg.activeRelease
 
-        if reqIdx >= 0 and
-            reqIdx < graph.reqs.len and
-            graph.reqs[reqIdx].release.hasInstallHooks:
+        if pkg.activeRelease != nil and
+            pkg.activeRelease.hasInstallHooks:
           let nimbleFiles = findNimbleFile(dep)
           if nimbleFiles.len() == 1:
             runNimScriptInstallHook nimbleFiles[0], pkg.projectName
@@ -243,8 +245,8 @@ proc solve*(graph: var DepGraph; form: Form) =
         let mapInfo = form.mapping[VarId varIdx]
         let i = findDependencyForDep(graph, mapInfo.url)
         graph[i].active = true
-        assert graph[i].activeVersion == -1, "too bad: " & graph[i].dep.url.url
-        graph[i].activeVersion = mapInfo.index
+        assert graph[i].activeRelease == -1, "too bad: " & graph[i].dep.url.url
+        graph[i].activeRelease = mapInfo.index
         debug mapInfo.url.projectName, "package satisfiable"
         if not mapInfo.vtag.commit.isEmpty() and graph[i].dep.state == Processed:
           assert graph[i].dep.ondisk.string.len > 0, "Missing ondisk location for: " & $(graph[i].dep.url, i)

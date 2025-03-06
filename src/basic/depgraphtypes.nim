@@ -6,8 +6,8 @@ import sattypes, context, deptypes, gitops, reporters, nimbleparser, pkgurls, ve
 
 # proc commit*(d: DepConstraint): CommitHash =
 #   result =
-#     if d.activeVersion >= 0 and d.activeVersion < d.releases.len:
-#       d.releases[d.activeVersion].vtag.commit()
+#     if d.activeRelease >= 0 and d.activeRelease < d.releases.len:
+#       d.releases[d.activeRelease].vtag.commit()
 #     else:
 #       CommitHash(h: "")
 
@@ -63,13 +63,13 @@ iterator allActiveNodes*(g: DepGraph): Package =
 #   result = g.packageToDependency.getOrDefault(dep)
 
 proc getCfgPath*(g: DepGraph; d: Package): lent CfgPath =
-  result = CfgPath g.pkgs[d.url].activeVersion.srcDir
+  result = CfgPath g.pkgs[d.url].activeRelease.srcDir
 
 # proc bestNimVersion*(g: DepGraph): Version =
 #   result = Version""
 #   for n in allNodes(g):
-#     if n.active and g.reqs[n.versions[n.activeVersion].req].nimVersion != Version"":
-#       let v = g.reqs[n.versions[n.activeVersion].req].nimVersion
+#     if n.active and g.reqs[n.versions[n.activeRelease].req].nimVersion != Version"":
+#       let v = g.reqs[n.versions[n.activeRelease].req].nimVersion
 #       if v > result: result = v
 
 # proc readOnDisk(result: var DepGraph) =
@@ -89,7 +89,7 @@ proc getCfgPath*(g: DepGraph; d: Package): lent CfgPath =
 #         if n.dep.isRoot:
 #           if not result.packageToDependency.hasKey(n.dep.url):
 #             result.packageToDependency[n.dep.url] = result.nodes.len
-#             result.nodes.add DepConstraint(dep: n.dep, activeVersion: -1)
+#             result.nodes.add DepConstraint(dep: n.dep, activeRelease: -1)
 #   except:
 #     warn configFile, "couldn't load graph from: " & $configFile
 
@@ -97,7 +97,7 @@ proc getCfgPath*(g: DepGraph; d: Package): lent CfgPath =
 #   result = DepGraph(nodes: @[], reqs: defaultReqs())
 #   result.packageToDependency[s] = result.nodes.len
 #   let dep = Package(pkg: s, isRoot: true, isTopLevel: true)
-#   result.nodes.add DepConstraint(dep: dep, versions: @[], activeVersion: -1)
+#   result.nodes.add DepConstraint(dep: dep, versions: @[], activeRelease: -1)
 #   readOnDisk(result)
 
 # proc createGraphFromWorkspace*(): DepGraph =

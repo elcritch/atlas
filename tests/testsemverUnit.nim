@@ -12,7 +12,7 @@ if not dirExists("tests/ws_testtraverse/buildGraph"):
 # proc createGraph*(s: PkgUrl): DepGraph =
 #   result = DepGraph(nodes: @[], reqs: defaultReqs())
 #   result.packageToDependency[s] = result.nodes.len
-#   result.nodes.add Package(pkg: s, versions: @[], isRoot: true, isTopLevel: true, activeVersion: -1)
+#   result.nodes.add Package(pkg: s, versions: @[], isRoot: true, isTopLevel: true, activeRelease: -1)
 
 proc setupGraph*(): seq[string] =
   let projs = @["proj_a", "proj_b", "proj_c", "proj_d"]
