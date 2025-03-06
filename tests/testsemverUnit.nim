@@ -80,7 +80,7 @@ suite "graph solve":
 
         let dir = paths.getCurrentDir().absolutePath
 
-        let specs: PackageSpecs = expand(nc, AllReleases, dir)
+        let specs: PackageGraph = expand(nc, AllReleases, dir)
 
         echo "\tspec:\n", specs.toJson(ToJsonOptions(enumMode: joptEnumString))
         let sp = specs.pkgsToSpecs.pairs().toSeq()

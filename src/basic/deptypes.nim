@@ -46,7 +46,7 @@ type
   CommitOrigin = enum
     FromHead, FromGitTag, FromDep, FromNimbleFile
 
-  PackageSpecs* = ref object
+  PackageGraph* = ref object
     pkgsToSpecs*: OrderedTable[PkgUrl, PackageSpec]
 
   NimbleContext* = object

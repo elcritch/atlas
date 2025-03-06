@@ -312,7 +312,7 @@ proc loadDependency*(
       dep.state = Error
       dep.errors.add "ondisk location missing"
 
-proc expand*(nc: var NimbleContext; mode: TraversalMode, path: Path): PackageSpecs =
+proc expand*(nc: var NimbleContext; mode: TraversalMode, path: Path): PackageGraph =
   ## Expand the graph by adding all dependencies.
   
   let pkg = nc.createUrl(path)
@@ -321,7 +321,7 @@ proc expand*(nc: var NimbleContext; mode: TraversalMode, path: Path): PackageSpe
   # nc.loadDependency(dep)
 
   var processed = initHashSet[PkgUrl]()
-  var specs = PackageSpecs()
+  var specs = PackageGraph()
   nc.packageToDependency[dep.pkg] = dep
 
   var processing = true
