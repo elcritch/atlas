@@ -42,8 +42,8 @@ proc dumpJson*(d: DepGraph, filename: string, full = true, pretty = true) =
   else:
     writeFile(filename, $(jn))
 
-# proc toDestDir*(g: DepGraph; d: DepConstraint): Path =
-#   result = d.dep.ondisk
+proc toDestDir*(g: DepGraph; d: Package): Path =
+  result = d.ondisk
 
 iterator allNodes*(g: DepGraph): Package =
   for pkg in values(g.pkgs):
