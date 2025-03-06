@@ -34,7 +34,7 @@ proc setupGraphNoGitTags*(): seq[string] =
   for proj in projs:
     result.add(ospaths2.getCurrentDir() / "buildGraphNoGitTags" / proj)
 
-template testRequirements(sp: PackageSpec,
+template testRequirements(sp: PackageReleases,
                           projTags: seq[VersionTag],
                           vers: openArray[(string, string)];
                           skipCount = false) =
@@ -157,13 +157,13 @@ suite "test expand with git tags":
 
         let vt = toVersionTag
 
-        let sp0: PackageSpec = sp[0][1] # proj ws_testtraversal
+        let sp0: PackageReleases = sp[0][1] # proj ws_testtraversal
         testRequirements(sp0, @[vt"#head@-"], [
           ("file://./buildGraph/proj_a", "#head"),
         ])
 
 
-        let sp1: PackageSpec = sp[1][1] # proj A
+        let sp1: PackageReleases = sp[1][1] # proj A
         # verify that the duplicate releases have been "reduced"
         # check sp1.releases[projAtags[1]] == sp1.releases[projAtags[2]]
         # check cast[pointer](sp1.releases[projAtags[1]]) == cast[pointer](sp1.releases[projAtags[2]])
@@ -230,7 +230,7 @@ suite "test expand with git tags":
         # check $sp[3][0] == "file://buildGraph/proj_c"
         # check $sp[4][0] == "file://buildGraph/proj_d"
 
-        let sp0: PackageSpec = sp[0][1] # proj ws_testtraversal
+        let sp0: PackageReleases = sp[0][1] # proj ws_testtraversal
         testRequirements(sp0, @[vt"#head@-"], [
           ("https://example.com/buildGraph/proj_a", "#head"),
         ])
@@ -336,7 +336,7 @@ suite "test expand with no git tags":
         let vt = toVersionTag
         proc stripcommits(tags: seq[VersionTag]): seq[VersionTag] = tags.mapIt(VersionTag(v: Version"", c: it.c))
 
-        let sp0: PackageSpec = sp[0][1] # proj ws_testtraversal
+        let sp0: PackageReleases = sp[0][1] # proj ws_testtraversal
         testRequirements(sp0, @[vt"#head@-"], [
           ("file://./buildGraphNoGitTags/proj_a", "#head"),
         ])

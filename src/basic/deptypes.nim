@@ -12,7 +12,7 @@ type
     Error
 
   Package* = object
-    pkg*: PkgUrl
+    url*: PkgUrl
     state*: DependencyState
     isRoot*: bool
     isTopLevel*: bool
@@ -24,7 +24,7 @@ type
     vid*: VarId
     release*: NimbleRelease
 
-  PackageSpec* = object
+  PackageReleases* = object
     releases*: OrderedTable[VersionTag, NimbleRelease]
     activeVersion*: int
     active*: bool
@@ -47,7 +47,7 @@ type
     FromHead, FromGitTag, FromDep, FromNimbleFile
 
   PackageGraph* = ref object
-    pkgsToSpecs*: OrderedTable[PkgUrl, PackageSpec]
+    pkgsToSpecs*: OrderedTable[PkgUrl, PackageReleases]
 
   NimbleContext* = object
     packageToDependency*: Table[PkgUrl, Package]
@@ -153,7 +153,7 @@ proc toJsonHook*(t: OrderedTable[VersionTag, NimbleRelease], opt: ToJsonOptions)
   for k, v in t:
     result[repr(k)] = toJson(v, opt)
 
-proc toJsonHook*(t: OrderedTable[PkgUrl, PackageSpec], opt: ToJsonOptions): JsonNode =
+proc toJsonHook*(t: OrderedTable[PkgUrl, PackageReleases], opt: ToJsonOptions): JsonNode =
   result = newJObject()
   for k, v in t:
     result[$(k)] = toJson(v, opt)
