@@ -250,7 +250,7 @@ proc solve*(graph: var DepGraph; form: Form) =
         assert pkg != nil, "too bad: " & $pkg.url
         # assert mapInfo.pkg.activeRelease != nil, "too bad: " & $pkg.url
         pkg.activeRelease = mapInfo.release
-        debug pkg.url.projectName, "package satisfiable"
+        info pkg.url.projectName, "package satisfiable"
         if not mapInfo.version.vtag.commit.isEmpty() and pkg.state == Processed:
           if pkg.ondisk.string.len == 0:
             error pkg.url.projectName, "Missing ondisk location for:", $(pkg.url)

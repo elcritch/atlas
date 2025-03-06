@@ -156,9 +156,13 @@ proc toJsonHook*(t: Table[VersionTag, NimbleRelease], opt: ToJsonOptions): JsonN
     result[repr(k)] = toJson(v, opt)
 
 proc toJsonHook*(t: OrderedTable[PackageVersion, NimbleRelease], opt: ToJsonOptions): JsonNode =
-  result = newJObject()
+  result = newJArray()
   for k, v in t:
-    result[repr(k.vtag)] = toJson(v, opt)
+    var tpl = newJArray()
+    tpl.add toJson(k, opt)
+    tpl.add toJson(v, opt)
+    result.add tpl
+    # result[repr(k.vtag)] = toJson(v, opt)
 
 proc toJsonHook*(t: OrderedTable[PkgUrl, Package], opt: ToJsonOptions): JsonNode =
   result = newJObject()
