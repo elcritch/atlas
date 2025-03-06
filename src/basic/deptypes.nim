@@ -33,6 +33,7 @@ type
     hasInstallHooks*: bool
     srcDir*: Path
     err*: string
+    vid*: VarId
 
   RequirementStatus* = enum
     Normal, HasBrokenRepo, HasBrokenNimbleFile, HasBrokenRelease, HasUnknownNimbleFile, HasBrokenDep

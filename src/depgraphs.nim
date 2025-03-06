@@ -40,63 +40,83 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
   var builder = Builder()
   builder.openOpr(AndForm)
 
+  # This loop processes each package to set up version selection constraints
   for p in mitems(graph.nodes):
     if p.versions.len == 0: continue
 
+    # Sort versions in descending order (newer versions first)
     p.versions.sort(sortDepVersions)
 
-    var verIdx = 0
+    # Assign a unique SAT variable to each version of the package
+    var i = 0
     for ver in p.versions.mitems():
       ver.vid = VarId(result.idgen)
+      # Map the SAT variable to package information for result interpretation
       result.mapping[ver.vid] = SatVarInfo(
         pkg: p.dep.pkg,
         vtag: ver.vtag,
-        index: verIdx
+        index: i
       )
       inc result.idgen
-      inc verIdx
+      inc i
 
     doAssert p.dep.state != NotInitialized
 
+    # Add constraints based on the package status
     if p.dep.state == Error:
+      # If package is broken, enforce that none of its versions can be selected
       builder.openOpr(AndForm)
       for ver in mitems(p.versions):
         builder.addNegated ver.vid
       builder.closeOpr # AndForm
     elif p.dep.isRoot:
+      # If it's a root package, enforce that exactly one version must be selected
       builder.openOpr(ExactlyOneOfForm)
       for ver in mitems(p.versions):
         builder.add ver.vid
       builder.closeOpr # ExactlyOneOfForm
     else:
+      # For non-root packages, they can either have one version selected or none at all
       builder.openOpr(ZeroOrOneOfForm)
       for ver in mitems(p.versions):
         builder.add ver.vid
       builder.closeOpr # ExactlyOneOfForm
 
+  # This loop sets up the dependency relationships in the SAT formula
+  # It creates constraints for each package's requirements
   for pkg in mitems(graph.nodes):
     for ver in mvalidVersions(pkg, graph):
+
+      # Skip if this requirement has already been processed
       if isValid(graph.reqs[ver.reqIdx].vid):
         continue
+
+      # Assign a unique SAT variable to this requirement set
       let eqVar = VarId(result.idgen)
       graph.reqs[ver.reqIdx].vid = eqVar
       inc result.idgen
 
+      # Skip empty requirement sets
       if graph.reqs[ver.reqIdx].release.deps.len == 0:
         continue
 
       let beforeEq = builder.getPatchPos()
 
+      # Create a constraint:
+      #    if this requirement is true, then all its dependencies must be satisfied
       builder.openOpr(OrForm)
       builder.addNegated eqVar
       if graph.reqs[ver.reqIdx].release.deps.len > 1:
         builder.openOpr(AndForm)
       var elementCount = 0
+    
+      # For each dependency in the requirement, create version matching constraints
       for dep, query in items graph.reqs[ver.reqIdx].release.deps:
         let queryVer = if algo == SemVer: toSemVer(query) else: query
         let commit = extractSpecificCommit(queryVer)
         let availVer = graph[findDependencyForDep(graph, dep)]
-        if availVer.versions.len == 0: continue
+        if availVer.versions.len == 0:
+          continue
 
         let beforeExactlyOneOf = builder.getPatchPos()
         builder.openOpr(ExactlyOneOfForm)
@@ -104,6 +124,7 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
         var matchCount = 0
 
         if not commit.isEmpty():
+          # Match by specific commit if specified
           for verIdx in countup(0, availVer.versions.len-1):
             if queryVer.matches(availVer.versions[verIdx].vtag.version) or
                 commit == availVer.versions[verIdx].vtag.commit:
@@ -111,25 +132,34 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
               inc matchCount
               break
         elif algo == MinVer:
+          # For MinVer algorithm, try to find the minimum version that satisfies the requirement
           for verIdx in countup(0, availVer.versions.len-1):
             if queryVer.matches(availVer.versions[verIdx].vtag.version):
               builder.add availVer.versions[verIdx].vid
               inc matchCount
         else:
+          # For other algorithms (like SemVer), try to find the maximum version that satisfies
           for verIdx in countdown(availVer.versions.len-1, 0):
             if queryVer.matches(availVer.versions[verIdx].vtag.version):
               builder.add availVer.versions[verIdx].vid
               inc matchCount
+
         builder.closeOpr # ExactlyOneOfForm
+
+        # If no matching version was found, add a false literal to make the formula unsatisfiable
         if matchCount == 0:
           builder.resetToPatchPos beforeExactlyOneOf
           builder.add falseLit()
 
       if graph.reqs[ver.reqIdx].release.deps.len > 1: builder.closeOpr # AndForm
       builder.closeOpr # EqForm
+
+      # If no dependencies were processed, reset the formula position
       if elementCount == 0:
         builder.resetToPatchPos beforeEq
 
+  # This final loop links package versions to their requirements
+  # It enforces that if a version is selected, its requirements must be satisfied
   for pkg in mitems(graph.nodes):
     for ver in mvalidVersions(pkg, graph):
       if graph.reqs[ver.reqIdx].release.deps.len > 0:

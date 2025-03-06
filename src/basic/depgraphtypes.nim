@@ -21,10 +21,6 @@ type
     vtag*: VersionTag
     reqIdx*: int # index into graph.reqs so that it can be shared between releases
 
-  Requirements* = object
-    vid*: VarId
-    release*: NimbleRelease
-
 proc `[]`*(g: DepGraph, idx: int): DepConstraint =
   g.nodes[idx]
 
