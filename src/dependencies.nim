@@ -196,10 +196,9 @@ proc traverseDependency*(
     pkg: var Package,
     mode: TraversalMode;
     explicitVersions: seq[VersionTag];
-): Package =
+) =
   doAssert pkg.ondisk.dirExists() and pkg.state != NotInitialized, "Package should've been found or cloned at this point"
 
-  result = Package(url: pkg.url)
   var versions: seq[(PackageVersion, NimbleRelease)]
 
   let currentCommit = currentGitCommit(pkg.ondisk, Warning)
@@ -263,8 +262,6 @@ proc traverseDependency*(
       if not checkoutGitCommit(pkg.ondisk, currentCommit, Warning):
         info pkg.url.projectName, "traverseDependency error loading versions reverting to ", $currentCommit
 
-  pkg.state = Processed
-
   var uniqueReleases: Table[NimbleRelease, NimbleRelease]
 
   for (ver, rel) in versions:
@@ -276,15 +273,17 @@ proc traverseDependency*(
 
   info pkg.url.projectName, "unique versions found:", uniqueReleases.values().toSeq().mapIt($it.version).join(", ")
   for (ver, rel) in versions:
-    if ver in result.versions:
+    if ver in pkg.versions:
       error pkg.url.projectName, "duplicate release found:", $ver.vtag, "new:", repr(rel)
-      error pkg.url.projectName, "... existing: ", repr(result.versions[ver])
-      error pkg.url.projectName, "duplicate release found:", $ver.vtag, "new:", repr(rel), " existing: ", repr(result.versions[ver])
-      error pkg.url.projectName, "versions table:", $result.versions.keys().toSeq()
-    result.versions[ver] = uniqueReleases[rel]
+      error pkg.url.projectName, "... existing: ", repr(pkg.versions[ver])
+      error pkg.url.projectName, "duplicate release found:", $ver.vtag, "new:", repr(rel), " existing: ", repr(pkg.versions[ver])
+      error pkg.url.projectName, "versions table:", $pkg.versions.keys().toSeq()
+    pkg.versions[ver] = uniqueReleases[rel]
   
   # TODO: filter by unique versions first?
   # result.versions.sort(sortVersions)
+  pkg.state = Processed
+
 
 proc loadDependency*(
     nc: NimbleContext,
@@ -342,7 +341,7 @@ proc expand*(nc: var NimbleContext; mode: TraversalMode, path: Path): DepGraph =
         info pkg.projectName, "Processing at:", $pkg.ondisk
         # processing = true
         let mode = if pkg.isRoot: CurrentCommit else: mode
-        let pkg = nc.traverseDependency(pkg, mode, @[])
+        nc.traverseDependency(pkg, mode, @[])
         # debug pkg.projectName, "processed pkg:", $pkg
         for vtag, reqs in pkg.versions:
           debug pkg.projectName, "pkg version:", $vtag, "reqs:", $(toJsonHook(reqs))

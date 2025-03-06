@@ -4,6 +4,7 @@ import std / [strutils, os, uri, jsonutils, json, tables, sequtils, strformat, u
 import basic/[sattypes, context, reporters, pkgurls, compiledpatterns, versions]
 import basic/deptypes
 import dependencies
+import depgraphs
 import testerutils
 
 if not dirExists("tests/ws_testtraverse/buildGraph"):
@@ -80,8 +81,10 @@ suite "graph solve":
 
         let dir = paths.getCurrentDir().absolutePath
 
-        let graph: DepGraph = expand(nc, AllReleases, dir)
+        var graph: DepGraph = expand(nc, AllReleases, dir)
 
         echo "\tspec:\n", graph.toJson(ToJsonOptions(enumMode: joptEnumString))
         let sp = graph.pkgs.values().toSeq()
+
+        let form = graph.toFormular(SemVer)
 

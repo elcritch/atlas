@@ -64,7 +64,7 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
       inc result.idgen
       inc i
 
-    doAssert p.state != NotInitialized
+    doAssert p.state != NotInitialized, "package not initialized: " & $p.toJson(ToJsonOptions(enumMode: joptEnumString))
 
     # Add constraints based on the package status
     if p.state == Error:

@@ -48,6 +48,7 @@ template testRequirements(sp: Package,
     echo "Checking requirements item: " & $vers[idx] & " version: " & $vt
     check idx < vers.len()
     let (url, ver) = vers[idx]
+    check sp.state == Processed
     check vt in sp.versions
     if vt in sp.versions:
       check sp.versions[vt].status == Normal
