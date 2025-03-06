@@ -33,7 +33,8 @@ proc sortDepVersions(a, b: (PackageVersion, NimbleRelease)): int =
 type
   SatVarInfo* = object # attached information for a SAT variable
     pkg*: Package
-    vtag*: VersionTag
+    version*: PackageVersion
+    release*: NimbleRelease
     # index*: int
 
   Form* = object
@@ -60,7 +61,8 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
       # Map the SAT variable to package information for result interpretation
       result.mapping[ver.vid] = SatVarInfo(
         pkg: p,
-        vtag: ver.vtag,
+        version: ver,
+        release: rel,
         # index: i
       )
       inc result.idgen
@@ -180,7 +182,7 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
   result.formula = toForm(builder)
 
 proc toString(info: SatVarInfo): string =
-  "(" & info.pkg.url.projectName & ", " & $info.vtag & ")"
+  "(" & info.pkg.url.projectName & ", " & $info.version & ")"
 
 proc runBuildSteps(graph: var DepGraph) =
   ## execute build steps for the dependency graph
@@ -225,67 +227,66 @@ proc toPretty*(v: uint64): string =
   else: ""
 
 proc solve*(graph: var DepGraph; form: Form) =
-  when false:
-    let maxVar = form.idgen
-    if context().dumpGraphs:
-      dumpJson(graph, "graph-solve-input.json")
-    var solution = createSolution(maxVar)
-    if context().dumpFormular:
-      debugFormular graph, form, solution
+  let maxVar = form.idgen
+  if context().dumpGraphs:
+    dumpJson(graph, "graph-solve-input.json")
+  var solution = createSolution(maxVar)
+  if context().dumpFormular:
+    debugFormular graph, form, solution
 
-    if satisfiable(form.formula, solution):
-      for node in mitems graph.nodes:
-        if node.dep.isRoot: node.active = true
-      for varIdx in 0 ..< maxVar:
-        let vid = VarId varIdx
-        if vid in form.mapping:
-          let mapInfo = form.mapping[vid]
-          info mapInfo.url.projectName, "v" & $varIdx & " sat var: " & $solution.getVar(vid).toPretty()
+  if satisfiable(form.formula, solution):
+    for node in mitems graph.nodes:
+      if node.dep.isRoot: node.active = true
+    for varIdx in 0 ..< maxVar:
+      let vid = VarId varIdx
+      if vid in form.mapping:
+        let mapInfo = form.mapping[vid]
+        info mapInfo.url.projectName, "v" & $varIdx & " sat var: " & $solution.getVar(vid).toPretty()
 
-        if solution.isTrue(VarId(varIdx)) and form.mapping.hasKey(VarId varIdx):
-          let mapInfo = form.mapping[VarId varIdx]
-          let i = findDependencyForDep(graph, mapInfo.url)
-          graph[i].active = true
-          assert graph[i].activeRelease == -1, "too bad: " & graph[i].dep.url.url
-          graph[i].activeRelease = mapInfo.index
-          debug mapInfo.url.projectName, "package satisfiable"
-          if not mapInfo.vtag.commit.isEmpty() and graph[i].dep.state == Processed:
-            assert graph[i].dep.ondisk.string.len > 0, "Missing ondisk location for: " & $(graph[i].dep.url, i)
-            let res = checkoutGitCommit(graph[i].dep.ondisk, mapInfo.vtag.commit)
+      if solution.isTrue(VarId(varIdx)) and form.mapping.hasKey(VarId varIdx):
+        let mapInfo = form.mapping[VarId varIdx]
+        let i = findDependencyForDep(graph, mapInfo.url)
+        graph[i].active = true
+        assert graph[i].activeRelease == -1, "too bad: " & graph[i].dep.url.url
+        graph[i].activeRelease = mapInfo.index
+        debug mapInfo.url.projectName, "package satisfiable"
+        if not mapInfo.vtag.commit.isEmpty() and graph[i].dep.state == Processed:
+          assert graph[i].dep.ondisk.string.len > 0, "Missing ondisk location for: " & $(graph[i].dep.url, i)
+          let res = checkoutGitCommit(graph[i].dep.ondisk, mapInfo.vtag.commit)
 
-      if NoExec notin context().flags:
-        runBuildSteps(graph)
+    if NoExec notin context().flags:
+      runBuildSteps(graph)
 
-      if ListVersions in context().flags:
-        info "../resolve", "selected:"
-        for node in items graph.nodes:
-          if not node.dep.isTopLevel:
-            for ver in items(node.versions):
-              let item = form.mapping[ver.vid]
-              if solution.isTrue(ver.vid):
-                info item.url.projectName, "[x] " & toString item
-              else:
-                info item.url.projectName, "[ ] " & toString item
-        info "../resolve", "end of selection"
-    else:
-      var notFoundCount = 0
-      for node in mitems(graph.nodes):
-        if node.dep.isRoot and node.dep.state != Processed:
-          error context().workspace, "invalid find package: " & node.dep.url.projectName & " in state: " & $node.dep.state & " error: " & $node.dep.errors
-          inc notFoundCount
-      if notFoundCount > 0:
-        return
-      error context().workspace, "version conflict; for more information use --showGraph"
-      for node in mitems(graph.nodes):
-        var usedVersionCount = 0
-        for ver in mvalidVersions(node, graph):
-          if solution.isTrue(ver.vid): inc usedVersionCount
-        if usedVersionCount > 1:
-          for ver in mvalidVersions(node, graph):
+    if ListVersions in context().flags:
+      info "../resolve", "selected:"
+      for node in items graph.nodes:
+        if not node.dep.isTopLevel:
+          for ver in items(node.versions):
+            let item = form.mapping[ver.vid]
             if solution.isTrue(ver.vid):
-              error node.dep.url.projectName, string(ver.vtag.version) & " required"
-    if context().dumpGraphs:
-      dumpJson(graph, "graph-solved.json")
+              info item.url.projectName, "[x] " & toString item
+            else:
+              info item.url.projectName, "[ ] " & toString item
+      info "../resolve", "end of selection"
+  else:
+    var notFoundCount = 0
+    for node in mitems(graph.nodes):
+      if node.dep.isRoot and node.dep.state != Processed:
+        error context().workspace, "invalid find package: " & node.dep.url.projectName & " in state: " & $node.dep.state & " error: " & $node.dep.errors
+        inc notFoundCount
+    if notFoundCount > 0:
+      return
+    error context().workspace, "version conflict; for more information use --showGraph"
+    for node in mitems(graph.nodes):
+      var usedVersionCount = 0
+      for ver in mvalidVersions(node, graph):
+        if solution.isTrue(ver.vid): inc usedVersionCount
+      if usedVersionCount > 1:
+        for ver in mvalidVersions(node, graph):
+          if solution.isTrue(ver.vid):
+            error node.dep.url.projectName, string(ver.vtag.version) & " required"
+  if context().dumpGraphs:
+    dumpJson(graph, "graph-solved.json")
 
 proc traverseLoop*(nc: var NimbleContext, path: Path): seq[CfgPath] =
   result = @[]
