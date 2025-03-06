@@ -11,13 +11,18 @@ type
     Processed
     Error
 
-  Dependency* = object
+  Package* = object
     pkg*: PkgUrl
     state*: DependencyState
     isRoot*: bool
     isTopLevel*: bool
     ondisk*: Path
     errors*: seq[string]
+
+  DependencyVersion* = object
+    vtag*: VersionTag
+    vid*: VarId
+    release*: NimbleRelease
 
   DependencySpec* = object
     releases*: OrderedTable[VersionTag, NimbleRelease]
@@ -33,7 +38,7 @@ type
     hasInstallHooks*: bool
     srcDir*: Path
     err*: string
-    vid*: VarId
+    requirementsId*: VarId
 
   RequirementStatus* = enum
     Normal, HasBrokenRepo, HasBrokenNimbleFile, HasBrokenRelease, HasUnknownNimbleFile, HasBrokenDep
@@ -45,7 +50,7 @@ type
     depsToSpecs*: OrderedTable[PkgUrl, DependencySpec]
 
   NimbleContext* = object
-    packageToDependency*: Table[PkgUrl, Dependency]
+    packageToDependency*: Table[PkgUrl, Package]
     overrides*: Patterns
     hasPackageList*: bool
     nameToUrl*: Table[string, PkgUrl]
@@ -87,10 +92,10 @@ proc sortVersions*(a, b: (VersionTag, NimbleRelease)): int =
   elif a[0].v == b[0].v: 0
   else: -1)
 
-proc `$`*(d: Dependency): string =
+proc `$`*(d: Package): string =
   d.pkg.projectName
 
-proc projectName*(d: Dependency): string =
+proc projectName*(d: Package): string =
   d.pkg.projectName
 
 proc toJsonHook*(v: (PkgUrl, VersionInterval), opt: ToJsonOptions): JsonNode =
@@ -111,7 +116,7 @@ proc toJsonHook*(r: NimbleRelease, opt: ToJsonOptions = ToJsonOptions()): JsonNo
   #   result["varId"] = toJson(r.vid, opt)
   result["status"] = toJson(r.status, opt)
 
-proc hash*(r: Dependency): Hash =
+proc hash*(r: Package): Hash =
   ## use pkg name and url for identification and lookups
   var h: Hash = 0
   h = h !& hash(r.pkg)

@@ -37,7 +37,7 @@ proc fromPrefixedPath*(path: Path): Path =
   else:
     return context().depsDir / path
 
-proc genLockEntry(lf: var LockFile; w: Dependency) =
+proc genLockEntry(lf: var LockFile; w: Package) =
   lf.items[w.pkg.projectName] = LockFileEntry(
     dir: prefixedPath(w.ondisk),
     url: w.pkg.url,
@@ -90,7 +90,7 @@ proc write(lock: NimbleLockFile; lockFilePath: string) =
 
 proc genLockEntry(
                   lf: var NimbleLockFile;
-                  w: Dependency,
+                  w: Package,
                   cfg: CfgPath,
                   deps: HashSet[string]) =
   let nimbleFiles = findNimbleFile(w)

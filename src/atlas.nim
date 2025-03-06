@@ -121,7 +121,7 @@ proc tag(field: Natural) =
     tag(newTag)
 
 proc generateDepGraph(g: DepGraph) =
-  proc repr(w: Dependency): string =
+  proc repr(w: Package): string =
     $(w.pkg.url / w.commit)
 
   var dotGraph = ""
@@ -151,7 +151,7 @@ proc afterGraphActions(g: DepGraph) =
     if v != Version"":
       setupNimEnv context().workspace, v.string, Keep in context().flags
 
-proc getRequiredCommit*(w: Dependency): string =
+proc getRequiredCommit*(w: Package): string =
   if isShortCommitHash(w.commit): shortToCommit(w.ondisk, w.commit)
   else: w.commit
 

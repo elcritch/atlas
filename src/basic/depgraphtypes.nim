@@ -11,15 +11,10 @@ type
     packageToDependency*: Table[PkgUrl, int]
 
   DepConstraint* = object
-    dep*: Dependency
+    dep*: Package
     activeVersion*: int
     active*: bool
     versions*: seq[DepVersion]
-
-  DepVersion* = object # Represents a specific version of a project.
-    vid*: VarId
-    vtag*: VersionTag
-    reqIdx*: int # index into graph.reqs so that it can be shared between releases
 
 proc `[]`*(g: DepGraph, idx: int): DepConstraint =
   g.nodes[idx]
@@ -138,7 +133,7 @@ proc readOnDisk(result: var DepGraph) =
 proc createGraph*(s: PkgUrl): DepGraph =
   result = DepGraph(nodes: @[], reqs: defaultReqs())
   result.packageToDependency[s] = result.nodes.len
-  let dep = Dependency(pkg: s, isRoot: true, isTopLevel: true)
+  let dep = Package(pkg: s, isRoot: true, isTopLevel: true)
   result.nodes.add DepConstraint(dep: dep, versions: @[], activeVersion: -1)
   readOnDisk(result)
 

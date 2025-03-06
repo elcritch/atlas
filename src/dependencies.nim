@@ -39,7 +39,7 @@ proc findNimbleFile*(dir: Path, projectName: string): seq[Path] =
       result.add Path(file)
   debug dir, "finding nimble file searching by name:", projectName, "found:", result.join(", ")
 
-proc findNimbleFile*(info: Dependency): seq[Path] =
+proc findNimbleFile*(info: Package): seq[Path] =
   doAssert(info.ondisk.string != "", "Package ondisk must be set before findNimbleFile can be called! Package: " & $(info))
   result = findNimbleFile(info.ondisk, info.projectName() & ".nimble")
 
@@ -80,7 +80,7 @@ proc createNimbleContext*(): NimbleContext =
   result.overrides = context().overrides
   fillPackageLookupTable(result)
 
-proc collectNimbleVersions*(nc: NimbleContext; dep: Dependency): seq[VersionTag] =
+proc collectNimbleVersions*(nc: NimbleContext; dep: Package): seq[VersionTag] =
   let nimbleFiles = findNimbleFile(dep)
   let dir = dep.ondisk
   doAssert(dep.ondisk.string != "", "Package ondisk must be set before collectNimbleVersions can be called! Package: " & $(dep))
@@ -94,7 +94,7 @@ type
   PackageAction* = enum
     DoNothing, DoClone
 
-proc pkgUrlToDirname*(dep: Dependency): (Path, PackageAction) =
+proc pkgUrlToDirname*(dep: Package): (Path, PackageAction) =
   # XXX implement namespace support here
   # var dest = Path g.ondisk.getOrDefault(d.pkg.url)
   var dest = Path ""
@@ -108,7 +108,7 @@ proc pkgUrlToDirname*(dep: Dependency): (Path, PackageAction) =
   dest = dest.absolutePath
   result = (dest, if dirExists(dest): DoNothing else: DoClone)
 
-proc copyFromDisk*(dep: Dependency; destDir: Path): (CloneStatus, string) =
+proc copyFromDisk*(dep: Package; destDir: Path): (CloneStatus, string) =
   var dir = Path dep.pkg.url
   if dir.string.startsWith(FileWorkspace):
     dir = context().workspace / Path(dir.string.substr(FileWorkspace.len))
@@ -131,7 +131,7 @@ proc copyFromDisk*(dep: Dependency; destDir: Path): (CloneStatus, string) =
 
 proc processNimbleRelease(
     nc: var NimbleContext;
-    dep: Dependency,
+    dep: Package,
     release: VersionTag
 ): NimbleRelease =
   info dep.pkg.projectName, "Processing release:", $release
@@ -164,7 +164,7 @@ proc processNimbleRelease(
         # var pkgDep = specs.packageToDependency.getOrDefault(pkgUrl, nil)
         if pkgUrl notin nc.packageToDependency:
           debug dep.pkg.projectName, "Found new dep:", pkgUrl.projectName, "url:", pkgUrl.url()
-          let pkgDep = Dependency(pkg: pkgUrl, state: NotInitialized)
+          let pkgDep = Package(pkg: pkgUrl, state: NotInitialized)
           nc.packageToDependency[pkgUrl] = pkgDep
           # TODO: enrich versions with hashes when added
           # enrichVersionsViaExplicitHash graph[depIdx].versions, interval
@@ -173,7 +173,7 @@ proc addRelease(
     releases: var seq[(VersionTag, NimbleRelease)],
     # spec: var DependencySpec,
     nc: var NimbleContext;
-    dep: Dependency,
+    dep: Package,
     vtag: VersionTag
 ): VersionTag =
   result = vtag
@@ -193,7 +193,7 @@ proc addRelease(
 
 proc traverseDependency*(
     nc: var NimbleContext;
-    dep: var Dependency,
+    dep: var Package,
     mode: TraversalMode;
     versions: seq[VersionTag];
 ): DependencySpec =
@@ -287,7 +287,7 @@ proc traverseDependency*(
 
 proc loadDependency*(
     nc: NimbleContext,
-    dep: var Dependency,
+    dep: var Package,
 ) = 
   let (dest, todo) = pkgUrlToDirname(dep)
   dep.ondisk = dest
@@ -317,7 +317,7 @@ proc expand*(nc: var NimbleContext; mode: TraversalMode, path: Path): Dependency
   
   let pkg = nc.createUrl(path)
   warn pkg.projectName, "expanding root package at:", $pkg
-  var dep = Dependency(pkg: pkg, isRoot: true, isTopLevel: true)
+  var dep = Package(pkg: pkg, isRoot: true, isTopLevel: true)
   # nc.loadDependency(dep)
 
   var processed = initHashSet[PkgUrl]()
@@ -330,7 +330,7 @@ proc expand*(nc: var NimbleContext; mode: TraversalMode, path: Path): Dependency
     let pkgs = nc.packageToDependency.keys().toSeq()
     info "Expand", "Expanding packages for:", $pkg.projectName
     for pkg in pkgs:
-      template dep(): var Dependency = nc.packageToDependency[pkg]
+      template dep(): var Package = nc.packageToDependency[pkg]
       case dep.state:
       of NotInitialized:
         info pkg.projectName, "Initializing at:", $dep

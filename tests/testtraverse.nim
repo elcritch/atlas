@@ -12,7 +12,7 @@ if not dirExists("tests/ws_testtraverse/buildGraph"):
 # proc createGraph*(s: PkgUrl): DepGraph =
 #   result = DepGraph(nodes: @[], reqs: defaultReqs())
 #   result.packageToDependency[s] = result.nodes.len
-#   result.nodes.add Dependency(pkg: s, versions: @[], isRoot: true, isTopLevel: true, activeVersion: -1)
+#   result.nodes.add Package(pkg: s, versions: @[], isRoot: true, isTopLevel: true, activeVersion: -1)
 
 proc setupGraph*(): seq[string] =
   let projs = @["proj_a", "proj_b", "proj_c", "proj_d"]
@@ -110,11 +110,11 @@ suite "test expand with git tags":
         # var graph = DepGraph(nodes: @[], reqs: defaultReqs())
         let pkg = nc.createUrl(dir, projectName = "ws_testtraverse")
 
-        var dep0 = Dependency(pkg: pkg, isRoot: true, isTopLevel: true)
-        var dep1 = Dependency(pkg: nc.createUrl("proj_a"), isRoot: true)
-        var dep2 = Dependency(pkg: nc.createUrl("proj_b"), isRoot: true)
-        var dep3 = Dependency(pkg: nc.createUrl("proj_c"), isRoot: true)
-        var dep4 = Dependency(pkg: nc.createUrl("proj_d"), isRoot: true)
+        var dep0 = Package(pkg: pkg, isRoot: true, isTopLevel: true)
+        var dep1 = Package(pkg: nc.createUrl("proj_a"), isRoot: true)
+        var dep2 = Package(pkg: nc.createUrl("proj_b"), isRoot: true)
+        var dep3 = Package(pkg: nc.createUrl("proj_c"), isRoot: true)
+        var dep4 = Package(pkg: nc.createUrl("proj_d"), isRoot: true)
 
         nc.loadDependency(dep0)
         nc.loadDependency(dep1)
@@ -287,11 +287,11 @@ suite "test expand with no git tags":
         # var graph = DepGraph(nodes: @[], reqs: defaultReqs())
         let pkg = nc.createUrl(dir, projectName = "ws_testtraverse")
 
-        var dep0 = Dependency(pkg: pkg, isRoot: true, isTopLevel: true)
-        var dep1 = Dependency(pkg: nc.createUrl("proj_a"), isRoot: true)
-        var dep2 = Dependency(pkg: nc.createUrl("proj_b"), isRoot: true)
-        var dep3 = Dependency(pkg: nc.createUrl("proj_c"), isRoot: true)
-        var dep4 = Dependency(pkg: nc.createUrl("proj_d"), isRoot: true)
+        var dep0 = Package(pkg: pkg, isRoot: true, isTopLevel: true)
+        var dep1 = Package(pkg: nc.createUrl("proj_a"), isRoot: true)
+        var dep2 = Package(pkg: nc.createUrl("proj_b"), isRoot: true)
+        var dep3 = Package(pkg: nc.createUrl("proj_c"), isRoot: true)
+        var dep4 = Package(pkg: nc.createUrl("proj_d"), isRoot: true)
 
         nc.loadDependency(dep0)
         nc.loadDependency(dep1)
