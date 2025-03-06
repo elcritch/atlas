@@ -277,7 +277,7 @@ proc parseVersionInterval*(s: string; start: int; err: var bool): VersionInterva
     else:
       err = true
   else:
-    result = VersionInterval(a: VersionReq(r: verAny, v: Version"#head"))
+    result = VersionInterval(a: VersionReq(r: verAny, v: Version""))
 
 proc parseTaggedVersions*(outp: string, requireVersions = true): seq[VersionTag] =
   result = @[]
