@@ -40,23 +40,24 @@ template testRequirements(sp: Package,
                           skipCount = false) =
   echo "Checking Requirements: " & astToStr(sp)
   if not skipCount:
-    check sp.releases.len() == vers.len()
+    check sp.versions.len() == vers.len()
 
   for idx, vt in projTags:
     # let vt = projTags[idx]
+    let vt = vt.toPkgVer
     echo "Checking requirements item: " & $vers[idx] & " version: " & $vt
     check idx < vers.len()
     let (url, ver) = vers[idx]
-    check vt in sp.releases
-    if vt in sp.releases:
-      check sp.releases[vt].status == Normal
+    check vt in sp.versions
+    if vt in sp.versions:
+      check sp.versions[vt].status == Normal
       if not skipCount:
-        check sp.releases[vt].deps.len() == 1
+        check sp.versions[vt].requirements.len() == 1
 
       if url != "":
-        check $sp.releases[vt].deps[0][0] == url
+        check $sp.versions[vt].requirements[0][0] == url
       if ver != "":
-        check $sp.releases[vt].deps[0][1] == ver
+        check $sp.versions[vt].requirements[0][1] == ver
 
 suite "test expand with git tags":
   setup:
@@ -144,10 +145,10 @@ suite "test expand with git tags":
         let deps = setupGraph()
         let dir = paths.getCurrentDir().absolutePath
 
-        let specs: Packages = expand(nc, AllReleases, dir)
+        let graph = expand(nc, AllReleases, dir)
 
-        echo "\tspec:\n", specs.toJson(ToJsonOptions(enumMode: joptEnumString))
-        let sp = specs.pkgsToSpecs
+        echo "\tspec:\n", graph.toJson(ToJsonOptions(enumMode: joptEnumString))
+        let sp = graph.pkgs.values().toSeq()
 
         check $sp[0].url == "file://$1" % [$dir]
         check $sp[1].url == "file://./buildGraph/proj_a"
@@ -217,10 +218,10 @@ suite "test expand with git tags":
         # let deps = setupGraph()
         let dir = paths.getCurrentDir().absolutePath
 
-        let specs: Packages = expand(nc, AllReleases, dir)
+        let graph = expand(nc, AllReleases, dir)
 
-        echo "\tspec:\n", specs.toJson(ToJsonOptions(enumMode: joptEnumString))
-        let sp = specs.pkgsToSpecs
+        echo "\tspec:\n", graph.toJson(ToJsonOptions(enumMode: joptEnumString))
+        let sp = graph.pkgs.values().toSeq()
         let vt = toVersionTag
 
         check sp.len() == 5
@@ -322,10 +323,10 @@ suite "test expand with no git tags":
         let deps = setupGraphNoGitTags()
         let dir = paths.getCurrentDir().absolutePath
 
-        let specs: Packages = expand(nc, AllReleases, dir)
+        let graph = expand(nc, AllReleases, dir)
 
-        echo "\tspec:\n", specs.toJson(ToJsonOptions(enumMode: joptEnumString))
-        let sp = specs.pkgsToSpecs
+        echo "\tspec:\n", graph.toJson(ToJsonOptions(enumMode: joptEnumString))
+        let sp = graph.pkgs.values().toSeq()
 
         check $sp[0].url == "file://$1" % [$dir]
         check $sp[1].url == "file://./buildGraphNoGitTags/proj_a"

@@ -17,7 +17,7 @@ type
   Package* = ref object
     url*: PkgUrl
     state*: PackageState
-    releases*: OrderedTable[PackageVersion, NimbleRelease]
+    versions*: OrderedTable[PackageVersion, NimbleRelease]
     activeVersion*: int
     ondisk*: Path
     active*: bool
@@ -41,7 +41,7 @@ type
 
   DepGraph* = object
     root*: Package
-    pkgs*: Table[PkgUrl, Package]
+    pkgs*: OrderedTable[PkgUrl, Package]
 
   NimbleContext* = object
     packageToDependency*: Table[PkgUrl, Package]
@@ -101,6 +101,8 @@ proc toJsonHook*(v: (PkgUrl, VersionInterval), opt: ToJsonOptions): JsonNode =
   result["version"] = toJsonHook(v[1])
 
 proc toJsonHook*(r: NimbleRelease, opt: ToJsonOptions = ToJsonOptions()): JsonNode =
+  if r == nil:
+    return newJNull()
   result = newJObject()
   result["requirements"] = toJson(r.requirements, opt)
   if r.hasInstallHooks:
@@ -145,12 +147,17 @@ proc toJsonHook*(t: Table[VersionTag, NimbleRelease], opt: ToJsonOptions): JsonN
   for k, v in t:
     result[repr(k)] = toJson(v, opt)
 
-proc toJsonHook*(t: OrderedTable[VersionTag, NimbleRelease], opt: ToJsonOptions): JsonNode =
+proc toJsonHook*(t: OrderedTable[PackageVersion, NimbleRelease], opt: ToJsonOptions): JsonNode =
   result = newJObject()
   for k, v in t:
-    result[repr(k)] = toJson(v, opt)
+    result[repr(k.vtag)] = toJson(v, opt)
 
 proc toJsonHook*(t: OrderedTable[PkgUrl, Package], opt: ToJsonOptions): JsonNode =
   result = newJObject()
   for k, v in t:
     result[$(k)] = toJson(v, opt)
+
+# proc toJsonHook*(d: DepGraph, opt: ToJsonOptions): JsonNode =
+#   result = newJObject()
+#   result["root"] = toJson(d.root, opt)
+#   result["pkgs"] = toJson(d.pkgs, opt)

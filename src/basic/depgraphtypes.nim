@@ -50,13 +50,6 @@ proc defaultReqs*(): seq[Requirements] =
   let unknownReq = Requirements(release: NimbleRelease(status: HasUnknownNimbleFile), vid: NoVar)
   result = @[emptyReq, unknownReq]
 
-proc toJsonHook*(d: DepGraph, opt: ToJsonOptions): JsonNode =
-  result = newJObject()
-  result["nodes"] = toJson(d.nodes, opt)
-  result["reqs"] = toJson(d.reqs, opt)
-  result["packageToDependency"] = toJson(d.packageToDependency, opt)
-    # result["reqsByDeps"] = toJson(d.reqsByDeps)
-
 proc sortDepVersions*(a, b: DepVersion): int =
   (if a.vtag.v < b.vtag.v: 1
   elif a.vtag.v == b.vtag.v: 0

@@ -160,8 +160,8 @@ proc processNimbleRelease(
     result = nc.parseNimbleFile(nimbleFile, context().overrides)
 
     if result.status == Normal:
-      for pkgUrl, interval in items(result.deps):
-        # var pkgDep = specs.packageToDependency.getOrDefault(pkgUrl, nil)
+      for pkgUrl, interval in items(result.requirements):
+        # var pkgDep = pkgs.packageToDependency.getOrDefault(pkgUrl, nil)
         if pkgUrl notin nc.packageToDependency:
           debug pkg.url.projectName, "Found new pkg:", pkgUrl.projectName, "url:", pkgUrl.url()
           let pkgDep = Package(url: pkgUrl, state: NotInitialized)
@@ -171,31 +171,31 @@ proc processNimbleRelease(
 
 proc addRelease(
     versions: var seq[(PackageVersion, NimbleRelease)],
-    # spec: var Package,
+    # pkg: var Package,
     nc: var NimbleContext;
     pkg: Package,
     vtag: VersionTag
-): VersionTag =
-  result = vtag
+) =
+  var pkgver = vtag.toPkgVer()
   warn pkg.url.projectName, "Adding Nimble version:", $vtag
   let release = nc.processNimbleRelease(pkg, vtag)
 
   if vtag.v.string == "":
-    result.v = release.version
-    debug pkg.url.projectName, "updating release tag information:", $result
+    pkgver.vtag.v = release.version
+    debug pkg.url.projectName, "updating release tag information:", $pkgver.vtag
   elif release.version.string == "":
-    warn pkg.url.projectName, "nimble file missing version information:", $result
+    warn pkg.url.projectName, "nimble file missing version information:", $pkgver.vtag
     release.version = vtag.version
   elif vtag.v != release.version:
     warn pkg.url.projectName, "version mismatch between:", $vtag.v, "nimble version:", $release.version
   
-  versions.add((result, release,))
+  versions.add((pkgver, release,))
 
 proc traverseDependency*(
     nc: var NimbleContext;
     pkg: var Package,
     mode: TraversalMode;
-    versions: seq[VersionTag];
+    explicitVersions: seq[VersionTag];
 ): Package =
   doAssert pkg.ondisk.dirExists() and pkg.state != NotInitialized, "Package should've been found or cloned at this point"
 
@@ -212,7 +212,7 @@ proc traverseDependency*(
   elif currentCommit.isEmpty():
     warn pkg.url.projectName, "traversing dependency unable to find git current version at ", $pkg.ondisk
     let vtag = VersionTag(v: Version"#head", c: initCommitHash("", FromHead))
-    versions.add((vtag, NimbleRelease(version: vtag.version, status: HasBrokenRepo)))
+    versions.add((vtag.toPkgVer, NimbleRelease(version: vtag.version, status: HasBrokenRepo)))
     pkg.state = Error
     return
   else:
@@ -222,28 +222,28 @@ proc traverseDependency*(
   of CurrentCommit:
     trace pkg.url.projectName, "traversing dependency for only current commit"
     let vtag = VersionTag(v: Version"#head", c: initCommitHash(currentCommit, FromHead))
-    discard versions.addRelease(nc, pkg, vtag)
+    versions.addRelease(nc, pkg, vtag)
 
   of AllReleases:
     try:
       var uniqueCommits: HashSet[CommitHash]
       let nimbleCommits = nc.collectNimbleVersions(pkg)
 
-      info pkg.url.projectName, "traverseDependency nimble explicit versions:", $versions
-      for version in versions:
+      info pkg.url.projectName, "traverseDependency nimble explicit versions:", $explicitVersions
+      for version in explicitVersions:
         if version.version == Version"" and
             not version.commit.isEmpty() and
             not uniqueCommits.containsOrIncl(version.commit):
             let vtag = VersionTag(v: Version"", c: version.commit)
             assert vtag.commit.orig == FromDep, "maybe this needs to be overriden like before: " & $vtag.commit.orig
-            discard versions.addRelease(nc, pkg, vtag)
+            versions.addRelease(nc, pkg, vtag)
 
       ## Note: always prefer tagged versions
       let tags = collectTaggedVersions(pkg.ondisk)
       info pkg.url.projectName, "traverseDependency nimble tags:", $tags
       for tag in tags:
         if not uniqueCommits.containsOrIncl(tag.c):
-          let tag = versions.addRelease(nc, pkg, tag)
+          versions.addRelease(nc, pkg, tag)
           assert tag.commit.orig == FromGitTag, "maybe this needs to be overriden like before: " & $tag.commit.orig
 
       if tags.len() == 0 or context().includeTagsAndNimbleCommits:
@@ -252,12 +252,12 @@ proc traverseDependency*(
         info pkg.url.projectName, "traverseDependency nimble commits:", $nimbleCommits
         for tag in nimbleCommits:
           if not uniqueCommits.containsOrIncl(tag.c):
-            discard versions.addRelease(nc, pkg, tag)
+            versions.addRelease(nc, pkg, tag)
 
       if versions.len() == 0:
         let vtag = VersionTag(v: Version"#head", c: initCommitHash(currentCommit, FromHead))
         info pkg.url.projectName, "traverseDependency no versions found, using default #head", "at", $pkg.ondisk
-        discard versions.addRelease(nc, pkg, vtag)
+        versions.addRelease(nc, pkg, vtag)
 
     finally:
       if not checkoutGitCommit(pkg.ondisk, currentCommit, Warning):
@@ -283,7 +283,7 @@ proc traverseDependency*(
     result.versions[vtag] = uniqueReleases[rel]
   
   # TODO: filter by unique versions first?
-  result.versions.sort(sortVersions)
+  # result.versions.sort(sortVersions)
 
 proc loadDependency*(
     nc: NimbleContext,
@@ -312,25 +312,25 @@ proc loadDependency*(
       pkg.state = Error
       pkg.errors.add "ondisk location missing"
 
-proc expand*(nc: var NimbleContext; mode: TraversalMode, path: Path): Packages =
+proc expand*(nc: var NimbleContext; mode: TraversalMode, path: Path): DepGraph =
   ## Expand the graph by adding all dependencies.
   
   let url = nc.createUrl(path)
   warn url.projectName, "expanding root package at:", $url
-  var pkg = Package(url: url, isRoot: true, isTopLevel: true)
+  var root = Package(url: url, isRoot: true, isTopLevel: true)
   # nc.loadDependency(pkg)
 
   var processed = initHashSet[PkgUrl]()
-  var specs = Packages()
-  nc.packageToDependency[pkg.url] = pkg
+  result = DepGraph(root: root)
+  nc.packageToDependency[root.url] = root
 
   var processing = true
   while processing:
     processing = false
-    let pkgs = nc.packageToDependency.keys().toSeq()
-    info "Expand", "Expanding packages for:", $pkg.projectName
-    for pkg in pkgs:
-      template pkg(): var Package = nc.packageToDependency[pkg]
+    let pkgUrls = nc.packageToDependency.keys().toSeq()
+    info "Expand", "Expanding packages for:", $root.projectName
+    for pkgUrl in pkgUrls:
+      var pkg = nc.packageToDependency[pkgUrl]
       case pkg.state:
       of NotInitialized:
         info pkg.projectName, "Initializing at:", $pkg
@@ -341,21 +341,20 @@ proc expand*(nc: var NimbleContext; mode: TraversalMode, path: Path): Packages =
         info pkg.projectName, "Processing at:", $pkg.ondisk
         # processing = true
         let mode = if pkg.isRoot: CurrentCommit else: mode
-        let spec = nc.traverseDependency(pkg, mode, @[])
-        # debug pkg.projectName, "processed spec:", $spec
-        for vtag, reqs in spec.versions:
-          debug pkg.projectName, "spec version:", $vtag, "reqs:", $(toJsonHook(reqs))
-        specs.pkgsToSpecs.add(spec)
+        let pkg = nc.traverseDependency(pkg, mode, @[])
+        # debug pkg.projectName, "processed pkg:", $pkg
+        for vtag, reqs in pkg.versions:
+          debug pkg.projectName, "pkg version:", $vtag, "reqs:", $(toJsonHook(reqs))
         processing = true
+        result.pkgs[pkgUrl] = pkg
       else:
         discard
 
-  for spec in specs.pkgsToSpecs:
-    info spec.url.projectName, "Processed:", $spec.url.url
-    for vtag, reqs in spec.versions:
-      info spec.url.projectName, "spec version:", $vtag, "reqs:", reqs.deps.mapIt($(it[0].projectName) & " " & $(it[1])).join(", "), "status:", $reqs.status
+  # for pkg in pkgs.pkgsToSpecs:
+  #   info pkg.url.projectName, "Processed:", $pkg.url.url
+  #   for vtag, reqs in pkg.versions:
+  #     info pkg.url.projectName, "pkg version:", $vtag, "reqs:", reqs.deps.mapIt($(it[0].projectName) & " " & $(it[1])).join(", "), "status:", $reqs.status
 
-  result = specs
 
   # if context().dumpGraphs:
   #   dumpJson(graph, "graph-expanded.json")
