@@ -6,7 +6,7 @@
 #    distribution, for details about the copyright.
 #
 
-import std / [os, sha1, paths, strutils, tables, unicode, hashes, json, jsonutils]
+import std / [os, sha1, uri, paths, strutils, tables, unicode, hashes, json, jsonutils]
 import sattypes, deptypes, versions, context, reporters, gitops, parse_requires, pkgurls, compiledpatterns
 
 proc addError*(err: var string; nimbleFile: string; msg: string) =
@@ -35,28 +35,31 @@ proc parseNimbleFile*(nc: NimbleContext;
     while i < r.len and r[i] notin {'#', '<', '=', '>'} + Whitespace: inc i
     let name = r.substr(0, i-1)
 
+    var url: PkgUrl
     try:
-      let url = nc.createUrl(name)
-
-      var err = false
-      let query = parseVersionInterval(r, i, err) # update err
-      if err:
-        if result.status != HasBrokenDep:
-          warn nimbleFile, "broken nimble file: " & name
-          result.status = HasBrokenNimbleFile
-          result.err.addError $nimbleFile, "invalid 'requires' syntax in nimble file: " & r
-      else:
-        if cmpIgnoreCase(name, "nim") == 0:
-          let v = extractGeQuery(query)
-          if v != Version"":
-            result.nimVersion = v
-        else:
-          result.requirements.add (url, query)
+      url = nc.createUrl(name)
     except ValueError, IOError, OSError:
       let err = getCurrentExceptionMsg()
       result.status = HasBrokenDep
       warn nimbleFile, "cannot resolve dependency package name: " & name & " error: " & $err
       result.err.addError $nimbleFile, "cannot resolve package name: " & name
+      url = toPkgUri(parseUri("error://" & name))
+
+    var err = false
+    let query = parseVersionInterval(r, i, err) # update err
+    if err:
+      if result.status != HasBrokenDep:
+        warn nimbleFile, "broken nimble file: " & name
+        result.status = HasBrokenNimbleFile
+        result.err.addError $nimbleFile, "invalid 'requires' syntax in nimble file: " & r
+    else:
+      if cmpIgnoreCase(name, "nim") == 0:
+        let v = extractGeQuery(query)
+        if v != Version"":
+          result.nimVersion = v
+      else:
+        result.requirements.add (url, query)
+
 
 proc genRequiresLine(u: string): string = "requires \"$1\"\n" % u.escape("", "")
 

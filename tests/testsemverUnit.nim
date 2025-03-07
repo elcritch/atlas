@@ -53,6 +53,8 @@ template testRequirements(sp: Package,
     check vt in sp.versions
     if vt in sp.versions:
       check sp.versions[vt].status == Normal
+      if sp.versions[vt].status != Normal:
+        continue
       if not skipCount:
         check sp.versions[vt].requirements.len() == 1
 
@@ -128,13 +130,11 @@ suite "graph solve":
         # check cast[pointer](sp1.releases[projAtags[1]]) == cast[pointer](sp1.releases[projAtags[2]])
         testRequirements(sp1, projAtags, [
           ("https://example.com/buildGraph/proj_b", ">= 1.1.0"),
-          # ("https://example.com/buildGraph/proj_b", ">= 1.0.0"),
           ("https://example.com/buildGraph/proj_b", ">= 1.0.0"),
         ])
         let sp2 = sp[2] # proj B
         testRequirements(sp2, projBtags, [
           ("https://example.com/buildGraph/proj_c", ">= 1.1.0"),
-          # ("https://example.com/buildGraph/proj_c", ">= 1.0.0"),
           ("https://example.com/buildGraph/proj_c", ">= 1.0.0"),
         ])
         let sp3 = sp[3] # proj C
@@ -147,7 +147,7 @@ suite "graph solve":
           ("", ""),
         ], true)
 
-        echo "\tspec:\n", graph.toJson(ToJsonOptions(enumMode: joptEnumString))
+        echo "\tgraph:\n", graph.toJson(ToJsonOptions(enumMode: joptEnumString))
 
         ## TODO: Figure out how to handle semver properly!
         ## maybe need to select versions before hand?
