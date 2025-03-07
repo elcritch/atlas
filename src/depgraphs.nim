@@ -168,7 +168,6 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
           for dep, query in items rel.requirements:
             let queryVer = if algo == SemVer: toSemVer(query) else: query
             let commit = extractSpecificCommit(queryVer)
-            # let availVer = graph[findDependencyForDep(graph, dep)]
             let availVer = graph.pkgs[dep]
             if availVer.versions.len == 0:
               continue
@@ -181,7 +180,6 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
             if not commit.isEmpty():
               info pkg.url.projectName, "adding requirements selections by specific commit:", $dep.projectName, "commit:", $commit
               # Match by specific commit if specified
-              # availVers.reverse()
               for depVer in availVers:
                 if queryVer.matches(depVer.version()) or commit == depVer.commit():
                   b.add depVer.vid
@@ -190,7 +188,6 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
             elif algo == MinVer:
               # For MinVer algorithm, try to find the minimum version that satisfies the requirement
               info pkg.url.projectName, "adding requirements selections by MinVer:", $dep.projectName
-              # availVers.reverse()
               for depVer in availVers:
                 if queryVer.matches(depVer.version()):
                   b.add depVer.vid
