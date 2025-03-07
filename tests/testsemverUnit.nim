@@ -97,14 +97,11 @@ suite "graph solve":
 
         echo "\tspec:\n", graph.toJson(ToJsonOptions(enumMode: joptEnumString))
 
-        let form = graph.toFormular(SemVer)
-        var formStr = $form.formula
-        formStr = formStr.replace("&", "&& ")
-        formStr = formStr.replace("|", "|| ")
-        formStr = formStr.replace("1==", "== ")
-        formStr = formStr.replace("1>=", "?= ")
+        ## TODO: Figure out how to handle semver properly!
+        ## maybe need to select versions before hand?
+        ## 
 
-        echo "\nFORM:STR: ", formStr
+        let form = graph.toFormular(SemVer)
 
         context().dumpGraphs = true
         var sol: Solution
