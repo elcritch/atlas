@@ -25,11 +25,6 @@ iterator validVersions*(pkg: var Package; graph: var DepGraph): (PackageVersion,
     if rel.status == Normal:
       yield (ver, rel)
 
-proc sortDepVersions(a, b: (PackageVersion, NimbleRelease)): int =
-      (if a[0].vtag.version < b[0].vtag.version: 1
-      elif a[0].vtag.version == b[0].vtag.version: 0
-      else: -1)
-
 type
   SatVarInfo* = object # attached information for a SAT variable
     pkg*: Package
@@ -58,7 +53,7 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
       if p.versions.len == 0: continue
 
       # # Sort versions in descending order (newer versions first)
-      p.versions.sort(sortDepVersions)
+      p.versions.sort(sortVersions)
 
       # Assign a unique SAT variable to each version of the package
       var i = 0
@@ -100,7 +95,7 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
           
           var hasCompatible = false
           for depVer, relVer in depNode.versions:
-            if query.matches(depVer.vtag.version):
+            if query.matches(depVer.version()):
               hasCompatible = true
               break
           
@@ -124,7 +119,7 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
           
           var compatibleVersions: seq[VarId] = @[]
           for depVer, relVer in depNode.versions:
-            if query.matches(depVer.vtag.version):
+            if query.matches(depVer.version()):
               compatibleVersions.add(depVer.vid)
           
           # Add implication: if this version is selected, one of its compatible deps must be selected
@@ -182,7 +177,7 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
   #         # Match by specific commit if specified
   #         availVers.reverse()
   #         for depVer in availVers:
-  #           if queryVer.matches(depVer.vtag.version) or commit == depVer.vtag.commit:
+  #           if queryVer.matches(depVer.version()) or commit == depVer.commit():
   #             b.add depVer.vid
   #             inc matchCount
   #             break
@@ -191,14 +186,14 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
   #         info pkg.url.projectName, "adding requirements selections by MinVer:", $dep.projectName
   #         availVers.reverse()
   #         for depVer in availVers:
-  #           if queryVer.matches(depVer.vtag.version):
+  #           if queryVer.matches(depVer.version()):
   #             b.add depVer.vid
   #             inc matchCount
   #       else:
   #         # For other algorithms (like SemVer), try to find the maximum version that satisfies
   #         info pkg.url.projectName, "adding requirements selections by SemVer:", $dep.projectName, "vers:", $availVers
   #         for depVer in availVers:
-  #           if queryVer.matches(depVer.vtag.version):
+  #           if queryVer.matches(depVer.version()):
   #             info pkg.url.projectName, "matched requirement selections by SemVer:", $queryVer, "depVer:", $depVer
   #             b.add depVer.vid
   #             inc matchCount
@@ -281,11 +276,11 @@ proc solve*(graph: var DepGraph; form: Form) =
         # assert mapInfo.pkg.activeRelease != nil, "too bad: " & $pkg.url
         pkg.activeRelease = mapInfo.release
         info pkg.url.projectName, "package satisfiable"
-        if not mapInfo.version.vtag.commit.isEmpty() and pkg.state == Processed:
+        if not mapInfo.version.commit().isEmpty() and pkg.state == Processed:
           if pkg.ondisk.string.len == 0:
             error pkg.url.projectName, "Missing ondisk location for:", $(pkg.url)
           else:
-            let res = checkoutGitCommit(pkg.ondisk, ver.vtag.commit)
+            let res = checkoutGitCommit(pkg.ondisk, ver.commit())
 
     # if NoExec notin context().flags:
     #   runBuildSteps(graph)
@@ -318,7 +313,7 @@ proc solve*(graph: var DepGraph; form: Form) =
       if usedVersionCount > 1:
         for (ver, rel) in validVersions(pkg, graph):
           if solution.isTrue(ver.vid):
-            error pkg.url.projectName, string(ver.vtag.version) & " required"
+            error pkg.url.projectName, string(ver.version()) & " required"
   if context().dumpGraphs:
     dumpJson(graph, "graph-solved.json")
 
