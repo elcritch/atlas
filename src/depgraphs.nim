@@ -256,10 +256,11 @@ proc solve*(graph: var DepGraph; form: Form) =
   let maxVar = form.idgen
   if context().dumpGraphs:
     dumpJson(graph, "graph-solve-input.json")
+
   var solution = createSolution(maxVar)
+
   if context().dumpFormular:
     debugFormular graph, form, solution
-
 
   if satisfiable(form.formula, solution):
     graph.root.active = true
@@ -267,32 +268,30 @@ proc solve*(graph: var DepGraph; form: Form) =
       let vid = VarId varIdx
       if vid in form.mapping:
         let mapInfo = form.mapping[vid]
-        info mapInfo.pkg.projectName, "v" & $varIdx & " sat var: " & $solution.getVar(vid).toPretty()
+        trace mapInfo.pkg.projectName, "v" & $varIdx & " sat var: " & $solution.getVar(vid).toPretty()
 
       if solution.isTrue(VarId(varIdx)) and form.mapping.hasKey(VarId varIdx):
         let mapInfo = form.mapping[VarId varIdx]
-        # let i = findDependencyForDep(graph, mapInfo.url)
         let pkg = mapInfo.pkg
         let ver = mapInfo.version
         pkg.active = true
         assert not pkg.isNil, "too bad: " & $pkg.url
         assert not mapInfo.release.isNil, "too bad: " & $pkg.url
         pkg.activeVersion = mapInfo.version
-        info pkg.url.projectName, "package satisfiable"
-
+        debug pkg.url.projectName, "package satisfiable"
 
     if ListVersions in context().flags:
-      info "../resolve", "selected:"
+      warn "Resolved", "selected:"
       for pkg in values(graph.pkgs):
         if not pkg.isRoot:
           for ver in pkg.versions.keys():
             let item = form.mapping[ver.vid]
             doAssert pkg.url == item.pkg.url
             if solution.isTrue(ver.vid):
-              info item.pkg.url.projectName, "[x] " & toString item
+              warn item.pkg.url.projectName, "[x] " & toString item
             else:
-              info item.pkg.url.projectName, "[ ] " & toString item
-      info "../resolve", "end of selection"
+              warn item.pkg.url.projectName, "[ ] " & toString item
+      warn "Resolved", "end of selection"
   else:
     var notFoundCount = 0
     for pkg in values(graph.pkgs):
@@ -340,6 +339,7 @@ proc runBuildSteps*(graph: DepGraph) =
             pkg.activeNimbleRelease.hasInstallHooks:
           let nimbleFiles = findNimbleFile(pkg)
           if nimbleFiles.len() == 1:
+            info pkg.url.projectName, "Running installHook"
             runNimScriptInstallHook nimbleFiles[0], pkg.projectName
         # check for nim script bs
         for pattern in mitems context().plugins.builderPatterns:
@@ -359,4 +359,5 @@ proc activateGraph*(graph: DepGraph): seq[CfgPath] =
     runBuildSteps(graph)
 
   for pkg in allActiveNodes(graph):
+    debug pkg.url.projectName, "adding CfgPath:", $(toDestDir(graph, pkg) / getCfgPath(graph, pkg).Path)
     result.add CfgPath(toDestDir(graph, pkg) / getCfgPath(graph, pkg).Path)
