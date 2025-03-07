@@ -100,6 +100,12 @@ proc sortVersionsDesc*(a, b: (VersionTag, NimbleRelease)): int =
 proc sortVersionsDesc*(a, b: (PackageVersion, NimbleRelease)): int =
   sortVersionsDesc(a[0].vtag, b[0].vtag)
 
+proc sortVersionsAsc*(a, b: (VersionTag, NimbleRelease)): int =
+  sortVersionsAsc(a[0], b[0])
+
+proc sortVersionsAsc*(a, b: (PackageVersion, NimbleRelease)): int =
+  sortVersionsAsc(a[0].vtag, b[0].vtag)
+
 proc `$`*(d: Package): string =
   d.url.projectName
 

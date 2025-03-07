@@ -83,7 +83,7 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
         if p.versions.len == 0: continue
 
         # # Sort versions in descending order (newer versions first)
-        p.versions.sort(sortVersions)
+        p.versions.sort(sortVersionsDesc)
 
         # Assign a unique SAT variable to each version of the package
         var i = 0
