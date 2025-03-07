@@ -43,6 +43,8 @@ template withOpenBr(b, op, blk) =
   b.closeOpr()
 
 
+const useOldAtlastVer = true
+
 proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
   result = Form()
   var b = Builder()
@@ -88,140 +90,145 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
           for ver in p.versions.keys():
             b.add ver.vid
 
-    # This simpler deps loop was copied from Nimble after it was first ported from Atlas :)
-    # It appears to acheive the same results, but it's a lot simpler
-    for pkg in graph.pkgs.mvalues():
-      for ver, rel in validVersions(pkg, graph):
-        var allDepsCompatible = true
+    when not useOldAtlastVer:
+      # This simpler deps loop was copied from Nimble after it was first ported from Atlas :)
+      # It appears to acheive the same results, but it's a lot simpler
+      for pkg in graph.pkgs.mvalues():
+        for ver, rel in validVersions(pkg, graph):
+          var allDepsCompatible = true
 
-        # First check if all dependencies can be satisfied
-        for dep, query in items(rel.requirements):
-          let depNode = graph.pkgs[dep]
+          # First check if all dependencies can be satisfied
+          for dep, query in items(rel.requirements):
+            let depNode = graph.pkgs[dep]
 
-          var hasCompatible = false
-          for depVer, relVer in depNode.versions:
-            if query.matches(depVer.version()):
-              hasCompatible = true
+            var hasCompatible = false
+            for depVer, relVer in depNode.versions:
+              if query.matches(depVer.version()):
+                hasCompatible = true
+                break
+
+            if not hasCompatible:
+              allDepsCompatible = false
+              error pkg.url.projectName, "no versions matched requirements for this dep", $dep.projectName
               break
 
-          if not hasCompatible:
-            allDepsCompatible = false
-            error pkg.url.projectName, "no versions matched requirements for this dep", $dep.projectName
-            break
+          # If any dependency can't be satisfied, make this version unsatisfiable
+          if not allDepsCompatible:
+            error pkg.url.projectName, "all requirements needed were not matched", $rel.requirements
+            b.addNegated(ver.vid)
+            continue
 
-        # If any dependency can't be satisfied, make this version unsatisfiable
-        if not allDepsCompatible:
-          error pkg.url.projectName, "all requirements needed were not matched", $rel.requirements
-          b.addNegated(ver.vid)
-          continue
+          # Add implications for each dependency
+          # for dep, q in items graph.reqs[ver.req].deps:
+          for dep, query in items(rel.requirements):
+            # let depIdx = findDependencyForDep(g, dep)
+            # if depIdx < 0: continue
+            let depNode = graph.pkgs[dep]
 
-        # Add implications for each dependency
-        # for dep, q in items graph.reqs[ver.req].deps:
-        for dep, query in items(rel.requirements):
-          # let depIdx = findDependencyForDep(g, dep)
-          # if depIdx < 0: continue
-          let depNode = graph.pkgs[dep]
+            var compatibleVersions: seq[VarId] = @[]
+            for depVer, relVer in depNode.versions:
+              if query.matches(depVer.version()):
+                compatibleVersions.add(depVer.vid)
 
-          var compatibleVersions: seq[VarId] = @[]
-          for depVer, relVer in depNode.versions:
-            if query.matches(depVer.version()):
-              compatibleVersions.add(depVer.vid)
-
-          # Add implication: if this version is selected, one of its compatible deps must be selected
-          withOpenBr(b, OrForm):
-            b.addNegated(ver.vid)  # not A
+            # Add implication: if this version is selected, one of its compatible deps must be selected
             withOpenBr(b, OrForm):
-              for compatVer in compatibleVersions:
-                b.add(compatVer)
+              b.addNegated(ver.vid)  # not A
+              withOpenBr(b, OrForm):
+                for compatVer in compatibleVersions:
+                  b.add(compatVer)
+
+    when not useOldAtlastVer:
+
+      # Original Atlas version ported to the new Package graph layout
+      # However the Nimble version appears to accomplish the same with less work
+      # Going to keep this here however, could be things we'll need to re-add later
+      # like handline the explicit commits, which were broken already anyways...
+      # 
+      # This loop sets up the dependency relationships in the SAT formula
+      # It creates constraints for each package's requirements
+      for pkg in graph.pkgs.mvalues():
+        for ver, rel in validVersions(pkg, graph):
+          # Skip if this requirement has already been processed
+          if isValid(rel.rid): continue
+          # Assign a unique SAT variable to this requirement set
+          let eqVar = VarId(result.idgen)
+          rel.rid = eqVar
+          inc result.idgen
+          # Skip empty requirement sets
+          if rel.requirements.len == 0:
+            continue
+          let beforeEq = b.getPatchPos()
+          # Create a constraint: if this requirement is true, then all its dependencies must be satisfied
+          b.openOpr(OrForm)
+          b.addNegated eqVar
+          if rel.requirements.len > 1:
+            b.openOpr(AndForm)
+          var elementCount = 0
+          # For each dependency in the requirement, create version matching constraints
+          for dep, query in items rel.requirements:
+            let queryVer = if algo == SemVer: toSemVer(query) else: query
+            let commit = extractSpecificCommit(queryVer)
+            # let availVer = graph[findDependencyForDep(graph, dep)]
+            let availVer = graph.pkgs[dep]
+            if availVer.versions.len == 0:
+              continue
+            let beforeExactlyOneOf = b.getPatchPos()
+            b.openOpr(ExactlyOneOfForm)
+            inc elementCount
+            var matchCount = 0
+            var availVers = availVer.versions.keys().toSeq()
+            info pkg.url.projectName, "version keys:", $dep.projectName, "availVers:", $availVers
+            if not commit.isEmpty():
+              info pkg.url.projectName, "adding requirements selections by specific commit:", $dep.projectName, "commit:", $commit
+              # Match by specific commit if specified
+              availVers.reverse()
+              for depVer in availVers:
+                if queryVer.matches(depVer.version()) or commit == depVer.commit():
+                  b.add depVer.vid
+                  inc matchCount
+                  break
+            elif algo == MinVer:
+              # For MinVer algorithm, try to find the minimum version that satisfies the requirement
+              info pkg.url.projectName, "adding requirements selections by MinVer:", $dep.projectName
+              availVers.reverse()
+              for depVer in availVers:
+                if queryVer.matches(depVer.version()):
+                  b.add depVer.vid
+                  inc matchCount
+            else:
+              # For other algorithms (like SemVer), try to find the maximum version that satisfies
+              info pkg.url.projectName, "adding requirements selections by SemVer:", $dep.projectName, "vers:", $availVers
+              for depVer in availVers:
+                if queryVer.matches(depVer.version()):
+                  info pkg.url.projectName, "matched requirement selections by SemVer:", $queryVer, "depVer:", $depVer
+                  b.add depVer.vid
+                  inc matchCount
+            b.closeOpr() # ExactlyOneOfForm
+            # If no matching version was found, add a false literal to make the formula unsatisfiable
+            if matchCount == 0:
+              b.resetToPatchPos beforeExactlyOneOf
+              b.add falseLit()
+          if rel.requirements.len > 1: b.closeOpr() # AndForm
+          b.closeOpr() # EqForm
+          # If no dependencies were processed, reset the formula position
+          if elementCount == 0:
+            b.resetToPatchPos beforeEq
+
+  when useOldAtlastVer:
+    # This final loop links package versions to their requirements
+    # It enforces that if a version is selected, its requirements must be satisfied
+    for pkg in mvalues(graph.pkgs):
+      for ver, rel in validVersions(pkg, graph):
+        if rel.requirements.len > 0:
+          info pkg.url.projectName, "adding package requirements restraint:", $ver, "vid: ", $ver.vid.int, "rel:", $rel.rid.int
+          b.openOpr(OrForm)
+          b.addNegated ver.vid
+          b.add rel.rid
+          b.closeOpr() # OrForm
+        else:
+          info pkg.url.projectName, "not adding pacakge requirements restraint:", $ver
 
   result.formula = toForm(b)
-
-  ## Original Atlas version ported to the new Package graph layout
-  ## However the Nimble version appears to accomplish the same with less work
-  ## Going to keep this here however, could be things we'll need to re-add later
-  ## like handline the explicit commits, which were broken already anyways...
-  ## 
-  # # This loop sets up the dependency relationships in the SAT formula
-  # # It creates constraints for each package's requirements
-  # for pkg in graph.pkgs.mvalues():
-  #   for ver, rel in validVersions(pkg, graph):
-  #     # Skip if this requirement has already been processed
-  #     if isValid(rel.rid): continue
-  #     # Assign a unique SAT variable to this requirement set
-  #     let eqVar = VarId(result.idgen)
-  #     rel.rid = eqVar
-  #     inc result.idgen
-  #     # Skip empty requirement sets
-  #     if rel.requirements.len == 0:
-  #       continue
-  #     let beforeEq = b.getPatchPos()
-  #     # Create a constraint: if this requirement is true, then all its dependencies must be satisfied
-  #     b.openOpr(OrForm)
-  #     b.addNegated eqVar
-  #     if rel.requirements.len > 1:
-  #       b.openOpr(AndForm)
-  #     var elementCount = 0
-  #     # For each dependency in the requirement, create version matching constraints
-  #     for dep, query in items rel.requirements:
-  #       let queryVer = if algo == SemVer: toSemVer(query) else: query
-  #       let commit = extractSpecificCommit(queryVer)
-  #       # let availVer = graph[findDependencyForDep(graph, dep)]
-  #       let availVer = graph.pkgs[dep]
-  #       if availVer.versions.len == 0:
-  #         continue
-  #       let beforeExactlyOneOf = b.getPatchPos()
-  #       b.openOpr(ExactlyOneOfForm)
-  #       inc elementCount
-  #       var matchCount = 0
-  #       var availVers = availVer.versions.keys().toSeq()
-  #       info pkg.url.projectName, "version keys:", $dep.projectName, "availVers:", $availVers
-  #       if not commit.isEmpty():
-  #         info pkg.url.projectName, "adding requirements selections by specific commit:", $dep.projectName, "commit:", $commit
-  #         # Match by specific commit if specified
-  #         availVers.reverse()
-  #         for depVer in availVers:
-  #           if queryVer.matches(depVer.version()) or commit == depVer.commit():
-  #             b.add depVer.vid
-  #             inc matchCount
-  #             break
-  #       elif algo == MinVer:
-  #         # For MinVer algorithm, try to find the minimum version that satisfies the requirement
-  #         info pkg.url.projectName, "adding requirements selections by MinVer:", $dep.projectName
-  #         availVers.reverse()
-  #         for depVer in availVers:
-  #           if queryVer.matches(depVer.version()):
-  #             b.add depVer.vid
-  #             inc matchCount
-  #       else:
-  #         # For other algorithms (like SemVer), try to find the maximum version that satisfies
-  #         info pkg.url.projectName, "adding requirements selections by SemVer:", $dep.projectName, "vers:", $availVers
-  #         for depVer in availVers:
-  #           if queryVer.matches(depVer.version()):
-  #             info pkg.url.projectName, "matched requirement selections by SemVer:", $queryVer, "depVer:", $depVer
-  #             b.add depVer.vid
-  #             inc matchCount
-  #       b.closeOpr() # ExactlyOneOfForm
-  #       # If no matching version was found, add a false literal to make the formula unsatisfiable
-  #       if matchCount == 0:
-  #         b.resetToPatchPos beforeExactlyOneOf
-  #         b.add falseLit()
-  #     if rel.requirements.len > 1: b.closeOpr() # AndForm
-  #     b.closeOpr() # EqForm
-  #     # If no dependencies were processed, reset the formula position
-  #     if elementCount == 0:
-  #       b.resetToPatchPos beforeEq
-  # # This final loop links package versions to their requirements
-  # # It enforces that if a version is selected, its requirements must be satisfied
-  # for pkg in mvalues(graph.pkgs):
-  #   for ver, rel in validVersions(pkg, graph):
-  #     if rel.requirements.len > 0:
-  #       info pkg.url.projectName, "adding package requirements restraint:", $ver, "vid: ", $ver.vid.int, "rel:", $rel.rid.int
-  #       b.openOpr(OrForm)
-  #       b.addNegated ver.vid
-  #       b.add rel.rid
-  #       b.closeOpr() # OrForm
-  #     else:
-  #       info pkg.url.projectName, "not adding pacakge requirements restraint:", $ver
 
 
 proc toString(info: SatVarInfo): string =
