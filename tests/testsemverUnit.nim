@@ -92,7 +92,7 @@ suite "graph solve":
         let sp0: Package = sp[0] # proj ws_testtraversal
         let vt = toVersionTag
         testRequirements(sp0, @[vt"#head@-"], [
-          ("file://./buildGraph/proj_a", "*"),
+          ("https://example.com/buildGraph/proj_a", "*"),
         ])
 
         echo "\tspec:\n", graph.toJson(ToJsonOptions(enumMode: joptEnumString))

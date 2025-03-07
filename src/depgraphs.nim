@@ -42,95 +42,100 @@ type
     mapping*: Table[VarId, SatVarInfo]
     idgen: int32
 
+template withOpenBr(b, op, blk) =
+  block:
+    b.openOpr(op)
+    `blk`
+    b.closeOpr()
+
 proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
   result = Form()
   var b = Builder()
-  b.openOpr(AndForm)
 
-  # This loop processes each package to set up version selection constraints
-  for pkgUrl, p in mpairs(graph.pkgs):
-    if p.versions.len == 0: continue
+  withOpenBr(b, AndForm):
+    # This loop processes each package to set up version selection constraints
+    for pkgUrl, p in mpairs(graph.pkgs):
+      if p.versions.len == 0: continue
 
-    # # Sort versions in descending order (newer versions first)
-    p.versions.sort(sortDepVersions)
+      # # Sort versions in descending order (newer versions first)
+      p.versions.sort(sortDepVersions)
 
-    # Assign a unique SAT variable to each version of the package
-    var i = 0
-    for ver, rel in p.versions:
-      ver.vid = VarId(result.idgen)
-      # Map the SAT variable to package information for result interpretation
-      result.mapping[ver.vid] = SatVarInfo( pkg: p, version: ver, release: rel)
-      inc result.idgen
-      inc i
+      # Assign a unique SAT variable to each version of the package
+      var i = 0
+      for ver, rel in p.versions:
+        ver.vid = VarId(result.idgen)
+        # Map the SAT variable to package information for result interpretation
+        result.mapping[ver.vid] = SatVarInfo( pkg: p, version: ver, release: rel)
+        inc result.idgen
+        inc i
 
-    doAssert p.state != NotInitialized, "package not initialized: " & $p.toJson(ToJsonOptions(enumMode: joptEnumString))
+      doAssert p.state != NotInitialized, "package not initialized: " & $p.toJson(ToJsonOptions(enumMode: joptEnumString))
 
-    # Add constraints based on the package status
-    if p.state == Error:
-      # If package is broken, enforce that none of its versions can be selected
-      b.openOpr(AndForm)
-      for ver in p.versions.keys():
-        b.addNegated ver.vid
-      b.closeOpr() # AndForm
-    elif p.isRoot:
-      # If it's a root package, enforce that exactly one version must be selected
-      b.openOpr(ExactlyOneOfForm)
-      for ver in p.versions.keys():
-        b.add ver.vid
-      b.closeOpr() # ExactlyOneOfForm
-    else:
-      # For non-root packages, they can either have one version selected or none at all
-      b.openOpr(ZeroOrOneOfForm)
-      for ver in p.versions.keys():
-        b.add ver.vid
-      b.closeOpr() # ZeroOrOneOfForm
+      # Add constraints based on the package status
+      if p.state == Error:
+        # If package is broken, enforce that none of its versions can be selected
+        withOpenBr(b, AndForm):
+          for ver in p.versions.keys():
+            b.addNegated ver.vid
+      elif p.isRoot:
+        # If it's a root package, enforce that exactly one version must be selected
+        withOpenBr(b, ExactlyOneOfForm):
+          for ver in p.versions.keys():
+            b.add ver.vid
+      else:
+        # For non-root packages, they can either have one version selected or none at all
+        withOpenBr(b, ZeroOrOneOfForm):
+          for ver in p.versions.keys():
+            b.add ver.vid
 
-  # This simpler deps loop was copied from Nimble after it was first ported from Atlas :)
-  for pkg in graph.pkgs.mvalues():
-    for ver, rel in validVersions(pkg, graph):
-      var allDepsCompatible = true
-      
-      # First check if all dependencies can be satisfied
-      for dep, query in items(rel.requirements):
-        let depNode = graph.pkgs[dep]
+    # This simpler deps loop was copied from Nimble after it was first ported from Atlas :)
+    # It appears to acheive the same results, but it's a lot simpler
+    for pkg in graph.pkgs.mvalues():
+      for ver, rel in validVersions(pkg, graph):
+        var allDepsCompatible = true
         
-        var hasCompatible = false
-        for depVer, relVer in depNode.versions:
-          if query.matches(depVer.vtag.version):
-            hasCompatible = true
+        # First check if all dependencies can be satisfied
+        for dep, query in items(rel.requirements):
+          let depNode = graph.pkgs[dep]
+          
+          var hasCompatible = false
+          for depVer, relVer in depNode.versions:
+            if query.matches(depVer.vtag.version):
+              hasCompatible = true
+              break
+          
+          if not hasCompatible:
+            allDepsCompatible = false
+            error pkg.url.projectName, "no versions matched requirements for this dep", $dep.projectName
             break
-        
-        if not hasCompatible:
-          allDepsCompatible = false
-          break
 
-      # If any dependency can't be satisfied, make this version unsatisfiable
-      if not allDepsCompatible:
-        b.addNegated(ver.vid)
-        continue
+        # If any dependency can't be satisfied, make this version unsatisfiable
+        if not allDepsCompatible:
+          error pkg.url.projectName, "all requirements needed were not matched", $rel.requirements
+          b.addNegated(ver.vid)
+          continue
 
-      # Add implications for each dependency
-      # for dep, q in items graph.reqs[ver.req].deps:
-      for dep, query in items(rel.requirements):
-        # let depIdx = findDependencyForDep(g, dep)
-        # if depIdx < 0: continue
-        let depNode = graph.pkgs[dep]
-        
-        var compatibleVersions: seq[VarId] = @[]
-        for depVer, relVer in depNode.versions:
-          if query.matches(depVer.vtag.version):
-            compatibleVersions.add(depVer.vid)
-        
-        # Add implication: if this version is selected, one of its compatible deps must be selected
-        b.openOpr(OrForm)
-        b.addNegated(ver.vid)  # not A
-        b.openOpr(OrForm)    # or (B1 or B2 or ...)
-        for compatVer in compatibleVersions:
-          b.add(compatVer)
-        b.closeOpr()
-        b.closeOpr()
+        # Add implications for each dependency
+        # for dep, q in items graph.reqs[ver.req].deps:
+        for dep, query in items(rel.requirements):
+          # let depIdx = findDependencyForDep(g, dep)
+          # if depIdx < 0: continue
+          let depNode = graph.pkgs[dep]
+          
+          var compatibleVersions: seq[VarId] = @[]
+          for depVer, relVer in depNode.versions:
+            if query.matches(depVer.vtag.version):
+              compatibleVersions.add(depVer.vid)
+          
+          # Add implication: if this version is selected, one of its compatible deps must be selected
+          b.openOpr(OrForm)
+          b.addNegated(ver.vid)  # not A
+          b.openOpr(OrForm)    # or (B1 or B2 or ...)
+          for compatVer in compatibleVersions:
+            b.add(compatVer)
+          b.closeOpr()
+          b.closeOpr()
 
-  b.closeOpr() # AndForm
   result.formula = toForm(b)
 
   ## Original Atlas version ported to the new Package graph layout
@@ -346,7 +351,7 @@ proc runBuildSteps*(graph: var DepGraph) =
           if nimbleFiles.len() == 1:
             runNimScriptInstallHook nimbleFiles[0], pkg.projectName
         # check for nim script bs
-        for pattern in mitems context().plugins.bPatterns:
+        for pattern in mitems context().plugins.builderPatterns:
           let bFile = pattern[0] % pkg.projectName
           if fileExists(bFile):
             runNimScriptBuilder pattern, pkg.projectName
