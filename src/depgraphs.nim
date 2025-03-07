@@ -52,8 +52,10 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
   withOpenBr(b, AndForm):
 
     # First pass: Assign variables and encode version selection constraints
-    for pkgUrl, p in mpairs(graph.pkgs):
-      if p.validVersions().toSeq().len == 0: continue
+    for p in mvalues(graph.pkgs):
+      if p.versions.len == 0:
+        debug p.url.projectName, "skipping adding package variable as it has no versions"
+        continue
 
       # # Sort versions in descending order (newer versions first)
 
@@ -77,17 +79,17 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
       if p.state == Error:
         # If package is broken, enforce that none of its versions can be selected
         withOpenBr(b, AndForm):
-          for ver in p.versions.keys():
+          for ver, rel in p.validVersions():
             b.addNegated ver.vid
       elif p.isRoot:
         # If it's a root package, enforce that exactly one version must be selected
         withOpenBr(b, ExactlyOneOfForm):
-          for ver in p.versions.keys():
+          for ver, rel in p.validVersions():
             b.add ver.vid
       else:
         # For non-root packages, they can either have one version selected or none at all
         withOpenBr(b, ZeroOrOneOfForm):
-          for ver in p.versions.keys():
+          for ver, rel in p.validVersions():
             b.add ver.vid
 
     when true:
@@ -153,8 +155,7 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
           rel.rid = eqVar
           inc result.idgen
           # Skip empty requirement sets
-          if rel.requirements.len == 0:
-            continue
+          if rel.requirements.len == 0: continue
           let beforeEq = b.getPatchPos()
           # Create a constraint: if this requirement is true, then all its dependencies must be satisfied
           b.openOpr(OrForm)
