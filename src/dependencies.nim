@@ -262,8 +262,8 @@ proc traverseDependency*(
       if not checkoutGitCommit(pkg.ondisk, currentCommit, Warning):
         info pkg.url.projectName, "traverseDependency error loading versions reverting to ", $currentCommit
 
+  # make sure identicle NimbleReleases refer to the same ref
   var uniqueReleases: Table[NimbleRelease, NimbleRelease]
-
   for (ver, rel) in versions:
     if rel notin uniqueReleases:
       trace pkg.url.projectName, "found unique release requirements at:", $ver.vtag
