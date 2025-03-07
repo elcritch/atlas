@@ -20,7 +20,7 @@ iterator directDependencies*(graph: DepGraph; pkg: Package): lent Package =
       # let idx = findDependencyForDep(graph, dep[0])
       yield graph.pkgs[durl]
 
-iterator validVersions*(pkg: var Package; graph: var DepGraph): (PackageVersion, var NimbleRelease) =
+iterator validVersions*(pkg: var Package): (PackageVersion, NimbleRelease) =
   for ver, rel in mpairs(pkg.versions):
     if rel.status == Normal:
       yield (ver, rel)
@@ -53,7 +53,7 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
 
     # First pass: Assign variables and encode version selection constraints
     for pkgUrl, p in mpairs(graph.pkgs):
-      if p.versions.len == 0: continue
+      if p.validVersions().toSeq().len == 0: continue
 
       # # Sort versions in descending order (newer versions first)
 
@@ -90,11 +90,11 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
           for ver in p.versions.keys():
             b.add ver.vid
 
-    when false:
+    when true:
       # This simpler deps loop was copied from Nimble after it was first ported from Atlas :)
       # It appears to acheive the same results, but it's a lot simpler
       for pkg in graph.pkgs.mvalues():
-        for ver, rel in validVersions(pkg, graph):
+        for ver, rel in validVersions(pkg):
           var allDepsCompatible = true
 
           # First check if all dependencies can be satisfied
@@ -121,8 +121,6 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
           # Add implications for each dependency
           # for dep, q in items graph.reqs[ver.req].deps:
           for dep, query in items(rel.requirements):
-            # let depIdx = findDependencyForDep(g, dep)
-            # if depIdx < 0: continue
             let depNode = graph.pkgs[dep]
 
             var compatibleVersions: seq[VarId] = @[]
@@ -147,7 +145,7 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
       # This loop sets up the dependency relationships in the SAT formula
       # It creates constraints for each package's requirements
       for pkg in graph.pkgs.mvalues():
-        for ver, rel in validVersions(pkg, graph):
+        for ver, rel in validVersions(pkg):
           # Skip if this requirement has already been processed
           if isValid(rel.rid): continue
           # Assign a unique SAT variable to this requirement set
@@ -206,7 +204,8 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
             if matchCount == 0:
               b.resetToPatchPos beforeExactlyOneOf
               b.add falseLit()
-          if rel.requirements.len > 1: b.closeOpr() # AndForm
+          if rel.requirements.len > 1:
+            b.closeOpr() # AndForm
           b.closeOpr() # EqForm
           # If no dependencies were processed, reset the formula position
           if elementCount == 0:
@@ -215,7 +214,7 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
       # This final loop links package versions to their requirements
       # It enforces that if a version is selected, its requirements must be satisfied
       for pkg in mvalues(graph.pkgs):
-        for ver, rel in validVersions(pkg, graph):
+        for ver, rel in validVersions(pkg):
           if rel.requirements.len > 0:
             info pkg.url.projectName, "adding package requirements restraint:", $ver, "vid: ", $ver.vid.int, "rel:", $rel.rid.int
             b.openOpr(OrForm)
@@ -307,10 +306,10 @@ proc solve*(graph: var DepGraph; form: Form) =
     error context().workspace, "version conflict; for more information use --showGraph"
     for pkg in mvalues(graph.pkgs):
       var usedVersionCount = 0
-      for (ver, rel) in validVersions(pkg, graph):
+      for (ver, rel) in validVersions(pkg):
         if solution.isTrue(ver.vid): inc usedVersionCount
       if usedVersionCount > 1:
-        for (ver, rel) in validVersions(pkg, graph):
+        for (ver, rel) in validVersions(pkg):
           if solution.isTrue(ver.vid):
             error pkg.url.projectName, string(ver.version()) & " required"
   if context().dumpGraphs:
