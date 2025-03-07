@@ -71,19 +71,19 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
       builder.openOpr(AndForm)
       for ver in p.versions.keys():
         builder.addNegated ver.vid
-      builder.closeOpr # AndForm
+      builder.closeOpr() # AndForm
     elif p.isRoot:
       # If it's a root package, enforce that exactly one version must be selected
       builder.openOpr(ExactlyOneOfForm)
       for ver in p.versions.keys():
         builder.add ver.vid
-      builder.closeOpr # ExactlyOneOfForm
+      builder.closeOpr() # ExactlyOneOfForm
     else:
       # For non-root packages, they can either have one version selected or none at all
       builder.openOpr(ZeroOrOneOfForm)
       for ver in p.versions.keys():
         builder.add ver.vid
-      builder.closeOpr # ZeroOrOneOfForm
+      builder.closeOpr() # ZeroOrOneOfForm
 
   # This loop sets up the dependency relationships in the SAT formula
   # It creates constraints for each package's requirements
@@ -105,8 +105,7 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
 
       let beforeEq = builder.getPatchPos()
 
-      # Create a constraint:
-      #    if this requirement is true, then all its dependencies must be satisfied
+      # Create a constraint: if this requirement is true, then all its dependencies must be satisfied
       builder.openOpr(OrForm)
       builder.addNegated eqVar
       if rel.requirements.len > 1:
@@ -129,6 +128,47 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
 
         var availVers = availVer.versions.keys().toSeq()
         info pkg.url.projectName, "version keys:", $dep.projectName, "availVers:", $availVers
+        block:
+          # For other algorithms (like SemVer), try to find the maximum version that satisfies
+          info pkg.url.projectName, "adding requirements selections by SemVer:", $dep.projectName, "vers:", $availVers
+          for depVer in availVers:
+            if queryVer.matches(depVer.vtag.version):
+              info pkg.url.projectName, "matched requirement selections by SemVer:", $queryVer, "depVer:", $depVer
+              builder.add depVer.vid
+              inc matchCount
+
+        builder.closeOpr() # ExactlyOneOfForm
+
+        # If no matching version was found, add a false literal to make the formula unsatisfiable
+        if matchCount == 0:
+          builder.resetToPatchPos beforeExactlyOneOf
+          builder.add falseLit()
+
+      if rel.requirements.len > 1: builder.closeOpr() # AndForm
+      builder.closeOpr() # EqForm
+
+      # If no dependencies were processed, reset the formula position
+      if elementCount == 0:
+        builder.resetToPatchPos beforeEq
+
+  # This final loop links package versions to their requirements
+  # It enforces that if a version is selected, its requirements must be satisfied
+  for pkg in mvalues(graph.pkgs):
+    for ver, rel in validVersions(pkg, graph):
+      if rel.requirements.len > 0:
+        info pkg.url.projectName, "adding package requirements restraint:", $ver, "vid: ", $ver.vid.int, "rel:", $rel.rid.int
+        builder.openOpr(OrForm)
+        builder.addNegated ver.vid
+        builder.add rel.rid
+        builder.closeOpr() # OrForm
+      else:
+        info pkg.url.projectName, "not adding pacakge requirements restraint:", $ver
+
+  builder.closeOpr() # AndForm
+  result.formula = toForm(builder)
+
+
+when false:
         if not commit.isEmpty():
           info pkg.url.projectName, "adding requirements selections by specific commit:", $dep.projectName, "commit:", $commit
           # Match by specific commit if specified
@@ -147,43 +187,7 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
               builder.add depVer.vid
               inc matchCount
         else:
-          # For other algorithms (like SemVer), try to find the maximum version that satisfies
-          info pkg.url.projectName, "adding requirements selections by SemVer:", $dep.projectName, "vers:", $availVers
-          for depVer in availVers:
-            if queryVer.matches(depVer.vtag.version):
-              info pkg.url.projectName, "matched requirement selections by SemVer:", $queryVer, "depVer:", $depVer
-              builder.add depVer.vid
-              inc matchCount
-
-        builder.closeOpr # ExactlyOneOfForm
-
-        # If no matching version was found, add a false literal to make the formula unsatisfiable
-        if matchCount == 0:
-          builder.resetToPatchPos beforeExactlyOneOf
-          builder.add falseLit()
-
-      if rel.requirements.len > 1: builder.closeOpr # AndForm
-      builder.closeOpr # EqForm
-
-      # If no dependencies were processed, reset the formula position
-      if elementCount == 0:
-        builder.resetToPatchPos beforeEq
-
-  # This final loop links package versions to their requirements
-  # It enforces that if a version is selected, its requirements must be satisfied
-  for pkg in mvalues(graph.pkgs):
-    for ver, rel in validVersions(pkg, graph):
-      if rel.requirements.len > 0:
-        info pkg.url.projectName, "adding package requirements restraint:", $ver, "vid: ", $ver.vid.int, "rel:", $rel.rid.int
-        builder.openOpr(OrForm)
-        builder.addNegated ver.vid
-        builder.add rel.rid
-        builder.closeOpr # OrForm
-      else:
-        info pkg.url.projectName, "not adding pacakge requirements restraint:", $ver
-
-  builder.closeOpr # AndForm
-  result.formula = toForm(builder)
+          discard
 
 proc toString(info: SatVarInfo): string =
   "(" & info.pkg.url.projectName & ", " & $info.version & ")"
