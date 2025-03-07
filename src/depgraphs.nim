@@ -50,94 +50,44 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
 
   withOpenBr(b, AndForm):
 
-      # First pass: Assign variables and encode version selection constraints
-    when false:
-      # [Info]   (proj_a) [ ] (proj_a, 1.0.0@e479b438)
-      # [Info]   (proj_a) [x] (proj_a, 1.1.0@fb3804df)
-      # [Info]   (proj_b) [ ] (proj_b, 1.0.0@af427510)
-      # [Info]   (proj_b) [x] (proj_b, 1.1.0@ee875bae)
-      # [Info]   (proj_c) [x] (proj_c, 1.2.0@9331e14f)
-      # [Info]   (proj_d) [ ] (proj_d, 1.0.0@0dec9c97)
-      # [Info]   (proj_d) [x] (proj_d, 2.0.0@dd98f775)
+    # First pass: Assign variables and encode version selection constraints
+    for pkgUrl, p in mpairs(graph.pkgs):
+      if p.versions.len == 0: continue
 
-      for p in mvalues(graph.pkgs):
-        if p.versions.len == 0: continue
+      # # Sort versions in descending order (newer versions first)
 
-        case algo
-        of MinVer:
-          p.versions.sort(sortVersionsAsc)
-        of SemVer, MaxVer:
-          p.versions.sort(sortVersionsDesc)
-
-        # Version selection constraint
-        if p.isRoot:
-          withOpenBr(b, ExactlyOneOfForm):
-            for ver, rel in p.versions:
-              ver.vid = VarId(result.idgen)
-              # result.mapping[ver.v] = SatVarInfo(pkg: p.pkgName, version: ver.version, index: result.idgen)
-              result.mapping[ver.vid] = SatVarInfo(pkg: p, version: ver, release: rel)
-              b.add(ver.vid)
-              inc result.idgen
-        else:
-          # For non-root packages, assign variables first
-          for ver, rel in p.versions:
-            ver.vid = VarId(result.idgen)
-            # result.mapping[ver.v] = SatVarInfo(pkg: p.pkgName, version: ver.version, index: result.idgen)
-            result.mapping[ver.vid] = SatVarInfo(pkg: p, version: ver, release: rel)
-            inc result.idgen
-          
-          # Then add ZeroOrOneOf constraint
-          withOpenBr(b, ZeroOrOneOfForm):
-            for ver, rel in p.versions:
-              b.add(ver.vid)
-
-    else:
-      # [Info]   (proj_a) [ ] (proj_a, 1.0.0@e479b438)
-      # [Info]   (proj_a) [x] (proj_a, 1.1.0@fb3804df)
-      # [Info]   (proj_b) [ ] (proj_b, 1.0.0@af427510)
-      # [Info]   (proj_b) [x] (proj_b, 1.1.0@ee875bae)
-      # [Info]   (proj_c) [x] (proj_c, 1.2.0@9331e14f)
-      # [Info]   (proj_d) [ ] (proj_d, 1.0.0@0dec9c97)
-      # [Info]   (proj_d) [x] (proj_d, 2.0.0@dd98f775)
-
-      # This loop processes each package to set up version selection constraints
-      for pkgUrl, p in mpairs(graph.pkgs):
-        if p.versions.len == 0: continue
-
-        # # Sort versions in descending order (newer versions first)
-
-        case algo
-        of MinVer: p.versions.sort(sortVersionsDesc)
-        of SemVer, MaxVer: p.versions.sort(sortVersionsAsc)
+      case algo
+      of MinVer: p.versions.sort(sortVersionsDesc)
+      of SemVer, MaxVer: p.versions.sort(sortVersionsAsc)
 
 
-        # Assign a unique SAT variable to each version of the package
-        var i = 0
-        for ver, rel in p.versions:
-          ver.vid = VarId(result.idgen)
-          # Map the SAT variable to package information for result interpretation
-          result.mapping[ver.vid] = SatVarInfo( pkg: p, version: ver, release: rel)
-          inc result.idgen
-          inc i
+      # Assign a unique SAT variable to each version of the package
+      var i = 0
+      for ver, rel in p.versions:
+        ver.vid = VarId(result.idgen)
+        # Map the SAT variable to package information for result interpretation
+        result.mapping[ver.vid] = SatVarInfo( pkg: p, version: ver, release: rel)
+        inc result.idgen
+        inc i
 
-        doAssert p.state != NotInitialized, "package not initialized: " & $p.toJson(ToJsonOptions(enumMode: joptEnumString))
+      doAssert p.state != NotInitialized, "package not initialized: " & $p.toJson(ToJsonOptions(enumMode: joptEnumString))
 
-        # Add constraints based on the package status
-        if p.state == Error:
-          # If package is broken, enforce that none of its versions can be selected
-          withOpenBr(b, AndForm):
-            for ver in p.versions.keys():
-              b.addNegated ver.vid
-        elif p.isRoot:
-          # If it's a root package, enforce that exactly one version must be selected
-          withOpenBr(b, ExactlyOneOfForm):
-            for ver in p.versions.keys():
-              b.add ver.vid
-        else:
-          # For non-root packages, they can either have one version selected or none at all
-          withOpenBr(b, ZeroOrOneOfForm):
-            for ver in p.versions.keys():
-              b.add ver.vid
+      # Add constraints based on the package status
+      if p.state == Error:
+        # If package is broken, enforce that none of its versions can be selected
+        withOpenBr(b, AndForm):
+          for ver in p.versions.keys():
+            b.addNegated ver.vid
+      elif p.isRoot:
+        # If it's a root package, enforce that exactly one version must be selected
+        withOpenBr(b, ExactlyOneOfForm):
+          for ver in p.versions.keys():
+            b.add ver.vid
+      else:
+        # For non-root packages, they can either have one version selected or none at all
+        withOpenBr(b, ZeroOrOneOfForm):
+          for ver in p.versions.keys():
+            b.add ver.vid
 
     # This simpler deps loop was copied from Nimble after it was first ported from Atlas :)
     # It appears to acheive the same results, but it's a lot simpler
@@ -179,13 +129,11 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
               compatibleVersions.add(depVer.vid)
           
           # Add implication: if this version is selected, one of its compatible deps must be selected
-          b.openOpr(OrForm)
-          b.addNegated(ver.vid)  # not A
-          b.openOpr(OrForm)    # or (B1 or B2 or ...)
-          for compatVer in compatibleVersions:
-            b.add(compatVer)
-          b.closeOpr()
-          b.closeOpr()
+          withOpenBr(b, OrForm):
+            b.addNegated(ver.vid)  # not A
+            withOpenBr(b, OrForm):
+              for compatVer in compatibleVersions:
+                b.add(compatVer)
 
   result.formula = toForm(b)
 
@@ -375,7 +323,7 @@ proc traverseLoop*(nc: var NimbleContext, path: Path): seq[CfgPath] =
   solve(graph, form)
 
 
-proc runBuildSteps*(graph: var DepGraph) =
+proc runBuildSteps*(graph: DepGraph) =
   ## execute build steps for the dependency graph
   ##
   ## `countdown` suffices to give us some kind of topological sort:
