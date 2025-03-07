@@ -20,7 +20,7 @@ iterator directDependencies*(graph: DepGraph; pkg: Package): lent Package =
       # let idx = findDependencyForDep(graph, dep[0])
       yield graph.pkgs[durl]
 
-iterator validVersions*(pkg: var Package): (PackageVersion, NimbleRelease) =
+iterator validVersions*(pkg: Package): (PackageVersion, NimbleRelease) =
   for ver, rel in mpairs(pkg.versions):
     if rel.status == Normal:
       yield (ver, rel)
@@ -63,10 +63,9 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
       of MinVer: p.versions.sort(sortVersionsDesc)
       of SemVer, MaxVer: p.versions.sort(sortVersionsAsc)
 
-
       # Assign a unique SAT variable to each version of the package
       var i = 0
-      for ver, rel in p.versions:
+      for ver, rel in p.validVersions():
         ver.vid = VarId(result.idgen)
         # Map the SAT variable to package information for result interpretation
         result.mapping[ver.vid] = SatVarInfo( pkg: p, version: ver, release: rel)
@@ -104,7 +103,7 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
             let depNode = graph.pkgs[dep]
 
             var hasCompatible = false
-            for depVer, relVer in depNode.versions:
+            for depVer, relVer in depNode.validVersions():
               if query.matches(depVer.version()):
                 hasCompatible = true
                 break
@@ -126,7 +125,7 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
             let depNode = graph.pkgs[dep]
 
             var compatibleVersions: seq[VarId] = @[]
-            for depVer, relVer in depNode.versions:
+            for depVer, relVer in depNode.validVersions():
               if query.matches(depVer.version()):
                 compatibleVersions.add(depVer.vid)
 
@@ -138,7 +137,8 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
                   b.add(compatVer)
 
     else:
-
+      # Note this original ran, but seems to have problems now with minver...
+      #
       # Original Atlas version ported to the new Package graph layout
       # However the Nimble version appears to accomplish the same with less work
       # Going to keep this here however, could be things we'll need to re-add later
@@ -146,6 +146,7 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
       # 
       # This loop sets up the dependency relationships in the SAT formula
       # It creates constraints for each package's requirements
+      #
       for pkg in graph.pkgs.mvalues():
         for ver, rel in validVersions(pkg):
           # Skip if this requirement has already been processed
@@ -288,7 +289,7 @@ proc solve*(graph: var DepGraph; form: Form) =
       warn "Resolved", "selected:"
       for pkg in values(graph.pkgs):
         if not pkg.isRoot:
-          for ver in pkg.versions.keys():
+          for ver, rel in pkg.validVersions():
             let item = form.mapping[ver.vid]
             doAssert pkg.url == item.pkg.url
             if solution.isTrue(ver.vid):
