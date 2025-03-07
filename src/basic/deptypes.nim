@@ -84,20 +84,16 @@ proc createUrl*(nc: NimbleContext, nameOrig: string; projectName: string = ""): 
   if projectName != "":
     result.projectName = projectName
 
-proc sortVersions*(a, b: VersionTag): int =
+proc sortVersionsDesc*(a, b: VersionTag): int =
   (if a.v < b.v: 1
   elif a.v == b.v: 0
   else: -1)
 
-proc sortVersions*(a, b: (VersionTag, NimbleRelease)): int =
-  (if a[0].v < b[0].v: 1
-  elif a[0].v == b[0].v: 0
-  else: -1)
+proc sortVersionsDesc*(a, b: (VersionTag, NimbleRelease)): int =
+  sortVersionsDesc(a[0], b[0])
 
-proc sortVersions*(a, b: (PackageVersion, NimbleRelease)): int =
-  (if a[0].version < b[0].version: 1
-  elif a[0].version == b[0].version: 0
-  else: -1)
+proc sortVersionsDesc*(a, b: (PackageVersion, NimbleRelease)): int =
+  sortVersionsDesc(a[0].vtag, b[0].vtag)
 
 proc `$`*(d: Package): string =
   d.url.projectName
