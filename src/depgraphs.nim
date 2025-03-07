@@ -38,10 +38,9 @@ type
     idgen: int32
 
 template withOpenBr(b, op, blk) =
-  block:
-    b.openOpr(op)
-    `blk`
-    b.closeOpr()
+  b.openOpr(op)
+  `blk`
+  b.closeOpr()
 
 
 proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
