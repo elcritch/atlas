@@ -323,8 +323,8 @@ proc solve*(graph: var DepGraph; form: Form) =
         let pkg = mapInfo.pkg
         let ver = mapInfo.version
         pkg.active = true
-        assert pkg != nil, "too bad: " & $pkg.url
-        # assert mapInfo.pkg.activeRelease != nil, "too bad: " & $pkg.url
+        assert not pkg.isNil, "too bad: " & $pkg.url
+        assert not mapInfo.release.isNil, "too bad: " & $pkg.url
         pkg.activeRelease = mapInfo.release
         info pkg.url.projectName, "package satisfiable"
         if not mapInfo.version.commit().isEmpty() and pkg.state == Processed:
