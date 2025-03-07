@@ -48,40 +48,68 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
   var b = Builder()
 
   withOpenBr(b, AndForm):
-    # This loop processes each package to set up version selection constraints
-    for pkgUrl, p in mpairs(graph.pkgs):
+
+    # First pass: Assign variables and encode version selection constraints
+    for p in mvalues(graph.pkgs):
       if p.versions.len == 0: continue
-
-      # # Sort versions in descending order (newer versions first)
-      p.versions.sort(sortVersions)
-
-      # Assign a unique SAT variable to each version of the package
-      var i = 0
-      for ver, rel in p.versions:
-        ver.vid = VarId(result.idgen)
-        # Map the SAT variable to package information for result interpretation
-        result.mapping[ver.vid] = SatVarInfo( pkg: p, version: ver, release: rel)
-        inc result.idgen
-        inc i
-
-      doAssert p.state != NotInitialized, "package not initialized: " & $p.toJson(ToJsonOptions(enumMode: joptEnumString))
-
-      # Add constraints based on the package status
-      if p.state == Error:
-        # If package is broken, enforce that none of its versions can be selected
-        withOpenBr(b, AndForm):
-          for ver in p.versions.keys():
-            b.addNegated ver.vid
-      elif p.isRoot:
-        # If it's a root package, enforce that exactly one version must be selected
+      p.versions.sort(cmp)
+      
+      # Version selection constraint
+      if p.isRoot:
         withOpenBr(b, ExactlyOneOfForm):
-          for ver in p.versions.keys():
-            b.add ver.vid
+          for ver, rel in p.versions:
+            ver.vid = VarId(result.idgen)
+            # result.mapping[ver.v] = SatVarInfo(pkg: p.pkgName, version: ver.version, index: result.idgen)
+            result.mapping[ver.vid] = SatVarInfo(pkg: p, version: ver, release: rel)
+            b.add(ver.vid)
+            inc result.idgen
       else:
-        # For non-root packages, they can either have one version selected or none at all
+        # For non-root packages, assign variables first
+        for ver, rel in p.versions:
+          ver.vid = VarId(result.idgen)
+          # result.mapping[ver.v] = SatVarInfo(pkg: p.pkgName, version: ver.version, index: result.idgen)
+          result.mapping[ver.vid] = SatVarInfo(pkg: p, version: ver, release: rel)
+          inc result.idgen
+        
+        # Then add ZeroOrOneOf constraint
         withOpenBr(b, ZeroOrOneOfForm):
-          for ver in p.versions.keys():
-            b.add ver.vid
+          for ver, rel in p.versions:
+            b.add(ver.vid)
+
+    # # This loop processes each package to set up version selection constraints
+    # for pkgUrl, p in mpairs(graph.pkgs):
+    #   if p.versions.len == 0: continue
+
+    #   # # Sort versions in descending order (newer versions first)
+    #   p.versions.sort(sortVersions)
+
+    #   # Assign a unique SAT variable to each version of the package
+    #   var i = 0
+    #   for ver, rel in p.versions:
+    #     ver.vid = VarId(result.idgen)
+    #     # Map the SAT variable to package information for result interpretation
+    #     result.mapping[ver.vid] = SatVarInfo( pkg: p, version: ver, release: rel)
+    #     inc result.idgen
+    #     inc i
+
+    #   doAssert p.state != NotInitialized, "package not initialized: " & $p.toJson(ToJsonOptions(enumMode: joptEnumString))
+
+    #   # Add constraints based on the package status
+    #   if p.state == Error:
+    #     # If package is broken, enforce that none of its versions can be selected
+    #     withOpenBr(b, AndForm):
+    #       for ver in p.versions.keys():
+    #         b.addNegated ver.vid
+    #   elif p.isRoot:
+    #     # If it's a root package, enforce that exactly one version must be selected
+    #     withOpenBr(b, ExactlyOneOfForm):
+    #       for ver in p.versions.keys():
+    #         b.add ver.vid
+    #   else:
+    #     # For non-root packages, they can either have one version selected or none at all
+    #     withOpenBr(b, ZeroOrOneOfForm):
+    #       for ver in p.versions.keys():
+    #         b.add ver.vid
 
     # This simpler deps loop was copied from Nimble after it was first ported from Atlas :)
     # It appears to acheive the same results, but it's a lot simpler

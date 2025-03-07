@@ -161,7 +161,7 @@ suite "test expand with git tags":
 
         let sp0: Package = sp[0] # proj ws_testtraversal
         testRequirements(sp0, @[vt"#head@-"], [
-          ("file://./buildGraph/proj_a", "~"),
+          ("file://./buildGraph/proj_a", "*"),
         ])
 
 
@@ -234,7 +234,7 @@ suite "test expand with git tags":
 
         let sp0: Package = sp[0] # proj ws_testtraversal
         testRequirements(sp0, @[vt"#head@-"], [
-          ("https://example.com/buildGraph/proj_a", "#head"),
+          ("https://example.com/buildGraph/proj_a", "*"),
         ])
 
 
@@ -340,7 +340,7 @@ suite "test expand with no git tags":
 
         let sp0: Package = sp[0] # proj ws_testtraversal
         testRequirements(sp0, @[vt"#head@-"], [
-          ("file://./buildGraphNoGitTags/proj_a", "#head"),
+          ("file://./buildGraphNoGitTags/proj_a", "*"),
         ])
 
         let sp1 = sp[1] # proj A
