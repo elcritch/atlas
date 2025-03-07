@@ -93,17 +93,17 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
     for pkg in graph.pkgs.mvalues():
       for ver, rel in validVersions(pkg, graph):
         var allDepsCompatible = true
-        
+
         # First check if all dependencies can be satisfied
         for dep, query in items(rel.requirements):
           let depNode = graph.pkgs[dep]
-          
+
           var hasCompatible = false
           for depVer, relVer in depNode.versions:
             if query.matches(depVer.version()):
               hasCompatible = true
               break
-          
+
           if not hasCompatible:
             allDepsCompatible = false
             error pkg.url.projectName, "no versions matched requirements for this dep", $dep.projectName
@@ -121,12 +121,12 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
           # let depIdx = findDependencyForDep(g, dep)
           # if depIdx < 0: continue
           let depNode = graph.pkgs[dep]
-          
+
           var compatibleVersions: seq[VarId] = @[]
           for depVer, relVer in depNode.versions:
             if query.matches(depVer.version()):
               compatibleVersions.add(depVer.vid)
-          
+
           # Add implication: if this version is selected, one of its compatible deps must be selected
           withOpenBr(b, OrForm):
             b.addNegated(ver.vid)  # not A
