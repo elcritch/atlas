@@ -58,6 +58,11 @@ const
 proc toPkgVer*(vtag: VersionTag): PackageVersion =
   result = PackageVersion(vtag: vtag)
 
+proc version*(pv: PackageVersion): Version =
+  pv.vtag.version
+proc commit*(pv: PackageVersion): CommitHash =
+  pv.vtag.commit
+
 proc createUrl*(nc: NimbleContext, orig: Path): PkgUrl =
   var didReplace = false
   result = createUrlSkipPatterns($orig)
@@ -87,6 +92,11 @@ proc sortVersionTags*(a, b: VersionTag): int =
 proc sortVersions*(a, b: (VersionTag, NimbleRelease)): int =
   (if a[0].v < b[0].v: 1
   elif a[0].v == b[0].v: 0
+  else: -1)
+
+proc sortVersions*(a, b: (PackageVersion, NimbleRelease)): int =
+  (if a[0].version < b[0].version: 1
+  elif a[0].version == b[0].version: 0
   else: -1)
 
 proc `$`*(d: Package): string =

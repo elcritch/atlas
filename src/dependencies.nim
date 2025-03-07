@@ -281,7 +281,7 @@ proc traverseDependency*(
     pkg.versions[ver] = uniqueReleases[rel]
   
   # TODO: filter by unique versions first?
-  # result.versions.sort(sortVersions)
+  pkg.versions.sort(sortVersions)
   pkg.state = Processed
 
 
