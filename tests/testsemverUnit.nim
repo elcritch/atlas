@@ -52,7 +52,10 @@ template testRequirements(sp: Package,
     check sp.state == Processed
     check vt in sp.versions
     if vt in sp.versions:
-      check sp.versions[vt].status == Normal or vers[idx][0].endsWith("does_not_exist")
+      if vers[idx][0].endsWith("does_not_exist"):
+        check sp.versions[vt].status == HasBrokenDep
+      else:
+        check sp.versions[vt].status == Normal
       if sp.versions[vt].status != Normal:
         continue
       if not skipCount:
