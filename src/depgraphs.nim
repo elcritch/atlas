@@ -254,11 +254,6 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
 proc toString(info: SatVarInfo): string =
   "(" & info.pkg.url.projectName & ", " & $info.version & ")"
 
-proc sortVersionTags*(a, b: VersionTag): int =
-  (if a.v < b.v: 1
-  elif a.v == b.v: 0
-  else: -1)
-
 proc debugFormular*(graph: var DepGraph; form: Form; solution: Solution) =
   echo "FORM:\n\t", form.formula
   var keys = form.mapping.keys().toSeq()

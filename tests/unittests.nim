@@ -1,7 +1,7 @@
 
 
-import std/[unittest, os, strutils]
-import basic/[context, osutils, versions]
+import std/[unittest, os, algorithm, strutils]
+import basic/[context, deptypes, osutils, versions]
 
 when false:
   from nameresolver import resolvePackage
@@ -334,3 +334,64 @@ suite "version interval matches":
     let regularInterval = p">= 1.0.0"
     let noCommit = extractSpecificCommit(regularInterval)
     check noCommit.h == ""
+
+suite "sortVersions":
+  
+  test "basic version sorting":
+    let v1 = VersionTag(v: v"1.0.0", c: initCommitHash("a1", FromNone))
+    let v2 = VersionTag(v: v"1.1.0", c: initCommitHash("a2", FromNone))
+    let v3 = VersionTag(v: v"2.0.0", c: initCommitHash("a3", FromNone))
+    
+    # Test descending order (newer versions first)
+    check sortVersions(v1, v2) == -1  # v1 should come after v2
+    check sortVersions(v2, v1) == 1   # v2 should come before v1
+    check sortVersions(v2, v3) == -1  # v2 should come after v3
+    check sortVersions(v3, v2) == 1   # v3 should come before v2
+    check sortVersions(v1, v1) == 0   # Equal versions should return 0
+  
+  test "patches and minor versions":
+    let v1 = VersionTag(v: v"1.2.3", c: initCommitHash("b1", FromNone))
+    let v2 = VersionTag(v: v"1.2.4", c: initCommitHash("b2", FromNone))
+    let v3 = VersionTag(v: v"1.3.0", c: initCommitHash("b3", FromNone))
+    
+    check sortVersions(v1, v2) == -1  # 1.2.3 should come after 1.2.4
+    check sortVersions(v2, v3) == -1  # 1.2.4 should come after 1.3.0
+    check sortVersions(v1, v3) == -1  # 1.2.3 should come after 1.3.0
+  
+  test "different commit hashes but same version":
+    let v1 = VersionTag(v: v"1.0.0", c: initCommitHash("c1", FromNone))
+    let v2 = VersionTag(v: v"1.0.0", c: initCommitHash("c2", FromNone))
+    
+    check sortVersions(v1, v2) == 0  # Versions are equal, ignoring commit
+  
+  test "special versions":
+    let v1 = VersionTag(v: v"1.0.0", c: initCommitHash("d1", FromNone))
+    let v2 = VersionTag(v: v"#head", c: initCommitHash("d2", FromNone))
+    let v3 = VersionTag(v: v"#branch", c: initCommitHash("d3", FromNone))
+    
+    # Based on the existing Version comparison tests:
+    # v"1.0" < v"#head"
+    # v"#branch" < v"#head"
+    # v"#branch" < v"1.0"
+    
+    check sortVersions(v1, v2) == -1  # 1.0.0 should come after #head
+    check sortVersions(v3, v2) == -1  # #branch should come after #head
+    check sortVersions(v3, v1) == 1   # #branch should come before 1.0.0
+  
+  test "sort a sequence of version tags":
+    var versions = @[
+      VersionTag(v: v"1.2.0", c: initCommitHash("e1", FromNone)),
+      VersionTag(v: v"1.0.0", c: initCommitHash("e2", FromNone)),
+      VersionTag(v: v"2.0.0", c: initCommitHash("e3", FromNone)),
+      VersionTag(v: v"#head", c: initCommitHash("e4", FromNone)),
+      VersionTag(v: v"1.1.0", c: initCommitHash("e5", FromNone))
+    ]
+    
+    versions.sort(sortVersions)
+    
+    # Expected order (descending): #head, 2.0.0, 1.2.0, 1.1.0, 1.0.0
+    check versions[0].v == v"#head"
+    check versions[1].v == v"2.0.0"
+    check versions[2].v == v"1.2.0"
+    check versions[3].v == v"1.1.0"
+    check versions[4].v == v"1.0.0"

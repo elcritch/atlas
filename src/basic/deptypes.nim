@@ -84,7 +84,7 @@ proc createUrl*(nc: NimbleContext, nameOrig: string; projectName: string = ""): 
   if projectName != "":
     result.projectName = projectName
 
-proc sortVersionTags*(a, b: VersionTag): int =
+proc sortVersions*(a, b: VersionTag): int =
   (if a.v < b.v: 1
   elif a.v == b.v: 0
   else: -1)
