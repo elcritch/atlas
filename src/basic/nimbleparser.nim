@@ -80,8 +80,6 @@ proc patchNimbleFile*(nc: var NimbleContext;
     error name, "cannot resolve package name: " & name
     return
 
-  echo "NIMBLEFILE: ", $nimbleFile
-  echo "NIMBLEFILE: ", $nimbleFile.absolutePath
   let release = parseNimbleFile(nc, nimbleFile, p)
   # see if we have this requirement already listed. If so, do nothing:
   for d in release.requirements:
