@@ -43,6 +43,7 @@ template withOpenBr(b, op, blk) =
     `blk`
     b.closeOpr()
 
+
 proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
   result = Form()
   var b = Builder()
@@ -51,10 +52,23 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
 
       # First pass: Assign variables and encode version selection constraints
     when false:
+      # [Info]   (proj_a) [ ] (proj_a, 1.0.0@e479b438)
+      # [Info]   (proj_a) [x] (proj_a, 1.1.0@fb3804df)
+      # [Info]   (proj_b) [ ] (proj_b, 1.0.0@af427510)
+      # [Info]   (proj_b) [x] (proj_b, 1.1.0@ee875bae)
+      # [Info]   (proj_c) [x] (proj_c, 1.2.0@9331e14f)
+      # [Info]   (proj_d) [ ] (proj_d, 1.0.0@0dec9c97)
+      # [Info]   (proj_d) [x] (proj_d, 2.0.0@dd98f775)
+
       for p in mvalues(graph.pkgs):
         if p.versions.len == 0: continue
-        p.versions.sort(cmp)
-        
+
+        case algo
+        of MinVer:
+          p.versions.sort(sortVersionsAsc)
+        of SemVer, MaxVer:
+          p.versions.sort(sortVersionsDesc)
+
         # Version selection constraint
         if p.isRoot:
           withOpenBr(b, ExactlyOneOfForm):
@@ -78,12 +92,24 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
               b.add(ver.vid)
 
     else:
+      # [Info]   (proj_a) [ ] (proj_a, 1.0.0@e479b438)
+      # [Info]   (proj_a) [x] (proj_a, 1.1.0@fb3804df)
+      # [Info]   (proj_b) [ ] (proj_b, 1.0.0@af427510)
+      # [Info]   (proj_b) [x] (proj_b, 1.1.0@ee875bae)
+      # [Info]   (proj_c) [x] (proj_c, 1.2.0@9331e14f)
+      # [Info]   (proj_d) [ ] (proj_d, 1.0.0@0dec9c97)
+      # [Info]   (proj_d) [x] (proj_d, 2.0.0@dd98f775)
+
       # This loop processes each package to set up version selection constraints
       for pkgUrl, p in mpairs(graph.pkgs):
         if p.versions.len == 0: continue
 
         # # Sort versions in descending order (newer versions first)
-        p.versions.sort(sortVersionsDesc)
+
+        case algo
+        of MinVer: p.versions.sort(sortVersionsDesc)
+        of SemVer, MaxVer: p.versions.sort(sortVersionsAsc)
+
 
         # Assign a unique SAT variable to each version of the package
         var i = 0

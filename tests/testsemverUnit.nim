@@ -157,10 +157,12 @@ suite "graph solve":
         ## 
 
         let form = graph.toFormular(SemVer)
-
         context().dumpGraphs = true
         var sol: Solution
-
-        let expForm = "(&(1==v0) (1>=v1 v2) (1>=v3 v4) (1>=v5) (1>=v6 v7) (|(~v0) v0) (|(~v1) v0) (|(~v2) v0) (|(~v3) v0) (|(~v4) v0) (|(~v5) v0))"
-
+        # let expForm = "(&(1==v0) (1>=v1 v2) (1>=v3 v4) (1>=v5) (1>=v6 v7) (|(~v0) v0) (|(~v1) v0) (|(~v2) v0) (|(~v3) v0) (|(~v4) v0) (|(~v5) v0))"
         solve(graph, form)
+
+        let formMinVer = graph.toFormular(MinVer)
+        context().dumpGraphs = true
+        var solMinVer: Solution
+        solve(graph, formMinVer)
