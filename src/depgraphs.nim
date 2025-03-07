@@ -288,13 +288,16 @@ proc solve*(graph: var DepGraph; form: Form) =
       warn "Resolved", "selected:"
       for pkg in values(graph.pkgs):
         if not pkg.isRoot:
-          for ver, rel in pkg.validVersions():
-            let item = form.mapping[ver.vid]
-            doAssert pkg.url == item.pkg.url
-            if solution.isTrue(ver.vid):
-              warn item.pkg.url.projectName, "[x] " & toString item
+          for ver, rel in pkg.versions:
+            if ver.vid in form.mapping:
+              let item = form.mapping[ver.vid]
+              doAssert pkg.url == item.pkg.url
+              if solution.isTrue(ver.vid):
+                warn item.pkg.url.projectName, "[x] " & toString item
+              else:
+                warn item.pkg.url.projectName, "[ ] " & toString item
             else:
-              warn item.pkg.url.projectName, "[ ] " & toString item
+              warn pkg.url.projectName, "[!] " & "(" & $rel.status & "; pkg: " & pkg.url.projectName & ", " & $ver & ")"
       warn "Resolved", "end of selection"
   else:
     var notFoundCount = 0
