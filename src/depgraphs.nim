@@ -91,52 +91,51 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
           for ver, rel in p.validVersions():
             b.add ver.vid
 
-    when true:
-      # This simpler deps loop was copied from Nimble after it was first ported from Atlas :)
-      # It appears to acheive the same results, but it's a lot simpler
-      for pkg in graph.pkgs.mvalues():
-        for ver, rel in validVersions(pkg):
-          var allDepsCompatible = true
+    # This simpler deps loop was copied from Nimble after it was first ported from Atlas :)
+    # It appears to acheive the same results, but it's a lot simpler
+    for pkg in graph.pkgs.mvalues():
+      for ver, rel in validVersions(pkg):
+        var allDepsCompatible = true
 
-          # First check if all dependencies can be satisfied
-          for dep, query in items(rel.requirements):
-            let depNode = graph.pkgs[dep]
+        # First check if all dependencies can be satisfied
+        for dep, query in items(rel.requirements):
+          let depNode = graph.pkgs[dep]
 
-            var hasCompatible = false
-            for depVer, relVer in depNode.validVersions():
-              if query.matches(depVer.version()):
-                hasCompatible = true
-                break
-
-            if not hasCompatible:
-              allDepsCompatible = false
-              error pkg.url.projectName, "no versions matched requirements for this dep", $dep.projectName
+          var hasCompatible = false
+          for depVer, relVer in depNode.validVersions():
+            if query.matches(depVer.version()):
+              hasCompatible = true
               break
 
-          # If any dependency can't be satisfied, make this version unsatisfiable
-          if not allDepsCompatible:
-            error pkg.url.projectName, "all requirements needed were not matched", $rel.requirements
-            b.addNegated(ver.vid)
-            continue
+          if not hasCompatible:
+            allDepsCompatible = false
+            error pkg.url.projectName, "no versions matched requirements for this dep", $dep.projectName
+            break
 
-          # Add implications for each dependency
-          # for dep, q in items graph.reqs[ver.req].deps:
-          for dep, query in items(rel.requirements):
-            let depNode = graph.pkgs[dep]
+        # If any dependency can't be satisfied, make this version unsatisfiable
+        if not allDepsCompatible:
+          error pkg.url.projectName, "all requirements needed were not matched", $rel.requirements
+          b.addNegated(ver.vid)
+          continue
 
-            var compatibleVersions: seq[VarId] = @[]
-            for depVer, relVer in depNode.validVersions():
-              if query.matches(depVer.version()):
-                compatibleVersions.add(depVer.vid)
+        # Add implications for each dependency
+        # for dep, q in items graph.reqs[ver.req].deps:
+        for dep, query in items(rel.requirements):
+          let depNode = graph.pkgs[dep]
 
-            # Add implication: if this version is selected, one of its compatible deps must be selected
+          var compatibleVersions: seq[VarId] = @[]
+          for depVer, relVer in depNode.validVersions():
+            if query.matches(depVer.version()):
+              compatibleVersions.add(depVer.vid)
+
+          # Add implication: if this version is selected, one of its compatible deps must be selected
+          withOpenBr(b, OrForm):
+            b.addNegated(ver.vid)  # not A
             withOpenBr(b, OrForm):
-              b.addNegated(ver.vid)  # not A
-              withOpenBr(b, OrForm):
-                for compatVer in compatibleVersions:
-                  b.add(compatVer)
+              for compatVer in compatibleVersions:
+                b.add(compatVer)
 
-    else:
+    when false:
       # Note this original ran, but seems to have problems now with minver...
       #
       # Original Atlas version ported to the new Package graph layout
