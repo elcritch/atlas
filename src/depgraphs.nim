@@ -44,8 +44,8 @@ type
 
 proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
   result = Form()
-  var builder = Builder()
-  builder.openOpr(AndForm)
+  var b = Builder()
+  b.openOpr(AndForm)
 
   # This loop processes each package to set up version selection constraints
   for pkgUrl, p in mpairs(graph.pkgs):
@@ -68,22 +68,22 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
     # Add constraints based on the package status
     if p.state == Error:
       # If package is broken, enforce that none of its versions can be selected
-      builder.openOpr(AndForm)
+      b.openOpr(AndForm)
       for ver in p.versions.keys():
-        builder.addNegated ver.vid
-      builder.closeOpr() # AndForm
+        b.addNegated ver.vid
+      b.closeOpr() # AndForm
     elif p.isRoot:
       # If it's a root package, enforce that exactly one version must be selected
-      builder.openOpr(ExactlyOneOfForm)
+      b.openOpr(ExactlyOneOfForm)
       for ver in p.versions.keys():
-        builder.add ver.vid
-      builder.closeOpr() # ExactlyOneOfForm
+        b.add ver.vid
+      b.closeOpr() # ExactlyOneOfForm
     else:
       # For non-root packages, they can either have one version selected or none at all
-      builder.openOpr(ZeroOrOneOfForm)
+      b.openOpr(ZeroOrOneOfForm)
       for ver in p.versions.keys():
-        builder.add ver.vid
-      builder.closeOpr() # ZeroOrOneOfForm
+        b.add ver.vid
+      b.closeOpr() # ZeroOrOneOfForm
 
   # This simpler deps loop was copied from Nimble after it was first ported from Atlas :)
   for pkg in graph.pkgs.mvalues():
@@ -106,7 +106,7 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
 
       # If any dependency can't be satisfied, make this version unsatisfiable
       if not allDepsCompatible:
-        builder.addNegated(ver.vid)
+        b.addNegated(ver.vid)
         continue
 
       # Add implications for each dependency
@@ -122,16 +122,16 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
             compatibleVersions.add(depVer.vid)
         
         # Add implication: if this version is selected, one of its compatible deps must be selected
-        builder.openOpr(OrForm)
-        builder.addNegated(ver.vid)  # not A
-        builder.openOpr(OrForm)    # or (B1 or B2 or ...)
+        b.openOpr(OrForm)
+        b.addNegated(ver.vid)  # not A
+        b.openOpr(OrForm)    # or (B1 or B2 or ...)
         for compatVer in compatibleVersions:
-          builder.add(compatVer)
-        builder.closeOpr()
-        builder.closeOpr()
+          b.add(compatVer)
+        b.closeOpr()
+        b.closeOpr()
 
-  builder.closeOpr() # AndForm
-  result.formula = toForm(builder)
+  b.closeOpr() # AndForm
+  result.formula = toForm(b)
 
   ## Original Atlas version ported to the new Package graph layout
   ## However the Nimble version appears to accomplish the same with less work
@@ -151,12 +151,12 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
   #     # Skip empty requirement sets
   #     if rel.requirements.len == 0:
   #       continue
-  #     let beforeEq = builder.getPatchPos()
+  #     let beforeEq = b.getPatchPos()
   #     # Create a constraint: if this requirement is true, then all its dependencies must be satisfied
-  #     builder.openOpr(OrForm)
-  #     builder.addNegated eqVar
+  #     b.openOpr(OrForm)
+  #     b.addNegated eqVar
   #     if rel.requirements.len > 1:
-  #       builder.openOpr(AndForm)
+  #       b.openOpr(AndForm)
   #     var elementCount = 0
   #     # For each dependency in the requirement, create version matching constraints
   #     for dep, query in items rel.requirements:
@@ -166,8 +166,8 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
   #       let availVer = graph.pkgs[dep]
   #       if availVer.versions.len == 0:
   #         continue
-  #       let beforeExactlyOneOf = builder.getPatchPos()
-  #       builder.openOpr(ExactlyOneOfForm)
+  #       let beforeExactlyOneOf = b.getPatchPos()
+  #       b.openOpr(ExactlyOneOfForm)
   #       inc elementCount
   #       var matchCount = 0
   #       var availVers = availVer.versions.keys().toSeq()
@@ -178,7 +178,7 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
   #         availVers.reverse()
   #         for depVer in availVers:
   #           if queryVer.matches(depVer.vtag.version) or commit == depVer.vtag.commit:
-  #             builder.add depVer.vid
+  #             b.add depVer.vid
   #             inc matchCount
   #             break
   #       elif algo == MinVer:
@@ -187,7 +187,7 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
   #         availVers.reverse()
   #         for depVer in availVers:
   #           if queryVer.matches(depVer.vtag.version):
-  #             builder.add depVer.vid
+  #             b.add depVer.vid
   #             inc matchCount
   #       else:
   #         # For other algorithms (like SemVer), try to find the maximum version that satisfies
@@ -195,28 +195,28 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
   #         for depVer in availVers:
   #           if queryVer.matches(depVer.vtag.version):
   #             info pkg.url.projectName, "matched requirement selections by SemVer:", $queryVer, "depVer:", $depVer
-  #             builder.add depVer.vid
+  #             b.add depVer.vid
   #             inc matchCount
-  #       builder.closeOpr() # ExactlyOneOfForm
+  #       b.closeOpr() # ExactlyOneOfForm
   #       # If no matching version was found, add a false literal to make the formula unsatisfiable
   #       if matchCount == 0:
-  #         builder.resetToPatchPos beforeExactlyOneOf
-  #         builder.add falseLit()
-  #     if rel.requirements.len > 1: builder.closeOpr() # AndForm
-  #     builder.closeOpr() # EqForm
+  #         b.resetToPatchPos beforeExactlyOneOf
+  #         b.add falseLit()
+  #     if rel.requirements.len > 1: b.closeOpr() # AndForm
+  #     b.closeOpr() # EqForm
   #     # If no dependencies were processed, reset the formula position
   #     if elementCount == 0:
-  #       builder.resetToPatchPos beforeEq
+  #       b.resetToPatchPos beforeEq
   # # This final loop links package versions to their requirements
   # # It enforces that if a version is selected, its requirements must be satisfied
   # for pkg in mvalues(graph.pkgs):
   #   for ver, rel in validVersions(pkg, graph):
   #     if rel.requirements.len > 0:
   #       info pkg.url.projectName, "adding package requirements restraint:", $ver, "vid: ", $ver.vid.int, "rel:", $rel.rid.int
-  #       builder.openOpr(OrForm)
-  #       builder.addNegated ver.vid
-  #       builder.add rel.rid
-  #       builder.closeOpr() # OrForm
+  #       b.openOpr(OrForm)
+  #       b.addNegated ver.vid
+  #       b.add rel.rid
+  #       b.closeOpr() # OrForm
   #     else:
   #       info pkg.url.projectName, "not adding pacakge requirements restraint:", $ver
 
@@ -345,8 +345,8 @@ proc runBuildSteps*(graph: var DepGraph) =
           let nimbleFiles = findNimbleFile(pkg)
           if nimbleFiles.len() == 1:
             runNimScriptInstallHook nimbleFiles[0], pkg.projectName
-        # check for nim script builders
-        for pattern in mitems context().plugins.builderPatterns:
-          let builderFile = pattern[0] % pkg.projectName
-          if fileExists(builderFile):
+        # check for nim script bs
+        for pattern in mitems context().plugins.bPatterns:
+          let bFile = pattern[0] % pkg.projectName
+          if fileExists(bFile):
             runNimScriptBuilder pattern, pkg.projectName
