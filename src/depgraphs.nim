@@ -302,12 +302,17 @@ proc toPretty*(v: uint64): string =
   else: ""
 
 proc solve*(graph: var DepGraph; form: Form) =
+  for pkg in graph.pkgs.mvalues():
+    pkg.activeVersion = nil
+    pkg.active = false
+
   let maxVar = form.idgen
   if context().dumpGraphs:
     dumpJson(graph, "graph-solve-input.json")
   var solution = createSolution(maxVar)
   if context().dumpFormular:
     debugFormular graph, form, solution
+
 
   if satisfiable(form.formula, solution):
     graph.root.active = true
@@ -327,14 +332,7 @@ proc solve*(graph: var DepGraph; form: Form) =
         assert not mapInfo.release.isNil, "too bad: " & $pkg.url
         pkg.activeVersion = mapInfo.version
         info pkg.url.projectName, "package satisfiable"
-        if not mapInfo.version.commit().isEmpty() and pkg.state == Processed:
-          if pkg.ondisk.string.len == 0:
-            error pkg.url.projectName, "Missing ondisk location for:", $(pkg.url)
-          else:
-            let res = checkoutGitCommit(pkg.ondisk, ver.commit())
 
-    # if NoExec notin context().flags:
-    #   runBuildSteps(graph)
 
     if ListVersions in context().flags:
       info "../resolve", "selected:"
@@ -373,9 +371,9 @@ proc traverseLoop*(nc: var NimbleContext, path: Path): seq[CfgPath] =
   let specs = expand(nc, TraversalMode.AllReleases, path)
   var graph: DepGraph
   let form = graph.toFormular(context().defaultAlgo)
+  
   solve(graph, form)
-  for dep in allActiveNodes(graph):
-    result.add CfgPath(toDestDir(graph, dep) / getCfgPath(graph, dep).Path)
+
 
 proc runBuildSteps*(graph: var DepGraph) =
   ## execute build steps for the dependency graph
@@ -401,3 +399,17 @@ proc runBuildSteps*(graph: var DepGraph) =
           let bFile = pattern[0] % pkg.projectName
           if fileExists(bFile):
             runNimScriptBuilder pattern, pkg.projectName
+
+proc activateGraph*(graph: DepGraph): seq[CfgPath] =
+  for pkg in allActiveNodes(graph):
+    if not pkg.activeVersion.commit().isEmpty():
+      if pkg.ondisk.string.len == 0:
+        error pkg.url.projectName, "Missing ondisk location for:", $(pkg.url)
+      else:
+        let res = checkoutGitCommit(pkg.ondisk, pkg.activeVersion.commit())
+
+  if NoExec notin context().flags:
+    runBuildSteps(graph)
+
+  for pkg in allActiveNodes(graph):
+    result.add CfgPath(toDestDir(graph, pkg) / getCfgPath(graph, pkg).Path)

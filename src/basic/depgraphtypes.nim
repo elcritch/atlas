@@ -51,7 +51,8 @@ iterator allNodes*(g: DepGraph): Package =
 
 iterator allActiveNodes*(g: DepGraph): Package =
   for pkg in values(g.pkgs):
-    if pkg.active:
+    if pkg.active and not pkg.activeVersion.isNil:
+      doAssert pkg.state == Processed
       yield pkg
 
 # iterator toposorted*(g: DepGraph): lent Package =

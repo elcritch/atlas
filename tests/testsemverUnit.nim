@@ -173,8 +173,6 @@ suite "graph solve":
         var solMinVer: Solution
         solve(graph, formMinVer)
 
-        for pkg in graph.pkgs.values():
-          echo "PKG: ", $pkg.url, " ", $pkg.active, " active: ", $pkg.activeVersion
         check $graph.root.activeVersion == "#head@-"
         check $graph.pkgs[nc.nameToUrl["proj_a"]].activeVersion == "1.0.0@e479b438"
         check $graph.pkgs[nc.nameToUrl["proj_b"]].activeVersion == "1.0.0@af427510"
