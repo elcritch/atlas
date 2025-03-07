@@ -90,7 +90,7 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
           for ver in p.versions.keys():
             b.add ver.vid
 
-    when not useOldAtlastVer:
+    when false:
       # This simpler deps loop was copied from Nimble after it was first ported from Atlas :)
       # It appears to acheive the same results, but it's a lot simpler
       for pkg in graph.pkgs.mvalues():
@@ -137,7 +137,7 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
                 for compatVer in compatibleVersions:
                   b.add(compatVer)
 
-    when not useOldAtlastVer:
+    else:
 
       # Original Atlas version ported to the new Package graph layout
       # However the Nimble version appears to accomplish the same with less work
@@ -181,7 +181,7 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
             if not commit.isEmpty():
               info pkg.url.projectName, "adding requirements selections by specific commit:", $dep.projectName, "commit:", $commit
               # Match by specific commit if specified
-              availVers.reverse()
+              # availVers.reverse()
               for depVer in availVers:
                 if queryVer.matches(depVer.version()) or commit == depVer.commit():
                   b.add depVer.vid
@@ -190,7 +190,7 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
             elif algo == MinVer:
               # For MinVer algorithm, try to find the minimum version that satisfies the requirement
               info pkg.url.projectName, "adding requirements selections by MinVer:", $dep.projectName
-              availVers.reverse()
+              # availVers.reverse()
               for depVer in availVers:
                 if queryVer.matches(depVer.version()):
                   b.add depVer.vid
@@ -198,6 +198,7 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
             else:
               # For other algorithms (like SemVer), try to find the maximum version that satisfies
               info pkg.url.projectName, "adding requirements selections by SemVer:", $dep.projectName, "vers:", $availVers
+              availVers.reverse()
               for depVer in availVers:
                 if queryVer.matches(depVer.version()):
                   info pkg.url.projectName, "matched requirement selections by SemVer:", $queryVer, "depVer:", $depVer
@@ -214,19 +215,18 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
           if elementCount == 0:
             b.resetToPatchPos beforeEq
 
-  when useOldAtlastVer:
-    # This final loop links package versions to their requirements
-    # It enforces that if a version is selected, its requirements must be satisfied
-    for pkg in mvalues(graph.pkgs):
-      for ver, rel in validVersions(pkg, graph):
-        if rel.requirements.len > 0:
-          info pkg.url.projectName, "adding package requirements restraint:", $ver, "vid: ", $ver.vid.int, "rel:", $rel.rid.int
-          b.openOpr(OrForm)
-          b.addNegated ver.vid
-          b.add rel.rid
-          b.closeOpr() # OrForm
-        else:
-          info pkg.url.projectName, "not adding pacakge requirements restraint:", $ver
+      # This final loop links package versions to their requirements
+      # It enforces that if a version is selected, its requirements must be satisfied
+      for pkg in mvalues(graph.pkgs):
+        for ver, rel in validVersions(pkg, graph):
+          if rel.requirements.len > 0:
+            info pkg.url.projectName, "adding package requirements restraint:", $ver, "vid: ", $ver.vid.int, "rel:", $rel.rid.int
+            b.openOpr(OrForm)
+            b.addNegated ver.vid
+            b.add rel.rid
+            b.closeOpr() # OrForm
+          else:
+            info pkg.url.projectName, "not adding pacakge requirements restraint:", $ver
 
   result.formula = toForm(b)
 

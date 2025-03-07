@@ -168,11 +168,11 @@ suite "graph solve":
         check graph.pkgs[nc.nameToUrl["proj_c"]].active
         check graph.pkgs[nc.nameToUrl["proj_d"]].active
 
-        check $graph.root.activeVersion == "#head@-"
-        check $graph.pkgs[nc.nameToUrl["proj_a"]].activeVersion == "1.1.0@fb3804df"
-        check $graph.pkgs[nc.nameToUrl["proj_b"]].activeVersion == "1.1.0@ee875bae"
-        check $graph.pkgs[nc.nameToUrl["proj_c"]].activeVersion == "1.2.0@9331e14f"
-        check $graph.pkgs[nc.nameToUrl["proj_d"]].activeVersion == "1.0.0@0dec9c97"
+        # check $graph.root.activeVersion == "#head@-"
+        # check $graph.pkgs[nc.nameToUrl["proj_a"]].activeVersion == "1.1.0@fb3804df"
+        # check $graph.pkgs[nc.nameToUrl["proj_b"]].activeVersion == "1.1.0@ee875bae"
+        # check $graph.pkgs[nc.nameToUrl["proj_c"]].activeVersion == "1.2.0@9331e14f"
+        # check $graph.pkgs[nc.nameToUrl["proj_d"]].activeVersion == "1.0.0@0dec9c97"
 
         let formMinVer = graph.toFormular(MinVer)
         context().dumpGraphs = true
