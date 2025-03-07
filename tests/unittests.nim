@@ -349,11 +349,17 @@ suite "sortVersions":
     check versions[1].v == v"1.2.4"
     check versions[2].v == v"1.2.3"
   
+    versions.sort(sortVersionsAsc)
+    check versions[0].v == v"1.2.3"
+    check versions[1].v == v"1.2.4"
+    check versions[2].v == v"1.3.0"
+
   test "different commit hashes but same version":
     let v1 = VersionTag(v: v"1.0.0", c: initCommitHash("c1", FromNone))
     let v2 = VersionTag(v: v"1.0.0", c: initCommitHash("c2", FromNone))
     
     check sortVersionsDesc(v1, v2) == 0  # Versions are equal, ignoring commit
+    check sortVersionsAsc(v1, v2) == 0  # Versions are equal, ignoring commit
   
   test "special versions":
     let v1 = VersionTag(v: v"1.0.0", c: initCommitHash("d1", FromNone))
@@ -368,6 +374,9 @@ suite "sortVersions":
     check sortVersionsDesc(v1, v2) == 1  # 1.0.0 should come after #head
     check sortVersionsDesc(v3, v2) == 1  # #branch should come after #head
     check sortVersionsDesc(v3, v1) == 1 # #branch should come before 1.0.0
+    check sortVersionsAsc(v1, v2) == -1  # 1.0.0 should come after #head
+    check sortVersionsAsc(v3, v2) == -1  # #branch should come after #head
+    check sortVersionsAsc(v3, v1) == -1 # #branch should come before 1.0.0
   
   test "sort a sequence of version tags":
     var versions = @[
@@ -379,10 +388,17 @@ suite "sortVersions":
     ]
     
     versions.sort(sortVersionsDesc)
-    
     # Expected order (descending): #head, 2.0.0, 1.2.0, 1.1.0, 1.0.0
     check versions[0].v == v"#head"
     check versions[1].v == v"2.0.0"
     check versions[2].v == v"1.2.0"
     check versions[3].v == v"1.1.0"
     check versions[4].v == v"1.0.0"
+
+    versions.sort(sortVersionsAsc)
+    # Expected order (ascending)
+    check versions[0].v == v"1.0.0"
+    check versions[1].v == v"1.1.0"
+    check versions[2].v == v"1.2.0"
+    check versions[3].v == v"2.0.0"
+    check versions[4].v == v"#head"
