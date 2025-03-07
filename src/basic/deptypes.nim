@@ -18,7 +18,7 @@ type
     url*: PkgUrl
     state*: PackageState
     versions*: OrderedTable[PackageVersion, NimbleRelease]
-    activeRelease*: NimbleRelease
+    activeVersion*: PackageVersion
     ondisk*: Path
     active*: bool
     isRoot*: bool
@@ -185,3 +185,10 @@ proc toJsonHook*(t: OrderedTable[PkgUrl, Package], opt: ToJsonOptions): JsonNode
   result = newJObject()
   for k, v in t:
     result[$(k)] = toJson(v, opt)
+
+proc activeNimbleRelease*(pkg: Package): NimbleRelease =
+  if pkg.activeVersion.isNil:
+    result = nil
+  else:
+    let av = pkg.activeVersion
+    result = pkg.versions[av]

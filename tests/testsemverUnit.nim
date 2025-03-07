@@ -162,6 +162,16 @@ suite "graph solve":
         # let expForm = "(&(1==v0) (1>=v1 v2) (1>=v3 v4) (1>=v5) (1>=v6 v7) (|(~v0) v0) (|(~v1) v0) (|(~v2) v0) (|(~v3) v0) (|(~v4) v0) (|(~v5) v0))"
         solve(graph, form)
 
+        for pkg in graph.pkgs.values():
+          echo "PKG: ", $pkg.url, " ", $pkg.active, " active: ", $pkg.activeVersion
+        
+        check $graph.root.activeVersion == "#head@-"
+        check $graph.pkgs[nc.nameToUrl["proj_a"]].activeVersion == "1.1.0@fb3804df"
+        check $graph.pkgs[nc.nameToUrl["proj_b"]].activeVersion == "1.1.0@ee875bae"
+        check $graph.pkgs[nc.nameToUrl["proj_c"]].activeVersion == "1.2.0@9331e14f"
+        check $graph.pkgs[nc.nameToUrl["proj_d"]].activeVersion == "2.0.0@dd98f775"
+        # check graph.pkgs[""]
+
         let formMinVer = graph.toFormular(MinVer)
         context().dumpGraphs = true
         var solMinVer: Solution

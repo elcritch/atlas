@@ -63,7 +63,7 @@ iterator allActiveNodes*(g: DepGraph): Package =
 #   result = g.packageToDependency.getOrDefault(dep)
 
 proc getCfgPath*(g: DepGraph; d: Package): lent CfgPath =
-  result = CfgPath g.pkgs[d.url].activeRelease.srcDir
+  result = CfgPath g.pkgs[d.url].activeNimbleRelease().srcDir
 
 # proc bestNimVersion*(g: DepGraph): Version =
 #   result = Version""

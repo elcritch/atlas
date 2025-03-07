@@ -15,8 +15,8 @@ else:
 export sat
 
 iterator directDependencies*(graph: DepGraph; pkg: Package): lent Package =
-  if pkg.activeRelease != nil:
-    for (durl, _) in pkg.activeRelease.requirements:
+  if pkg.activeNimbleRelease != nil:
+    for (durl, _) in pkg.activeNimbleRelease.requirements:
       # let idx = findDependencyForDep(graph, dep[0])
       yield graph.pkgs[durl]
 
@@ -325,7 +325,7 @@ proc solve*(graph: var DepGraph; form: Form) =
         pkg.active = true
         assert not pkg.isNil, "too bad: " & $pkg.url
         assert not mapInfo.release.isNil, "too bad: " & $pkg.url
-        pkg.activeRelease = mapInfo.release
+        pkg.activeVersion = mapInfo.version
         info pkg.url.projectName, "package satisfiable"
         if not mapInfo.version.commit().isEmpty() and pkg.state == Processed:
           if pkg.ondisk.string.len == 0:
@@ -391,8 +391,8 @@ proc runBuildSteps*(graph: var DepGraph) =
       doAssert pkg != nil
       tryWithDir $pkg.ondisk:
         # check for install hooks
-        if not pkg.activeRelease.isNil and
-            pkg.activeRelease.hasInstallHooks:
+        if not pkg.activeNimbleRelease.isNil and
+            pkg.activeNimbleRelease.hasInstallHooks:
           let nimbleFiles = findNimbleFile(pkg)
           if nimbleFiles.len() == 1:
             runNimScriptInstallHook nimbleFiles[0], pkg.projectName
