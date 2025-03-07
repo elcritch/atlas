@@ -59,12 +59,7 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
     for ver, rel in p.versions:
       ver.vid = VarId(result.idgen)
       # Map the SAT variable to package information for result interpretation
-      result.mapping[ver.vid] = SatVarInfo(
-        pkg: p,
-        version: ver,
-        release: rel,
-        # index: i
-      )
+      result.mapping[ver.vid] = SatVarInfo( pkg: p, version: ver, release: rel)
       inc result.idgen
       inc i
 
@@ -88,7 +83,7 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
       builder.openOpr(ZeroOrOneOfForm)
       for ver in p.versions.keys():
         builder.add ver.vid
-      builder.closeOpr # ExactlyOneOfForm
+      builder.closeOpr # ZeroOrOneOfForm
 
   # This loop sets up the dependency relationships in the SAT formula
   # It creates constraints for each package's requirements
@@ -132,10 +127,13 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
         inc elementCount
         var matchCount = 0
 
+        var availVers = availVer.versions.keys().toSeq()
+        info pkg.url.projectName, "version keys:", $dep.projectName, "availVers:", $availVers
         if not commit.isEmpty():
           info pkg.url.projectName, "adding requirements selections by specific commit:", $dep.projectName, "commit:", $commit
           # Match by specific commit if specified
-          for depVer in availVer.versions.keys():
+          availVers.reverse()
+          for depVer in availVers:
             if queryVer.matches(depVer.vtag.version) or commit == depVer.vtag.commit:
               builder.add depVer.vid
               inc matchCount
@@ -143,17 +141,17 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
         elif algo == MinVer:
           # For MinVer algorithm, try to find the minimum version that satisfies the requirement
           info pkg.url.projectName, "adding requirements selections by MinVer:", $dep.projectName
-          for depVer in availVer.versions.keys():
+          availVers.reverse()
+          for depVer in availVers:
             if queryVer.matches(depVer.vtag.version):
               builder.add depVer.vid
               inc matchCount
         else:
           # For other algorithms (like SemVer), try to find the maximum version that satisfies
-          info pkg.url.projectName, "adding requirements selections by SemVer:", $dep.projectName
-          var revVers = availVer.versions.keys().toSeq()
-          revVers.reverse()
-          for depVer in revVers:
+          info pkg.url.projectName, "adding requirements selections by SemVer:", $dep.projectName, "vers:", $availVers
+          for depVer in availVers:
             if queryVer.matches(depVer.vtag.version):
+              info pkg.url.projectName, "matched requirement selections by SemVer:", $queryVer, "depVer:", $depVer
               builder.add depVer.vid
               inc matchCount
 
