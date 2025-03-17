@@ -147,7 +147,7 @@ suite "urls and naming":
     check isWindowsAbsoluteFile("D:/a/atlas/atlas/buildGraph/proj_a")
     check isWindowsAbsoluteFile("file://D:/a/atlas/atlas/buildGraph/proj_a")
 
-    let ua = fixFileRelativeUrl(parseUri("file://D:\\a\\atlas\\atlas\\buildGraph\\proj_a"), isWindows = true)
+    let ua = fixFileRelativeUrl(parseUri("file://D:\\a\\atlas\\atlas\\buildGraph\\proj_a"), isWindowsTest = true)
     echo "FIXFILEABSOLUTEURL: ", $ua, " repr: ", ua.repr
     check ua.hostname == ""
     check ua.path == "/D:/a/atlas/atlas/buildGraph/proj_a"
@@ -167,7 +167,7 @@ suite "urls and naming":
   test "proj_b file fixFileAbsoluteUrl":
     # setAtlasVerbosity(Trace)
     when not defined(windows):
-      let uabs = fixFileRelativeUrl(parseUri("file://" & "." / "buildGraph" / "proj_b"), isWindows = false)
+      let uabs = fixFileRelativeUrl(parseUri("file://" & "." / "buildGraph" / "proj_b"), isWindowsTest = false)
       echo "uabs: ", $uabs
 
   test "proj_b file url absolute path":
