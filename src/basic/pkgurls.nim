@@ -105,7 +105,7 @@ proc toWindowsFileUrl*(raw: string): string =
   else:
     result = rawPath
 
-proc fixFileAbsoluteUrl*(u: Uri, isWindows: bool): Uri =
+proc fixFileRelativeUrl*(u: Uri, isWindows: bool): Uri =
   if isWindows and u.scheme == "file" and u.hostname.len() > 0:
     result = parseUri(toWindowsFileUrl($u))
     echo "FIXFILEABSOLUTE:URL:windows: ", $result, " repr: ", result.repr
@@ -113,12 +113,12 @@ proc fixFileAbsoluteUrl*(u: Uri, isWindows: bool): Uri =
     result = u
 
   if result.scheme == "file" and result.hostname.len() > 0:
-    # fix absolute paths
+    # fix relative paths
     echo "Fixing absolute path: ", result.repr
-    var url = "file://" & (workspace().string / (result.hostname & result.path))
-    url = absolutePath(url)
+    var url = (workspace().string / (result.hostname & result.path)).absolutePath
+    # url = absolutePath(url)
     echo "Fixed absolute path: ", url
-    result = parseUri(url)
+    result = parseUri("file://" & url)
 
 proc createUrlSkipPatterns*(raw: string, skipDirTest = false, forceWindows: bool = false): PkgUrl =
   template cleanupUrl(u: Uri) =
@@ -162,8 +162,8 @@ proc createUrlSkipPatterns*(raw: string, skipDirTest = false, forceWindows: bool
 
     if u.scheme == "file":
       # fix missing absolute paths
-      echo "fixFileAbsoluteUrl: ", $u
-      u = fixFileAbsoluteUrl(u, isWindows = defined(windows))
+      echo "fixFileRelativeUrl: ", $u
+      u = fixFileRelativeUrl(u, isWindows = defined(windows))
       hasShortName = true
 
     if u.scheme == "file":

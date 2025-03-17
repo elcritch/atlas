@@ -147,13 +147,14 @@ suite "urls and naming":
     check isWindowsAbsoluteFile("D:/a/atlas/atlas/buildGraph/proj_a")
     check isWindowsAbsoluteFile("file://D:/a/atlas/atlas/buildGraph/proj_a")
 
-    let ua = fixFileAbsoluteUrl(parseUri("file://D:\\a\\atlas\\atlas\\buildGraph\\proj_a"), isWindows = true)
+    let ua = fixFileRelativeUrl(parseUri("file://D:\\a\\atlas\\atlas\\buildGraph\\proj_a"), isWindows = true)
     echo "FIXFILEABSOLUTEURL: ", $ua, " repr: ", ua.repr
     check ua.hostname == ""
     check ua.path == "/D:/a/atlas/atlas/buildGraph/proj_a"
 
   test "proj_a windows path url with createUrlSkipPatterns":
     workspace() = Path("D:\\a\\atlas\\atlas")
+    defer: workspace() = ws
 
     let upkg = createUrlSkipPatterns("D:\\a\\atlas\\atlas\\buildGraph\\proj_a", true, forceWindows = true)
     echo "upkg: ", $upkg
@@ -163,11 +164,18 @@ suite "urls and naming":
     check $upkg.url == "file:///D:/a/atlas/atlas/buildGraph/proj_a"
     check $upkg.projectName == "proj_a"
 
-  test "proj_b file url absolute path":
+  test "proj_b file fixFileAbsoluteUrl":
     # setAtlasVerbosity(Trace)
+    when not defined(windows):
+      let uabs = fixFileRelativeUrl(parseUri("file://" & "." / "buildGraph" / "proj_b"), isWindows = false)
+      echo "uabs: ", $uabs
+
+  test "proj_b file url absolute path":
+
     let pth = ("file://" & "$1" / "buildGraph" / "proj_b")
     echo "PATH: ", pth
     let upkg = nc.createUrl(pth % [ospaths2.getCurrentDir()])
+    echo "upkg: ", upkg
     check upkg.url.hostname == ""
     when defined(windows):
       check $upkg.url == "file:///" & $ospaths2.getCurrentDir().replace("\\", "/")
