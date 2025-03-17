@@ -110,17 +110,17 @@ proc fixFileAbsoluteUrl*(u: Uri, isWindows: bool): Uri =
     result = parseUri(toWindowsFileUrl($u))
     echo "FIXFILEABSOLUTE:URL:windows: ", $result, " repr: ", result.repr
   else:
-    result = u 
+    result = u
 
   if result.scheme == "file" and result.hostname.len() > 0:
     # fix absolute paths
-    echo "Fixing absolute path: ", u.repr
-    var url = "file://" & (workspace().string / (u.hostname & u.path))
+    echo "Fixing absolute path: ", result.repr
+    var url = "file://" & (workspace().string / (result.hostname & result.path))
     url = absolutePath(url)
     echo "Fixed absolute path: ", url
     result = parseUri(url)
 
-proc createUrlSkipPatterns*(raw: string, skipDirTest = false): PkgUrl =
+proc createUrlSkipPatterns*(raw: string, skipDirTest = false, forceWindows: bool = false): PkgUrl =
   template cleanupUrl(u: Uri) =
     if u.path.endsWith(".git") and (u.scheme in ["http", "https"] or u.hostname in ["github.com", "gitlab.com", "bitbucket.org"]):
       u.path.removeSuffix(".git")
@@ -129,14 +129,17 @@ proc createUrlSkipPatterns*(raw: string, skipDirTest = false): PkgUrl =
 
   if not raw.isUrl():
     if dirExists(raw) or skipDirTest:
-      var raw =
-        if isGitDir(raw):
-          getRemoteUrl(Path(raw))
+      var raw: string = raw
+      if isGitDir(raw):
+        raw = getRemoteUrl(Path(raw))
+      else:
+        if not forceWindows:
+          raw = raw.absolutePath()
+        if forceWindows or defined(windows) or defined(atlasUnitTests):
+          echo "toWindowsFileUrl: ", raw
+          raw = toWindowsFileUrl("file:///" & raw)
         else:
-          when defined(windows) or defined(atlasUnitTests):
-            toWindowsFileUrl(raw)
-          else:
-            ("file://" & raw)
+          raw = "file://" & raw
       let u = parseUri(raw)
       result = PkgUrl(qualifiedName: extractProjectName(u), u: u, hasShortName: true)
     else:
@@ -157,13 +160,14 @@ proc createUrlSkipPatterns*(raw: string, skipDirTest = false): PkgUrl =
       u.scheme = "ssh"
       echo "git scheme: url: ", raw, "u: ", repr(u)
 
-    if u.scheme == "file" and u.hostname != "":
+    if u.scheme == "file":
       # fix missing absolute paths
-      hasShortName = true
+      echo "fixFileAbsoluteUrl: ", $u
       u = fixFileAbsoluteUrl(u, isWindows = defined(windows))
+      hasShortName = true
 
     if u.scheme == "file":
-      warn "atlas:createUrlSkipPatterns", "url: ", $u
+      echo "atlas:createUrlSkipPatterns", "url: ", $u
 
     cleanupUrl(u)
     result = PkgUrl(qualifiedName: extractProjectName(u), u: u, hasShortName: hasShortName)
