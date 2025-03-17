@@ -170,7 +170,7 @@ suite "urls and naming":
     let upkg = nc.createUrl(pth % [ospaths2.getCurrentDir()])
     check upkg.url.hostname == ""
     when defined(windows):
-      check $upkg.url == "file:///" & $ospaths2.getCurrentDir().replace("\\", "/"
+      check $upkg.url == "file:///" & $ospaths2.getCurrentDir().replace("\\", "/")
     else:
       check $upkg.url == pth % [ospaths2.getCurrentDir()]
     check $upkg.projectName == "proj_b"
