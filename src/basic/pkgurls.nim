@@ -105,8 +105,8 @@ proc toWindowsFileUrl*(raw: string): string =
   else:
     result = rawPath
 
-proc fixFileRelativeUrl*(u: Uri, isWindows: bool = false): Uri =
-  if isWindows or defined(windows) and u.scheme == "file" and u.hostname.len() > 0:
+proc fixFileRelativeUrl*(u: Uri, isWindowsTest: bool = false): Uri =
+  if isWindowsTest or defined(windows) and u.scheme == "file" and u.hostname.len() > 0:
     result = parseUri(toWindowsFileUrl($u))
     echo "FIXFILEABSOLUTE:URL:windows: ", $result, " repr: ", result.repr
   else:
@@ -119,7 +119,7 @@ proc fixFileRelativeUrl*(u: Uri, isWindows: bool = false): Uri =
     # url = absolutePath(url)
     url = "file://" & url
     echo "Fixed absolute path: ", url
-    if isWindows:
+    if isWindowsTest or defined(windows):
       url = toWindowsFileUrl(url)
     result = parseUri(url)
 
