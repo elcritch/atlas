@@ -117,10 +117,11 @@ proc fixFileRelativeUrl*(u: Uri, isWindows: bool = false): Uri =
     echo "Fixing absolute path: ", result.repr
     var url = (workspace().string / (result.hostname & result.path)).absolutePath
     # url = absolutePath(url)
+    url = "file://" & url
     echo "Fixed absolute path: ", url
     if isWindows:
       url = toWindowsFileUrl(url)
-    result = parseUri("file://" & url)
+    result = parseUri(url)
 
 proc createUrlSkipPatterns*(raw: string, skipDirTest = false, forceWindows: bool = false): PkgUrl =
   template cleanupUrl(u: Uri) =
