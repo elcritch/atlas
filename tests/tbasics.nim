@@ -169,7 +169,10 @@ suite "urls and naming":
     echo "PATH: ", pth
     let upkg = nc.createUrl(pth % [ospaths2.getCurrentDir()])
     check upkg.url.hostname == ""
-    check $upkg.url == pth % [ospaths2.getCurrentDir()]
+    when defined(windows):
+      check $upkg.url == (pth % [ospaths2.getCurrentDir()]).toWindowsFileUrl()
+    else:
+      check $upkg.url == pth % [ospaths2.getCurrentDir()]
     check $upkg.projectName == "proj_b"
     check upkg.toDirectoryPath() == ws / Path"deps" / Path("proj_b")
     check upkg.toLinkPath() == ws / Path"deps" / Path("proj_b.link")
