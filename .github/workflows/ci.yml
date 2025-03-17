@@ -12,19 +12,19 @@ jobs:
         target:
           - os: linux
             cpu: amd64
-            nim_branch: devel
+            nim_branch: 2.2.2
           # - os: linux
           #   cpu: i386
           #   nim_branch: devel
           - os: macos
             cpu: amd64
-            nim_branch: devel
+            nim_branch: 2.2.2
           - os: windows
             cpu: amd64
-            nim_branch: devel
+            nim_branch: 2.2.2
           - os: windows
             cpu: i386
-            nim_branch: devel
+            nim_branch: 2.2.2
         include:
           - target:
               os: linux
