@@ -6,7 +6,7 @@
 #    distribution, for details about the copyright.
 #
 
-import std / [hashes, uri, os, strutils, os, sequtils, json]
+import std / [hashes, uri, os, strutils, os, sequtils, pegs, json]
 import compiledpatterns, gitops, reporters, context
 
 export uri
@@ -79,7 +79,7 @@ proc toDirectoryPath*(pkgUrl: PkgUrl): Path =
   if pkgUrl.url.scheme == "atlas":
     result = workspace()
   elif pkgUrl.url.scheme == "file":
-    # file:// urls are used for local source paths, not dependencies paths
+    # file:// urls are used for local source paths, not dependency paths
     # result = Path(pkgUrl.url.path)
     result = workspace() / context().depsDir / Path(pkgUrl.projectName())
   else:
@@ -94,6 +94,32 @@ proc toLinkPath*(pkgUrl: PkgUrl): Path =
   else:
     Path(pkgUrl.toDirectoryPath().string & ".link")
 
+proc isWindowsAbsoluteFile*(raw: string): bool =
+  raw.match(peg"^ {'file://'?} {[A-Z] ':' ['/'\\]} .*")
+
+proc toWindowsFileUrl*(raw: string): string =
+  let rawPath = raw.replace('\\', '/')
+  echo "TOWINDOWSFILEURL: ", rawPath, " isWindowsAbsoluteFile: ", rawPath.isWindowsAbsoluteFile()
+  if rawPath.isWindowsAbsoluteFile():
+    result = rawPath.replace("file://", "file:///")
+  else:
+    result = rawPath
+
+proc fixFileAbsoluteUrl*(u: Uri, isWindows: bool): Uri =
+  if isWindows and u.scheme == "file" and u.hostname.len() > 0:
+    result = parseUri(toWindowsFileUrl($u))
+    echo "FIXFILEABSOLUTE:URL:windows: ", $result, " repr: ", result.repr
+  else:
+    result = u 
+
+  if result.scheme == "file" and result.hostname.len() > 0:
+    # fix absolute paths
+    echo "Fixing absolute path: ", u.repr
+    var url = "file://" & (workspace().string / (u.hostname & u.path))
+    url = absolutePath(url)
+    echo "Fixed absolute path: ", url
+    result = parseUri(url)
+
 proc createUrlSkipPatterns*(raw: string, skipDirTest = false): PkgUrl =
   template cleanupUrl(u: Uri) =
     if u.path.endsWith(".git") and (u.scheme in ["http", "https"] or u.hostname in ["github.com", "gitlab.com", "bitbucket.org"]):
@@ -107,8 +133,8 @@ proc createUrlSkipPatterns*(raw: string, skipDirTest = false): PkgUrl =
         if isGitDir(raw):
           getRemoteUrl(Path(raw))
         else:
-          when defined(windows):
-            ("file://" & raw).replace(AltSep, DirSep)
+          when defined(windows) or defined(atlasUnitTests):
+            toWindowsFileUrl(raw)
           else:
             ("file://" & raw)
       let u = parseUri(raw)
@@ -132,12 +158,9 @@ proc createUrlSkipPatterns*(raw: string, skipDirTest = false): PkgUrl =
       echo "git scheme: url: ", raw, "u: ", repr(u)
 
     if u.scheme == "file" and u.hostname != "":
-      # fix absolute paths
-      var url = "file://" & ((workspace().string / (u.hostname & u.path)).absolutePath)
-      when defined(windows):
-        url = url.replace(AltSep, DirSep).replace(":\\\\", "://")
-      u = parseUri(url)
+      # fix missing absolute paths
       hasShortName = true
+      u = fixFileAbsoluteUrl(u, isWindows = defined(windows))
 
     if u.scheme == "file":
       warn "atlas:createUrlSkipPatterns", "url: ", $u

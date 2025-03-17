@@ -136,7 +136,28 @@ suite "urls and naming":
     echo "PATH: ", pth
     let upkg = nc.createUrl(pth)
     check upkg.url.hostname == ""
-    check $upkg.url == ("file://" & "$1" / "buildGraph" / "proj_a") % [ospaths2.getCurrentDir()]
+    # check $upkg.url == "file://" & (ospaths2.getCurrentDir() / "buildGraph" / "proj_a")
+    check $upkg.projectName == "proj_a"
+    check upkg.toDirectoryPath() == ws / Path"deps" / Path("proj_a")
+    check upkg.toLinkPath() == ws / Path"deps" / Path("proj_a.link")
+
+  test "windows absolute file url basics":
+    check isWindowsAbsoluteFile("D:\\a\\atlas\\atlas\\buildGraph\\proj_a")
+    check isWindowsAbsoluteFile("file://D:\\a\\atlas\\atlas\\buildGraph\\proj_a")
+    check isWindowsAbsoluteFile("D:/a/atlas/atlas/buildGraph/proj_a")
+    check isWindowsAbsoluteFile("file://D:/a/atlas/atlas/buildGraph/proj_a")
+
+  test "proj_a windows path url with createUrlSkipPatterns":
+    workspace() = Path("D:\\a\\atlas\\atlas")
+    let ua = fixFileAbsoluteUrl(parseUri("file://D:\\a\\atlas\\atlas\\buildGraph\\proj_a"), isWindows = true)
+    echo "FIXFILEABSOLUTEURL: ", $ua, " repr: ", ua.repr
+
+    let upkg = createUrlSkipPatterns("D:\\a\\atlas\\atlas\\buildGraph\\proj_a", true)
+    echo "upkg: ", $upkg
+    echo "upkg: ", upkg.repr
+    echo ""
+    check upkg.url.hostname == ""
+    check $upkg.url == "file:///D:/a/atlas/atlas/buildGraph/proj_a"
     check $upkg.projectName == "proj_a"
     check upkg.toDirectoryPath() == ws / Path"deps" / Path("proj_a")
     check upkg.toLinkPath() == ws / Path"deps" / Path("proj_a.link")
