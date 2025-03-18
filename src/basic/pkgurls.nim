@@ -69,9 +69,13 @@ proc extractProjectName*(url: Uri): tuple[name: string, user: string, host: stri
   else:
     result = (n & e, p, u.hostname)
 
-proc toOriginalPath*(pkgUrl: PkgUrl): Path =
+proc toOriginalPath*(pkgUrl: PkgUrl, isWindowsTest: bool = false): Path =
   if pkgUrl.url.scheme == "file":
     result = Path(pkgUrl.url.hostname & pkgUrl.url.path)
+    if defined(windows) or isWindowsTest:
+      var p = result.string.replace('/', '\\')
+      p.removePrefix('\\')
+      result = p.Path
   else:
     raise newException(ValueError, "Invalid file path: " & $pkgUrl.url)
 

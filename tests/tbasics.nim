@@ -163,6 +163,7 @@ suite "urls and naming":
     check upkg.url.hostname == ""
     check $upkg.url == "file:///D:/a/atlas/atlas/buildGraph/proj_a"
     check $upkg.projectName == "proj_a"
+    check upkg.toOriginalPath(isWindowsTest = true) == Path($workspace() & "\\buildGraph\\proj_a")
 
   test "proj_b file fixFileAbsoluteUrl":
     # setAtlasVerbosity(Trace)
@@ -184,7 +185,6 @@ suite "urls and naming":
     check $upkg.projectName == "proj_b"
     check upkg.toDirectoryPath() == ws / Path"deps" / Path("proj_b")
     check upkg.toLinkPath() == ws / Path"deps" / Path("proj_b.link")
-
 
   test "workspace atlas url":
     let upkg = nc.createUrl("atlas://workspace/test.nimble")
