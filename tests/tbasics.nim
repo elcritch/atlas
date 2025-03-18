@@ -164,7 +164,7 @@ suite "urls and naming":
     check $upkg.url == "file:///D:/a/atlas/atlas/buildGraph/proj_a"
     check $upkg.projectName == "proj_a"
     check upkg.toOriginalPath(isWindowsTest = true) == Path($workspace() & "\\buildGraph\\proj_a")
-    check toWindowsFileUrl("file://" & $workspace()) == "file:///D:/a/atlas/atlas"
+    check toWindowsFileUrl("file://D:\\a\\atlas\\atlas") == "file:///D:/a/atlas/atlas"
     check toWindowsFileUrl("file://regular/unix/path") == "file://regular/unix/path"
 
   test "proj_b file fixFileAbsoluteUrl":
