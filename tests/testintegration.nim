@@ -24,7 +24,7 @@ proc integrationTest() =
     let res = execShellCmd cmd
 
   when not defined(windows): # windows is different
-  sameDirContents("expected", ".")
+    sameDirContents("expected", ".")
 
   if res != 0:
     quit "FAILURE RUNNING: " & cmd
