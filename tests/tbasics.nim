@@ -136,7 +136,6 @@ suite "urls and naming":
     echo "PATH: ", pth
     let upkg = nc.createUrl(pth)
     check upkg.url.hostname == ""
-    # check $upkg.url == "file://" & (ospaths2.getCurrentDir() / "buildGraph" / "proj_a")
     check $upkg.projectName == "proj_a"
     check upkg.toDirectoryPath() == ws / Path"deps" / Path("proj_a")
     check upkg.toLinkPath() == ws / Path"deps" / Path("proj_a.link")
@@ -171,14 +170,11 @@ suite "urls and naming":
     # setAtlasVerbosity(Trace)
     when not defined(windows):
       let uabs = fixFileRelativeUrl(parseUri("file://" & "." / "buildGraph" / "proj_b"), isWindowsTest = false)
-      echo "uabs: ", $uabs
 
   test "proj_b file url absolute path":
 
     let pth = ("file://" & "$1" / "buildGraph" / "proj_b")
-    echo "PATH: ", pth
     let upkg = nc.createUrl(pth % [ospaths2.getCurrentDir()])
-    echo "upkg: ", upkg
     check upkg.url.hostname == ""
     when defined(windows):
       check $upkg.url == ("file:///$1/buildGraph/proj_b" % [ospaths2.getCurrentDir().replace("\\", "/")])
@@ -190,7 +186,6 @@ suite "urls and naming":
 
   test "workspace atlas url":
     let upkg = nc.createUrl("atlas://workspace/test.nimble")
-    echo "upkg: ", upkg.repr
     check upkg.url.hostname == "workspace"
     check $upkg.url == "atlas://workspace/test.nimble"
     check $upkg.projectName == "test"
