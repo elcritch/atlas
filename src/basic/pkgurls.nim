@@ -103,7 +103,6 @@ proc isWindowsAbsoluteFile*(raw: string): bool =
 
 proc toWindowsFileUrl*(raw: string): string =
   let rawPath = raw.replace('\\', '/')
-  echo "TOWINDOWSFILEURL: ", rawPath, " isWindowsAbsoluteFile: ", rawPath.isWindowsAbsoluteFile()
   if rawPath.isWindowsAbsoluteFile():
     result = rawPath.replace("file://", "file:///")
   else:
@@ -112,17 +111,14 @@ proc toWindowsFileUrl*(raw: string): string =
 proc fixFileRelativeUrl*(u: Uri, isWindowsTest: bool = false): Uri =
   if isWindowsTest or defined(windows) and u.scheme == "file" and u.hostname.len() > 0:
     result = parseUri(toWindowsFileUrl($u))
-    echo "FIXFILEABSOLUTE:URL:windows: ", $result, " repr: ", result.repr
   else:
     result = u
 
   if result.scheme == "file" and result.hostname.len() > 0:
     # fix relative paths
-    echo "Fixing absolute path: ", result.repr
     var url = (workspace().string / (result.hostname & result.path)).absolutePath
     # url = absolutePath(url)
     url = "file://" & url
-    echo "Fixed absolute path: ", url
     if isWindowsTest or defined(windows):
       url = toWindowsFileUrl(url)
     result = parseUri(url)
@@ -143,7 +139,6 @@ proc createUrlSkipPatterns*(raw: string, skipDirTest = false, forceWindows: bool
         if not forceWindows:
           raw = raw.absolutePath()
         if forceWindows or defined(windows) or defined(atlasUnitTests):
-          echo "toWindowsFileUrl: ", raw
           raw = toWindowsFileUrl("file:///" & raw)
         else:
           raw = "file://" & raw
@@ -165,16 +160,11 @@ proc createUrlSkipPatterns*(raw: string, skipDirTest = false, forceWindows: bool
         u.port = ""
 
       u.scheme = "ssh"
-      echo "git scheme: url: ", raw, "u: ", repr(u)
 
     if u.scheme == "file":
       # fix missing absolute paths
-      echo "fixFileRelativeUrl: ", $u
       u = fixFileRelativeUrl(u)
       hasShortName = true
-
-    if u.scheme == "file":
-      echo "atlas:createUrlSkipPatterns", "url: ", $u
 
     cleanupUrl(u)
     result = PkgUrl(qualifiedName: extractProjectName(u), u: u, hasShortName: hasShortName)
