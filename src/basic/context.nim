@@ -86,7 +86,7 @@ proc relativeToWorkspace*(path: Path): string =
   result = "$workspace/" & $path.relativePath(workspace())
 
 proc getWorkspaceConfig*(workspace = workspace()): Path =
-  ## prefer workspace atlas.config if found
+  ## prefer workspace atlas.workspace if found
   ## otherwise default to one in deps/
   ## the deps path will be the default for auto-created ones
   result = workspace / AtlasWorkspaceFile

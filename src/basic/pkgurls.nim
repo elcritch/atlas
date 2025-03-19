@@ -114,11 +114,10 @@ proc fixFileRelativeUrl*(u: Uri, isWindowsTest: bool = false): Uri =
   else:
     result = u
 
-  if result.scheme == "file" and result.hostname.len() > 0:
+  if result.scheme in ["file", "link"] and result.hostname.len() > 0:
     # fix relative paths
     var url = (workspace().string / (result.hostname & result.path)).absolutePath
-    # url = absolutePath(url)
-    url = "file://" & url
+    url = result.scheme & "://" & url
     if isWindowsTest or defined(windows):
       url = toWindowsFileUrl(url)
     result = parseUri(url)
@@ -161,7 +160,7 @@ proc createUrlSkipPatterns*(raw: string, skipDirTest = false, forceWindows: bool
 
       u.scheme = "ssh"
 
-    if u.scheme == "file":
+    if u.scheme in ["file", "link"]:
       # fix missing absolute paths
       u = fixFileRelativeUrl(u)
       hasShortName = true

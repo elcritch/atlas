@@ -14,17 +14,20 @@ type
     hasPackageList*: bool
     notFoundNames: HashSet[string]
 
-proc findNimbleFile*(nimbleFile: Path): seq[Path] =
+proc getNimbleFile*(nimbleFile: Path): seq[Path] =
   if fileExists(nimbleFile):
     result.add nimbleFile
 
 proc findNimbleFile*(dir: Path, projectName: string): seq[Path] =
   var nimbleFile = dir / Path(projectName & ".nimble")
-  result = findNimbleFile(nimbleFile)
+  result = getNimbleFile(nimbleFile)
   if result.len() == 0:
     for file in walkFiles($dir / "*.nimble"):
       result.add Path(file)
   debug dir, "finding nimble file searching by name:", projectName, "found:", result.join(", ")
+
+proc findNimbleFile*(dir: Path): seq[Path] =
+  result = findNimbleFile(dir, dir.splitPath().tail.string)
 
 proc findNimbleFile*(info: Package): seq[Path] =
   doAssert(info.ondisk.string != "", "Package ondisk must be set before findNimbleFile can be called! Package: " & $(info))

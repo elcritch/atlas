@@ -436,7 +436,7 @@ proc mainRun(params: seq[string]) =
 
   of "install":
 
-    var nimbleFiles = findNimbleFile(workspace(), workspace().splitPath().tail.string)
+    var nimbleFiles = findNimbleFile(workspace())
 
     if nimbleFiles.len() == 0:
       let nimbleFile = workspace() / Path(splitPath($paths.getCurrentDir()).tail & ".nimble")
@@ -478,9 +478,25 @@ proc mainRun(params: seq[string]) =
   of "link":
     singleArg()
 
-    var nimbleFiles = findNimbleFile(workspace())
     var nc = createNimbleContext()
 
+    let linkPath = absolutePath(Path args[0])
+    if not linkPath.isWorkspace():
+      fatal "Unable to find workspace at: " & $linkPath
+
+    let linkNimbles = findNimbleFile(linkPath)
+    if linkNimbles.len() == 0:
+      fatal "Unable to find Nimble at: " & $linkNimbles
+    elif linkNimbles.len() > 1:
+      fatal "Ambiguous Nimble files at: " & $linkNimbles
+
+    let linkNimble = linkNimbles[0]
+    let linkName = $linkNimble.splitFile().name
+    let linkUrl = toPkgUriRaw(parseUri("link://" & linkNimble.splitPath().tail.string), true)
+
+    nc.put(linkName, linkUrl)
+
+    var nimbleFiles = findNimbleFile(workspace())
     if nimbleFiles.len() == 0:
       let nimbleFile = workspace() / Path(splitPath($paths.getCurrentDir()).tail & ".nimble")
       debug "atlas:link", "using nimble file:", $nimbleFile
@@ -490,7 +506,7 @@ proc mainRun(params: seq[string]) =
       error "atlas:link", "Ambiguous Nimble files found: " & $nimbleFiles
 
     info "atlas:link", "modifying nimble file to use package:", args[0], "at:", $nimbleFiles[0]
-    patchNimbleFile(nc, nimbleFiles[0], args[0])
+    patchNimbleFile(nc, nimbleFiles[0], linkName)
 
     if atlasErrors() > 0:
       discard "don't continue for 'cannot resolve'"

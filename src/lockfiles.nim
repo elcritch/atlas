@@ -37,12 +37,12 @@ proc fromPrefixedPath*(path: Path): Path =
   else:
     return path
 
-proc genLockEntry(lf: var LockFile; w: Package) =
-  lf.items[w.url.projectName] = LockFileEntry(
-    dir: prefixedPath(w.ondisk),
-    url: $w.url.url,
-    commit: $currentGitCommit(w.ondisk),
-    version: if w.activeVersion.isNil: "" else: $w.activeVersion.vtag.v
+proc genLockEntry(lf: var LockFile; pkg: Package) =
+  lf.items[pkg.url.projectName] = LockFileEntry(
+    dir: prefixedPath(pkg.ondisk),
+    url: $pkg.url.url,
+    commit: $currentGitCommit(pkg.ondisk),
+    version: if pkg.activeVersion.isNil: "" else: $pkg.activeVersion.vtag.v
   )
 
 proc newLockFile(): LockFile =
@@ -74,25 +74,25 @@ proc write(lock: NimbleLockFile; lockFilePath: string) =
   writeFile lockFilePath, pretty(toJson(lock))
 
 proc genLockEntry(lf: var NimbleLockFile;
-                  w: Package,
+                  pkg: Package,
                   cfg: CfgPath,
                   deps: HashSet[string]) =
-  let nimbleFiles = findNimbleFile(w)
+  let nimbleFiles = findNimbleFile(pkg)
   let nimbleFile =
     if nimbleFiles.len() == 1:
       nimbleFiles[0]
     else:
-      error w.url.projectName, "Couldn't find nimble file at " & $w.ondisk
+      error pkg.url.projectName, "Couldn't find nimble file at " & $pkg.ondisk
       return
 
   let info = extractRequiresInfo(nimbleFile)
-  let commit = currentGitCommit(w.ondisk)
-  infoNow w.url.projectName, "calculating nimble checksum"
-  let chk = nimbleChecksum(w.url.projectName, w.ondisk)
-  lf.packages[w.url.projectName] = NimbleLockFileEntry(
+  let commit = currentGitCommit(pkg.ondisk)
+  infoNow pkg.url.projectName, "calculating nimble checksum"
+  let chk = nimbleChecksum(pkg.url.projectName, pkg.ondisk)
+  lf.packages[pkg.url.projectName] = NimbleLockFileEntry(
     version: info.version,
     vcsRevision: $commit,
-    url: $w.url.url,
+    url: $pkg.url.url,
     downloadMethod: "git",
     dependencies: deps.mapIt(it),
     checksums: {"sha1": chk}.toTable
@@ -136,7 +136,7 @@ proc pinGraph*(graph: DepGraph; lockFile: Path; exportNimble = false) =
   if fileExists(nimcfgPath):
     lf.nimcfg = readFile($nimcfgPath).splitLines()
 
-  let nimblePaths = findNimbleFile(workspace)
+  let nimblePaths = findNimbleFile(workspace, "")
   if nimblePaths.len() == 1 and nimblePaths[0].string.len > 0 and nimblePaths[0].fileExists():
     lf.nimbleFile = LockedNimbleFile(
       filename: nimblePaths[0].relativePath(workspace),
