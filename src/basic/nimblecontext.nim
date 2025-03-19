@@ -177,6 +177,24 @@ proc fillPackageLookupTable(c: var NimbleContext) =
       else:
         c.nameToUrl[pkgAlias.name] = url
 
+proc findNimbleLinks*(): seq[Path] =
+  for file in walkFiles($depsDir() / "*.link"):
+    result.add Path(file)
+  debug dir, "found nimble links:", result.mapIt($it).join(", ")
+
+proc loadNimbleLinks*(nc: var NimbleContext) =
+  let links = findNimbleLinks()
+  # TODO: do we need to load the linked workspace's atlas.workspace to get the names?
+  #       or can we just rely on finding the nimbles?
+  #       perhaps we just need to check our packages?
+  for link in links:
+    debug "atlas:loadNimbleLinks", "adding link:", link
+    # TODO:
+    # - read link file
+    # - create PkgUrl link://
+    # - add to extras database
+
+
 proc createUnfilledNimbleContext*(): NimbleContext =
   result = NimbleContext()
   result.nameOverrides = context().nameOverrides
