@@ -480,6 +480,7 @@ proc mainRun(params: seq[string]) =
 
     var nc = createNimbleContext()
 
+    # Find the linked project and it's workspace
     let linkPath = absolutePath(Path args[0])
     if not linkPath.isWorkspace():
       fatal "Unable to find workspace at: " & $linkPath
@@ -494,8 +495,12 @@ proc mainRun(params: seq[string]) =
     let linkName = $linkNimble.splitFile().name
     let linkUrl = toPkgUriRaw(parseUri("link://" & linkNimble.splitPath().tail.string), true)
 
+    # Add the new linked project
     nc.put(linkName, linkUrl)
 
+    # TODO: now load the linked workspace and create nimble-links for each dep
+
+    # Find the local nimble
     var nimbleFiles = findNimbleFile(workspace())
     if nimbleFiles.len() == 0:
       let nimbleFile = workspace() / Path(splitPath($paths.getCurrentDir()).tail & ".nimble")
