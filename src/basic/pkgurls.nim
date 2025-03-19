@@ -70,7 +70,7 @@ proc extractProjectName*(url: Uri): tuple[name: string, user: string, host: stri
     result = (n & e, p, u.hostname)
 
 proc toOriginalPath*(pkgUrl: PkgUrl, isWindowsTest: bool = false): Path =
-  if pkgUrl.url.scheme == "file":
+  if pkgUrl.url.scheme in ["file", "link"]:
     result = Path(pkgUrl.url.hostname & pkgUrl.url.path)
     if defined(windows) or isWindowsTest:
       var p = result.string.replace('/', '\\')
@@ -82,9 +82,10 @@ proc toOriginalPath*(pkgUrl: PkgUrl, isWindowsTest: bool = false): Path =
 proc toDirectoryPath*(pkgUrl: PkgUrl): Path =
   if pkgUrl.url.scheme == "atlas":
     result = workspace()
+  elif pkgUrl.url.scheme == "link":
+    result = pkgUrl.toOriginalPath()
   elif pkgUrl.url.scheme == "file":
     # file:// urls are used for local source paths, not dependency paths
-    # result = Path(pkgUrl.url.path)
     result = depsDir() / Path(pkgUrl.projectName())
   else:
     result = depsDir() / Path(pkgUrl.projectName())
@@ -168,14 +169,6 @@ proc createUrlSkipPatterns*(raw: string, skipDirTest = false, forceWindows: bool
     cleanupUrl(u)
     result = PkgUrl(qualifiedName: extractProjectName(u), u: u, hasShortName: hasShortName)
 
-  # trace result, "created url raw:", repr(raw), "url:", repr(result)
-
 proc toPkgUriRaw*(u: Uri, hasShortName: bool = false): PkgUrl =
   result = createUrlSkipPatterns($u, true)
   result.hasShortName = hasShortName
-
-# proc dir*(s: PkgUrl): string =
-#   if isFileProtocol(s):
-#     result = substr(s.u, len("file://"))
-#   else:
-#     result = s.projectName
