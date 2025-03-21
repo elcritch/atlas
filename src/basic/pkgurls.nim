@@ -82,14 +82,14 @@ proc toOriginalPath*(pkgUrl: PkgUrl, isWindowsTest: bool = false): Path =
 proc linkPath*(path: Path): Path =
   result = Path(path.string & ".nimble-link")
 
-proc toDirectoryPath(pkgUrl: PkgUrl, isLinkPath: bool): Path =
+proc toDirectoryPath(pkgUrl: PkgUrl, ctx: AtlasContext, isLinkPath: bool): Path =
   if pkgUrl.url.scheme == "atlas":
     result = project()
   elif pkgUrl.url.scheme == "file":
     # file:// urls are used for local source paths, not dependency paths
-    result = depsDir() / Path(pkgUrl.projectName())
+    result = ctx.depsDir() / Path(pkgUrl.projectName())
   else:
-    result = depsDir() / Path(pkgUrl.projectName())
+    result = ctx.depsDir() / Path(pkgUrl.projectName())
   
   if not isLinkPath and not dirExists(result) and fileExists(result.linkPath()):
     # prefer the directory path if it exists (?)
@@ -109,23 +109,23 @@ proc toDirectoryPath(pkgUrl: PkgUrl, isLinkPath: bool): Path =
   trace pkgUrl, "found directory path:", $result
   doAssert result.len() > 0
 
-proc toDirectoryPath*(pkgUrl: PkgUrl): Path =
-  toDirectoryPath(pkgUrl, false)
+proc toDirectoryPath*(pkgUrl: PkgUrl, ctx: AtlasContext): Path =
+  toDirectoryPath(pkgUrl, ctx, false)
 
-proc toLinkPath*(pkgUrl: PkgUrl): Path =
+proc toLinkPath*(pkgUrl: PkgUrl, ctx: AtlasContext): Path =
   if pkgUrl.url.scheme == "atlas":
     result = Path("")
   else:
-    result = Path(toDirectoryPath(pkgUrl, true).string & ".nimble-link")
+    result = Path(toDirectoryPath(pkgUrl, ctx, true).string & ".nimble-link")
 
-proc isLinkPath*(pkgUrl: PkgUrl): bool =
-  result = fileExists(toLinkPath(pkgUrl))
+proc isLinkPath*(pkgUrl: PkgUrl, ctx: AtlasContext): bool =
+  result = fileExists(toLinkPath(pkgUrl, ctx))
 
-proc isLinkedProject*(pkgUrl: PkgUrl): bool =
+proc isLinkedProject*(pkgUrl: PkgUrl, ctx: AtlasContext): bool =
   result = pkgUrl.url.scheme == "link"
 
 proc createNimbleLink*(pkgUrl: PkgUrl, nimblePath: Path, cfgPath: CfgPath) =
-  let nimbleLink = toLinkPath(pkgUrl)
+  let nimbleLink = toLinkPath(pkgUrl, context())
   if nimbleLink.fileExists():
     return
 

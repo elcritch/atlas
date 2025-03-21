@@ -7,7 +7,7 @@ type
     packageExtras*: Table[string, PkgUrl]
     nameToUrl: Table[string, PkgUrl]
     # urlToNames: Table[Uri, string]
-
+    ctx*: AtlasContext
     explicitVersions*: Table[PkgUrl, HashSet[VersionTag]]
     nameOverrides*: Patterns
     urlOverrides*: Patterns
@@ -127,7 +127,7 @@ proc createUrl*(nc: var NimbleContext, nameOrig: string): PkgUrl =
       debug "atlas:createUrl", "created url with name:", name, "orig:", nameOrig, "projectName:", $result.projectName, "hasShortName:", $result.hasShortName, "url:", $result.url
 
 
-proc createUrlFromPath*(nc: var NimbleContext, orig: Path): PkgUrl =
+proc createUrlFromPath*(nc: var NimbleContext, orig: Path, isLinkPath = false): PkgUrl =
   let absPath = absolutePath(orig)
   # Check if this is an Atlas project or if it's the current project
   if isProject(absPath) or absPath == absolutePath(project()):
@@ -142,8 +142,9 @@ proc createUrlFromPath*(nc: var NimbleContext, orig: Path): PkgUrl =
       let url = parseUri("atlas://project/" & $orig.splitPath().tail)
       result = toPkgUriRaw(url)
   else:
-    let fileUrl = "file://" & $absPath
-    result = createUrlSkipPatterns(fileUrl)
+    error "atlas:nimblecontext", "createUrlFromPath: not a project: " & $absPath
+    # let fileUrl = "file://" & $absPath
+    # result = createUrlSkipPatterns(fileUrl)
   if not result.isEmpty():
     discard nc.putFromPath(result.projectName, result)
 
@@ -186,6 +187,7 @@ proc createUnfilledNimbleContext*(): NimbleContext =
   #   result.packageExtras[key] = url
   #   result.urlToNames[url.url()] = key
 
-proc createNimbleContext*(): NimbleContext =
+proc createNimbleContext*(ctx: AtlasContext = context()): NimbleContext =
   result = createUnfilledNimbleContext()
+  result.ctx = ctx
   fillPackageLookupTable(result)

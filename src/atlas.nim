@@ -505,22 +505,14 @@ proc atlasRun*(params: seq[string]) =
 
     echo "\n\n==============\n\n"
     # Load linked project's config to get its deps dir
-    let linkedCtxt = readAtlasContext(linkDir / Path"atlas.config")
+    let linkedCtx = readAtlasContext(linkDir / Path"atlas.config")
     info "atlas:link", "current project dir:", $project()
-    info "atlas:link", "linking packages from:", $linkedCtxt.depsDir
+    info "atlas:link", "linking packages from:", $linkedCtx.depsDir
 
-    var linkNc = createNimbleContext()
+    var linkNc = createNimbleContext(linkedCtx)
     let linkGraph = expand(linkDir, linkNc, CurrentCommit, DoNothing)
     echo "linkGraph: ", $linkGraph.toJson(ToJsonOptions(enumMode: joptEnumString))
 
-    # Loop through packages in linked project's deps dir
-    # if linkedDepsDir.dirExists():
-    #   for kind, path in walkDir($linkedDepsDir):
-    #     if kind == pcDir:
-    #       let pkgName = path.splitPath().tail
-    #       info "atlas:link", "creating link for package:", pkgName
-    #       createNimbleLink(Path(path), project() / Path"deps" / Path(pkgName))
-    # installDependencies(nc, nimbleFile)
 
   of "pin":
     optSingleArg($LockFileName)

@@ -48,7 +48,7 @@ type
     IncludeTagsAndNimbleCommits # include nimble commits and tags in the solver
     NimbleCommitsMax # takes the newest commit for each version
 
-  AtlasContext* = object
+  AtlasContext* = ref object
     projectDir*: Path = Path"."
     depsDir*: Path = Path"deps"
     flags*: set[Flag] = {}
@@ -74,13 +74,16 @@ proc project*(): Path =
 proc project*(ws: Path) =
   atlasContext.projectDir = ws
 
-proc depsDir*(relative = false): Path =
-  if atlasContext.depsDir == Path"":
+proc depsDir*(ctx: AtlasContext, relative = false): Path =
+  if ctx.depsDir == Path"":
     result = Path""
-  elif relative or atlasContext.depsDir.isAbsolute:
-    result = atlasContext.depsDir
+  elif relative or ctx.depsDir.isAbsolute:
+    result = ctx.depsDir
   else:
-    result = atlasContext.projectDir / atlasContext.depsDir
+    result = ctx.projectDir / ctx.depsDir
+
+proc depsDir*(relative = false): Path =
+  depsDir(context(), relative)
 
 proc relativeToWorkspace*(path: Path): string =
   result = "$project/" & $path.relativePath(project())
