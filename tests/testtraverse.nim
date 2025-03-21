@@ -344,7 +344,7 @@ suite "test expand with git tags":
 
         check sp.len() == 6
         check $sp[0].url == "atlas://project/ws_testtraverselinked.nimble"
-        check $sp[1].url == "https://example.com/buildGraph/ws_testtraverse"
+        check $sp[1].url == "linked://../ws_testtraverse"
         check $sp[2].url == "https://example.com/buildGraph/proj_a"
         check $sp[3].url == "https://example.com/buildGraph/proj_b"
         check $sp[4].url == "https://example.com/buildGraph/proj_c"

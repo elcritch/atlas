@@ -118,6 +118,9 @@ proc toLinkPath*(pkgUrl: PkgUrl): Path =
   else:
     result = Path(toDirectoryPath(pkgUrl, true).string & ".nimble-link")
 
+proc isLinkPath*(pkgUrl: PkgUrl): bool =
+  result = fileExists(toLinkPath(pkgUrl))
+
 proc createNimbleLink*(pkgUrl: PkgUrl, nimblePath: Path, cfgPath: CfgPath) =
   let nimbleLink = toLinkPath(pkgUrl)
   if nimbleLink.fileExists():

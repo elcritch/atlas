@@ -29,6 +29,7 @@ suite "urls and naming":
     check upkg.toLinkPath() == ws / Path"deps" / Path("balls.disruptek.github.com.nimble-link")
     expect ValueError:
       discard nc.createUrl("balls")
+    check not upkg.isLinkPath()
 
   test "balls url using packageExtras":
     nc.put("balls", toPkgUriRaw(parseUri "https://github.com/disruptek/balls.git", true))
@@ -137,6 +138,7 @@ suite "urls and naming":
     check $upkg.projectName == "proj_a"
     check upkg.toDirectoryPath() == ws / Path"deps" / Path("proj_a")
     check upkg.toLinkPath() == ws / Path"deps" / Path("proj_a.nimble-link")
+    check not upkg.isLinkPath()
 
   test "windows absolute file url basics":
     check isWindowsAbsoluteFile("D:\\a\\atlas\\atlas\\buildGraph\\proj_a")
@@ -189,10 +191,12 @@ suite "urls and naming":
     check $upkg.projectName == "test"
     check upkg.toDirectoryPath() == ws
     check upkg.toLinkPath() == Path""
+    check not upkg.isLinkPath()
 
   test "foobar link file":
     let upkg = nc.createUrl("foobar")
     check upkg.toLinkPath() == ws / Path"deps" / Path("foobar.nimble-link")
+    check upkg.isLinkPath()
     check upkg.toDirectoryPath() == ws / Path"remote-deps" / Path("foobar")
     echo "LINKPATH: ", upkg.toLinkPath()
     check upkg.toLinkPath().fileExists()
