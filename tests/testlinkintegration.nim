@@ -115,7 +115,6 @@ suite "test link integration":
         checkpoint "\tgraph:\n" & $graph.toJson(ToJsonOptions(enumMode: joptEnumString))
 
         let config = readConfigFile(getProjectConfig())
-        privateAccess(config.type)
         echo "config: ", $config
         check config.nameOverrides.len == 1
         check config.nameOverrides["ws_link_semver"] == toWindowsFileUrl("link://" & $absolutePath($project() /../ "ws_link_semver"))

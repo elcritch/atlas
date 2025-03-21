@@ -18,13 +18,13 @@ proc readPluginsDir(dir: Path) =
 
 type
   JsonConfig* = object
-    deps: string
-    nameOverrides: Table[string, string]
-    urlOverrides: Table[string, string]
-    pkgOverrides: Table[string, string]
-    plugins: string
-    resolver: string
-    graph: JsonNode
+    deps*: string
+    nameOverrides*: Table[string, string]
+    urlOverrides*: Table[string, string]
+    pkgOverrides*: Table[string, string]
+    plugins*: string
+    resolver*: string
+    graph*: JsonNode
 
 proc writeDefaultConfigFile*() =
   let config = JsonConfig(
@@ -51,37 +51,40 @@ proc readConfigFile*(configFile: Path): JsonConfig =
   finally:
     close f
 
-proc readConfig*() =
-  let configFile = getProjectConfig()
+proc readAtlasContext*(configFile: Path): AtlasContext =
   let m = readConfigFile(configFile)
 
+  var ctx = AtlasContext()
+
   if m.deps.len > 0:
-    context().depsDir = m.deps.Path
+    ctx.depsDir = m.deps.Path
   
   # Handle package name overrides
   for key, val in m.nameOverrides:
-    let err = context().nameOverrides.addPattern(key, val)
+    let err = ctx.nameOverrides.addPattern(key, val)
     if err.len > 0:
       error configFile, "invalid name override pattern: " & err
 
   # Handle URL overrides  
   for key, val in m.urlOverrides:
-    let err = context().urlOverrides.addPattern(key, val)
+    let err = ctx.urlOverrides.addPattern(key, val)
     if err.len > 0:
       error configFile, "invalid URL override pattern: " & err
 
   # Handle package overrides
   for key, val in m.pkgOverrides:
-    context().pkgOverrides[key] = parseUri(val)
+    ctx.pkgOverrides[key] = parseUri(val)
   if m.resolver.len > 0:
     try:
-      context().defaultAlgo = parseEnum[ResolutionAlgorithm](m.resolver)
+      ctx.defaultAlgo = parseEnum[ResolutionAlgorithm](m.resolver)
     except ValueError:
       warn configFile, "ignored unknown resolver: " & m.resolver
   if m.plugins.len > 0:
-    context().pluginsFile = m.plugins.Path
+    ctx.pluginsFile = m.plugins.Path
     readPluginsDir(m.plugins.Path)
 
+proc readConfig*() =
+  setContext(readAtlasContext(getProjectConfig()))
 
 proc writeConfig*() =
   # TODO: serialize graph in a smarter way

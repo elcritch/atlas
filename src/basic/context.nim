@@ -49,7 +49,7 @@ type
     NimbleCommitsMax # takes the newest commit for each version
 
   AtlasContext* = object
-    project*: Path = Path"."
+    projectDir*: Path = Path"."
     depsDir*: Path = Path"deps"
     flags*: set[Flag] = {}
     nameOverrides*: Patterns
@@ -69,10 +69,10 @@ proc context*(): var AtlasContext =
   atlasContext
 
 proc project*(): Path =
-  atlasContext.project
+  atlasContext.projectDir
 
 proc project*(ws: Path) =
-  atlasContext.project = ws
+  atlasContext.projectDir = ws
 
 proc depsDir*(relative = false): Path =
   if atlasContext.depsDir == Path"":
@@ -80,16 +80,16 @@ proc depsDir*(relative = false): Path =
   elif relative or atlasContext.depsDir.isAbsolute:
     result = atlasContext.depsDir
   else:
-    result = atlasContext.project / atlasContext.depsDir
+    result = atlasContext.projectDir / atlasContext.depsDir
 
 proc relativeToWorkspace*(path: Path): string =
   result = "$project/" & $path.relativePath(project())
 
-proc getProjectConfig*(project = project()): Path =
+proc getProjectConfig*(dir = project()): Path =
   ## prefer project atlas.config if found
   ## otherwise default to one in deps/
   ## the deps path will be the default for auto-created ones
-  result = project / AtlasProjectConfig
+  result = dir / AtlasProjectConfig
   if fileExists(result): return
   result = depsDir() / AtlasProjectConfig
 
@@ -99,11 +99,11 @@ proc isProject*(dir: Path): bool =
 proc `==`*(a, b: CfgPath): bool {.borrow.}
 
 proc displayName(c: AtlasContext; p: string): string =
-  if p == c.project.string:
+  if p == c.projectDir.string:
     p.absolutePath
   elif $c.depsDir != "" and p.isRelativeTo($c.depsDir):
     p.relativePath($c.depsDir)
-  elif p.isRelativeTo($c.project):
-    p.relativePath($c.project)
+  elif p.isRelativeTo($c.projectDir):
+    p.relativePath($c.projectDir)
   else:
     p

@@ -384,8 +384,8 @@ proc parseAtlasOptions(params: seq[string], action: var string, args: var seq[st
     elif action notin ["search", "list"]:
       fatal "No project found. Run `atlas init` if you want this current directory to be your project."
 
-  if not explicitDepsDirOverride and action notin ["init", "tag"] and context().depsDir.len == 0:
-    context().depsDir = Path "deps"
+  # if not explicitDepsDirOverride and action notin ["init", "tag"] and context().depsDir.len == 0:
+  #   context().depsDir = Path "deps"
   if action != "tag":
     createDir(depsDir())
 
@@ -500,6 +500,22 @@ proc atlasRun*(params: seq[string]) =
     patchNimbleFile(nc, nimbleFile, linkUri.projectName)
 
     writeConfig()
+
+    # Load linked project's config to get its deps dir
+    let linkedCtxt = readAtlasContext(linkDir / Path"atlas.config")
+    info "atlas:link", "linking packages from:", $linkedCtxt.depsDir
+
+    var linkNc = nc
+    let linkGraph = expand(linkDir, linkNc, CurrentCommit, DoNothing)
+    echo "linkGraph: ", $linkGraph.toJson(ToJsonOptions(enumMode: joptEnumString))
+
+    # Loop through packages in linked project's deps dir
+    # if linkedDepsDir.dirExists():
+    #   for kind, path in walkDir($linkedDepsDir):
+    #     if kind == pcDir:
+    #       let pkgName = path.splitPath().tail
+    #       info "atlas:link", "creating link for package:", pkgName
+    #       createNimbleLink(Path(path), project() / Path"deps" / Path(pkgName))
     # installDependencies(nc, nimbleFile)
 
   of "pin":
