@@ -492,7 +492,7 @@ proc atlasRun*(params: seq[string]) =
     if not linkDir.dirExists():
       fatal "cannot link to directory that does not exist: " & $linkDir
 
-    let linkUri = createUrlSkipPatterns("link://" & linkDir.string)
+    let linkUri = toPkgUriRaw(parseUri("link://" & linkDir.string))
     discard context().nameOverrides.addPattern(linkUri.projectName, $linkUri.url)
 
     info "atlas:link", "modifying nimble file to use package:", args[0], "at:", $nimbleFiles[0]
