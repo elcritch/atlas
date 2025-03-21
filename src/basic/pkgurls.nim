@@ -70,7 +70,7 @@ proc extractProjectName*(url: Uri): tuple[name: string, user: string, host: stri
     result = (n & e, p, u.hostname)
 
 proc toOriginalPath*(pkgUrl: PkgUrl, isWindowsTest: bool = false): Path =
-  if pkgUrl.url.scheme == "file":
+  if pkgUrl.url.scheme in ["file", "link"]:
     result = Path(pkgUrl.url.hostname & pkgUrl.url.path)
     if defined(windows) or isWindowsTest:
       var p = result.string.replace('/', '\\')
@@ -199,8 +199,10 @@ proc createUrlSkipPatterns*(raw: string, skipDirTest = false, forceWindows: bool
       u.scheme = "ssh"
 
     if u.scheme in ["file", "link"]:
+      if u.scheme == "link":
+        echo "LINK URL: ", $u
       # fix missing absolute paths
-      u = fixFileRelativeUrl(u)
+      u = fixFileRelativeUrl(u, isWindowsTest = forceWindows)
       hasShortName = true
 
     cleanupUrl(u)

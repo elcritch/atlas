@@ -167,6 +167,18 @@ suite "urls and naming":
     check toWindowsFileUrl("file://D:\\a\\atlas\\atlas") == "file:///D:/a/atlas/atlas"
     check toWindowsFileUrl("file://regular/unix/path") == "file://regular/unix/path"
 
+  test "proj_a windows link url with toPkgUriRaw":
+    project(Path("D:\\a\\atlas\\atlas"))
+    defer: project(ws)
+
+    let upkg = createUrlSkipPatterns("link://D:\\a\\atlas\\atlas\\buildGraph\\proj_a", true, forceWindows = true)
+    check upkg.url.hostname == ""
+    check $upkg.url == "link:///D:/a/atlas/atlas/buildGraph/proj_a"
+    check $upkg.projectName == "proj_a"
+    check upkg.toOriginalPath(isWindowsTest = true) == Path($project() & "\\buildGraph\\proj_a")
+    check toWindowsFileUrl("link://D:\\a\\atlas\\atlas") == "link:///D:/a/atlas/atlas"
+    check toWindowsFileUrl("link://regular/unix/path") == "link://regular/unix/path"
+
   test "proj_b file fixFileAbsoluteUrl":
     # setAtlasVerbosity(Trace)
     when not defined(windows):
