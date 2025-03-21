@@ -118,6 +118,16 @@ proc toLinkPath*(pkgUrl: PkgUrl): Path =
   else:
     result = Path(toDirectoryPath(pkgUrl, true).string & ".nimble-link")
 
+proc createNimbleLink*(pkgUrl: PkgUrl, nimblePath: Path, cfgPath: CfgPath) =
+  let nimbleLink = toLinkPath(pkgUrl)
+  if nimbleLink.fileExists():
+    return
+
+  let nimblePath = nimblePath.absolutePath()
+  let cfgPath = cfgPath.Path.absolutePath()
+
+  writeFile($nimbleLink, "$1\n$2" % [$nimblePath, $cfgPath])
+
 proc isWindowsAbsoluteFile*(raw: string): bool =
   raw.match(peg"^ {'file://'?} {[A-Z] ':' ['/'\\]} .*")
 

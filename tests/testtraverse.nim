@@ -290,6 +290,53 @@ suite "test expand with git tags":
       for pkgUrl, commits in nc.explicitVersions.pairs:
         echo "\tversions: ", pkgUrl, " commits: ", commits.toSeq().mapIt($it).join("; ")
 
+  test "expand from link file":
+      withDir "tests/ws_testtraverselinked":
+        # setAtlasVerbosity(Trace)
+        removeDir("deps")
+        project(paths.getCurrentDir())
+        context().flags = {KeepWorkspace, ListVersions}
+        context().defaultAlgo = SemVer
+        context().depsDir = Path "deps"
+        context().nameOverrides = Patterns()
+
+        # discard context().overrides.addPattern("does_not_exist", "file://./buildGraph/does_not_exist")
+        # discard context().overrides.addPattern("$+", "http://localhost:4242/buildGraph/$#")
+        var nc = createNimbleContext()
+        nc.put("ws_testtraverse", toPkgUriRaw(parseUri "https://example.com/buildGraph/ws_testtraverse"))
+        nc.put("proj_a", toPkgUriRaw(parseUri "https://example.com/buildGraph/proj_a"))
+        nc.put("proj_b", toPkgUriRaw(parseUri "https://example.com/buildGraph/proj_b"))
+        nc.put("proj_c", toPkgUriRaw(parseUri "https://example.com/buildGraph/proj_c"))
+        nc.put("proj_d", toPkgUriRaw(parseUri "https://example.com/buildGraph/proj_d"))
+
+        let ws_testtraverse = Path(".." / "ws_testtraverse").absolutePath()
+        createNimbleLink(nc.createUrl("ws_testtraverse"), ws_testtraverse / Path("ws_testtraverse.nimble"), ws_testtraverse.CfgPath)
+
+        # let pkgA = nc.createUrl("proj_a")
+
+        # check $pkgA == "https://example.com/buildGraph/proj_a"
+
+        # # let deps = setupGraph()
+        # let dir = paths.getCurrentDir().absolutePath
+
+        # let graph = dir.expand(nc, AllReleases, onClone=DoClone)
+
+        # checkpoint "\tgraph:\n" & $graph.toJson(ToJsonOptions(enumMode: joptEnumString))
+        # let sp = graph.pkgs.values().toSeq()
+        # let vt = toVersionTag
+
+        # check sp.len() == 5
+        # check $sp[0].url == "atlas://project/ws_testtraverselinked.nimble"
+        # check $sp[1].url == "https://example.com/buildGraph/proj_a"
+        # check $sp[2].url == "https://example.com/buildGraph/proj_b"
+        # check $sp[3].url == "https://example.com/buildGraph/proj_c"
+        # check $sp[4].url == "https://example.com/buildGraph/proj_d"
+
+        # let sp0: Package = sp[0] # proj ws_testtraversal
+        # testRequirements(sp0, @[vt"#head@-"], [
+        #   ("https://example.com/buildGraph/proj_a", "*"),
+        # ])
+
       
 
 suite "test expand with no git tags":
