@@ -292,6 +292,7 @@ suite "test expand with git tags":
 
   test "expand from link file":
       withDir "tests/ws_testtraverse":
+        removeDir("deps")
         let deps = setupGraph()
 
       withDir "tests/ws_testtraverselinked":
@@ -338,7 +339,7 @@ suite "test expand with git tags":
 
         let graph = dir.expand(nc, AllReleases, onClone=DoClone)
 
-        echo "\tgraph:\n" & $graph.toJson(ToJsonOptions(enumMode: joptEnumString))
+        checkpoint "\tgraph:\n" & $graph.toJson(ToJsonOptions(enumMode: joptEnumString))
         let sp = graph.pkgs.values().toSeq()
         let vt = toVersionTag
 
@@ -350,10 +351,19 @@ suite "test expand with git tags":
         check $sp[4].url == "https://example.com/buildGraph/proj_c"
         check $sp[5].url == "https://example.com/buildGraph/proj_d"
 
-        # let sp0: Package = sp[0] # proj ws_testtraversal
-        # testRequirements(sp0, @[vt"#head@-"], [
-        #   ("https://example.com/buildGraph/proj_a", "*"),
-        # ])
+        let sp0: Package = sp[0] # proj ws_testtraversallinked
+        testRequirements(sp0, @[vt"#head@-"], [
+          ("atlas-link://" & ws_testtraverse.string, "*"),
+        ])
+
+        let sp2: Package = sp[2] # proj A
+        check sp2.url.projectName() == "proj_a"
+
+        echo "sp2: ", sp2
+        testRequirements(sp2, projAtags, [
+          ("https://example.com/buildGraph/proj_b", ">= 1.1.0"),
+          ("https://example.com/buildGraph/proj_b", ">= 1.0.0"),
+        ])
 
       
 
