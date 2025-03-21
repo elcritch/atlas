@@ -82,7 +82,7 @@ proc toOriginalPath*(pkgUrl: PkgUrl, isWindowsTest: bool = false): Path =
 proc linkPath*(path: Path): Path =
   result = Path(path.string & ".nimble-link")
 
-proc toDirectoryPath*(pkgUrl: PkgUrl): Path =
+proc toDirectoryPath(pkgUrl: PkgUrl, isLinkPath: bool): Path =
   if pkgUrl.url.scheme == "atlas":
     result = project()
   elif pkgUrl.url.scheme == "file":
@@ -91,7 +91,7 @@ proc toDirectoryPath*(pkgUrl: PkgUrl): Path =
   else:
     result = depsDir() / Path(pkgUrl.projectName())
   
-  if not dirExists(result) and fileExists(result.linkPath()):
+  if not isLinkPath and not dirExists(result) and fileExists(result.linkPath()):
     # prefer the directory path if it exists (?)
     let linkPath = result.linkPath()
     let link = readFile($linkPath)
@@ -101,17 +101,22 @@ proc toDirectoryPath*(pkgUrl: PkgUrl): Path =
     else:
       let nimble = Path(lines[0])
       result = nimble.splitFile().dir
+      if not result.isAbsolute():
+        result = linkPath.parentDir() / result
       info pkgUrl.projectName(), "link file to:", $result
 
   result = result.absolutePath
   trace pkgUrl, "found directory path:", $result
   doAssert result.len() > 0
 
+proc toDirectoryPath*(pkgUrl: PkgUrl): Path =
+  toDirectoryPath(pkgUrl, false)
+
 proc toLinkPath*(pkgUrl: PkgUrl): Path =
   if pkgUrl.url.scheme == "atlas":
     result = Path("")
   else:
-    result = Path(pkgUrl.toDirectoryPath().string & ".nimble-link")
+    result = Path(toDirectoryPath(pkgUrl, true).string & ".nimble-link")
 
 proc isWindowsAbsoluteFile*(raw: string): bool =
   raw.match(peg"^ {'file://'?} {[A-Z] ':' ['/'\\]} .*")

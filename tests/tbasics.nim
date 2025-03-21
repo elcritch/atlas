@@ -1,4 +1,4 @@
-import std/[unittest, os, algorithm, strutils, importutils, terminal]
+import std/[unittest, os, algorithm, dirs, files, strutils, importutils, terminal]
 import basic/[context, pkgurls, deptypes, nimblecontext, compiledpatterns, osutils, versions]
 
 when false:
@@ -18,6 +18,7 @@ suite "urls and naming":
     nc.put("npeg", toPkgUriRaw(parseUri "https://github.com/zevv/npeg"))
     nc.put("sync", toPkgUriRaw(parseUri "https://github.com/planetis-m/sync"))
     nc.put("regex", toPkgUriRaw(parseUri "https://github.com/nitely/nim-regex"))
+    nc.put("foobar", toPkgUriRaw(parseUri "https://example.com/bazz/foobar"))
 
   test "balls url":
     let upkg = nc.createUrl("https://github.com/disruptek/balls.git")
@@ -188,6 +189,14 @@ suite "urls and naming":
     check $upkg.projectName == "test"
     check upkg.toDirectoryPath() == ws
     check upkg.toLinkPath() == Path""
+
+  test "foobar link file":
+    let upkg = nc.createUrl("foobar")
+    check upkg.toDirectoryPath() == ws / Path"remote-deps" / Path("foobar")
+    check upkg.toLinkPath() == ws / Path"deps" / Path("foobar.nimble-link")
+    echo "LINKPATH: ", upkg.toLinkPath()
+    check upkg.toLinkPath().fileExists()
+
 
   # test "use short names on disk":
   #   context().alwaysUseLongNamesOnDisk = false
