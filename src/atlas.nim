@@ -174,13 +174,13 @@ proc detectProject(customProject = Path ""): bool =
     var cwd = paths.getCurrentDir().absolutePath
 
     while cwd.string.len() > 0:
-      if cwd.getWorkspaceConfig().fileExists():
+      if cwd.getProjectConfig().fileExists():
         break
       cwd = cwd.parentDir()
     project(cwd)
   
   if project().len() > 0:
-    result = getWorkspaceConfig().fileExists()
+    result = getProjectConfig().fileExists()
     if result:
       project(project().absolutePath)
 
@@ -198,7 +198,7 @@ proc autoProject(currentDir: Path): bool =
 
 proc createWorkspace() =
   createDir(depsDir())
-  if not fileExists(getWorkspaceConfig()):
+  if not fileExists(getProjectConfig()):
     writeDefaultConfigFile()
     info project(), "created atlas.project"
   if depsDir() != Path "":

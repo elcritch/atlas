@@ -125,7 +125,7 @@ proc bestNimVersion*(g: DepGraph): Version =
 proc createGraphFromWorkspace*(): DepGraph =
   # TODO: fixme?
   result = DepGraph()
-  let configFile = getWorkspaceConfig()
+  let configFile = getProjectConfig()
   var f = newFileStream($configFile, fmRead)
   if f == nil:
     error configFile, "could not open project config:", $configFile

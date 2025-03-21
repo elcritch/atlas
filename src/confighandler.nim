@@ -35,18 +35,18 @@ proc writeDefaultConfigFile*() =
     resolver: $SemVer,
     graph: newJNull()
   )
-  let configFile = getWorkspaceConfig()
+  let configFile = getProjectConfig()
   writeFile($configFile, pretty %*config)
 
 proc readConfig*() =
-  let configFile = getWorkspaceConfig()
+  let configFile = getProjectConfig()
   var f = newFileStream($configFile, fmRead)
   if f == nil:
     warn "atlas:config", "could not read project config:", $configFile
     return
 
-  let j = parseJson(f, $configFile)
   try:
+    let j = parseJson(f, $configFile)
     let m = j.jsonTo(JsonConfig, Joptions(allowExtraKeys: true, allowMissingKeys: true))
     if m.deps.len > 0:
       context().depsDir = m.deps.Path
@@ -89,5 +89,5 @@ proc writeConfig*(graph: DepGraph) =
     resolver: $context().defaultAlgo,
     graph: newJNull(),
   )
-  let configFile = getWorkspaceConfig()
+  let configFile = getProjectConfig()
   writeFile($configFile, pretty %*config)
