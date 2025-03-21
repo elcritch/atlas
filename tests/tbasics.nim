@@ -192,17 +192,10 @@ suite "urls and naming":
 
   test "foobar link file":
     let upkg = nc.createUrl("foobar")
-    check upkg.toDirectoryPath() == ws / Path"remote-deps" / Path("foobar")
     check upkg.toLinkPath() == ws / Path"deps" / Path("foobar.nimble-link")
+    check upkg.toDirectoryPath() == ws / Path"remote-deps" / Path("foobar")
     echo "LINKPATH: ", upkg.toLinkPath()
     check upkg.toLinkPath().fileExists()
-
-
-  # test "use short names on disk":
-  #   context().alwaysUseLongNamesOnDisk = false
-  #   let upkg = nc.createUrl("npeg")
-  #   echo "upkg: ", upkg.repr
-  #   check $upkg.projectName == "npeg.zevv.github.com"
 
   test "print names":
     let upkg = nc.createUrl("https://github.com/disruptek/balls.git")
