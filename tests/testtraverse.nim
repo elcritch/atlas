@@ -291,8 +291,11 @@ suite "test expand with git tags":
         echo "\tversions: ", pkgUrl, " commits: ", commits.toSeq().mapIt($it).join("; ")
 
   test "expand from link file":
+      withDir "tests/ws_testtraverse":
+        let deps = setupGraph()
+
       withDir "tests/ws_testtraverselinked":
-        # setAtlasVerbosity(Trace)
+        setAtlasVerbosity(Trace)
         removeDir("deps")
         project(paths.getCurrentDir())
         context().flags = {KeepWorkspace, ListVersions}
@@ -327,25 +330,25 @@ suite "test expand with git tags":
         check nc.createUrl("proj_c").toDirectoryPath() == proj_c
         check nc.createUrl("proj_d").toDirectoryPath() == proj_d
 
-        # let pkgA = nc.createUrl("proj_a")
+        let pkgA = nc.createUrl("proj_a")
 
-        # check $pkgA == "https://example.com/buildGraph/proj_a"
+        check $pkgA == "https://example.com/buildGraph/proj_a"
 
-        # # let deps = setupGraph()
-        # let dir = paths.getCurrentDir().absolutePath
+        let dir = paths.getCurrentDir().absolutePath
 
-        # let graph = dir.expand(nc, AllReleases, onClone=DoClone)
+        let graph = dir.expand(nc, AllReleases, onClone=DoClone)
 
-        # checkpoint "\tgraph:\n" & $graph.toJson(ToJsonOptions(enumMode: joptEnumString))
-        # let sp = graph.pkgs.values().toSeq()
-        # let vt = toVersionTag
+        checkpoint "\tgraph:\n" & $graph.toJson(ToJsonOptions(enumMode: joptEnumString))
+        let sp = graph.pkgs.values().toSeq()
+        let vt = toVersionTag
 
-        # check sp.len() == 5
-        # check $sp[0].url == "atlas://project/ws_testtraverselinked.nimble"
-        # check $sp[1].url == "https://example.com/buildGraph/proj_a"
-        # check $sp[2].url == "https://example.com/buildGraph/proj_b"
-        # check $sp[3].url == "https://example.com/buildGraph/proj_c"
-        # check $sp[4].url == "https://example.com/buildGraph/proj_d"
+        check sp.len() == 6
+        check $sp[0].url == "atlas://project/ws_testtraverselinked.nimble"
+        check $sp[1].url == "https://example.com/buildGraph/ws_testtraverse"
+        check $sp[2].url == "https://example.com/buildGraph/proj_a"
+        check $sp[3].url == "https://example.com/buildGraph/proj_b"
+        check $sp[4].url == "https://example.com/buildGraph/proj_c"
+        check $sp[5].url == "https://example.com/buildGraph/proj_d"
 
         # let sp0: Package = sp[0] # proj ws_testtraversal
         # testRequirements(sp0, @[vt"#head@-"], [
