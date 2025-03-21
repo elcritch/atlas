@@ -374,6 +374,7 @@ proc parseAtlasOptions(params: seq[string], action: var string, args: var seq[st
   if detectProject():
     notice "atlas:project", "Using project directory:", $project()
     readConfig()
+    notice "atlas:project", "Using project directory:post:", $project()
   elif action notin ["init", "tag"]:
     notice "atlas:project", "Using project directory:", $project()
     if autoinit:
@@ -500,12 +501,15 @@ proc atlasRun*(params: seq[string]) =
     patchNimbleFile(nc, nimbleFile, linkUri.projectName)
 
     writeConfig()
+    info "atlas:link", "current project dir:", $project()
 
+    echo "\n\n==============\n\n"
     # Load linked project's config to get its deps dir
     let linkedCtxt = readAtlasContext(linkDir / Path"atlas.config")
+    info "atlas:link", "current project dir:", $project()
     info "atlas:link", "linking packages from:", $linkedCtxt.depsDir
 
-    var linkNc = nc
+    var linkNc = createNimbleContext()
     let linkGraph = expand(linkDir, linkNc, CurrentCommit, DoNothing)
     echo "linkGraph: ", $linkGraph.toJson(ToJsonOptions(enumMode: joptEnumString))
 

@@ -35,7 +35,6 @@ proc setupGraphNoGitTags*(): seq[string] =
 
 suite "test link integration":
   setup:
-    setAtlasVerbosity(Warning)
     # setAtlasVerbosity(Trace)
     context().nameOverrides = Patterns()
     context().urlOverrides = Patterns()
@@ -46,6 +45,7 @@ suite "test link integration":
 
   test "setup and test target project":
       # setAtlasVerbosity(Info)
+      setAtlasVerbosity(Error)
       withDir "tests/ws_link_semver":
         removeDir("deps")
         project(paths.getCurrentDir())
@@ -108,6 +108,7 @@ suite "test link integration":
         nc.put("proj_d", toPkgUriRaw(parseUri "https://example.com/buildGraph/proj_d", true))
         let dir = paths.getCurrentDir().absolutePath
 
+        check project() == paths.getCurrentDir()
         atlasRun(@["link", "../ws_link_semver"])
 
         var graph = dir.expand(nc, AllReleases, onClone=DoClone)
@@ -116,6 +117,7 @@ suite "test link integration":
 
         let config = readConfigFile(getProjectConfig())
         echo "config: ", $config
+        check project() == paths.getCurrentDir()
         check config.nameOverrides.len == 1
         check config.nameOverrides["ws_link_semver"] == toWindowsFileUrl("link://" & $absolutePath($project() /../ "ws_link_semver"))
 

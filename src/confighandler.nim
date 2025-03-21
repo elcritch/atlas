@@ -56,10 +56,6 @@ proc readAtlasContext*(configFile: Path): AtlasContext =
 
   result = AtlasContext()
 
-
-  echo "CONTEXT: ", repr result
-  echo "CONFIG: ", repr m
-
   if m.deps.len > 0:
     result.depsDir = m.deps.Path
   
@@ -89,7 +85,9 @@ proc readAtlasContext*(configFile: Path): AtlasContext =
   
 
 proc readConfig*() =
+  let projectDir = project()
   setContext(readAtlasContext(getProjectConfig()))
+  project(projectDir)
   trace "atlas:config", "read config file: ", repr context()
 
 proc writeConfig*() =
