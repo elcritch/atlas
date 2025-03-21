@@ -122,7 +122,7 @@ proc isLinkPath*(pkgUrl: PkgUrl): bool =
   result = fileExists(toLinkPath(pkgUrl))
 
 proc isLinkedProject*(pkgUrl: PkgUrl): bool =
-  result = pkgUrl.url.scheme == "atlas-link"
+  result = pkgUrl.url.scheme == "link"
 
 proc createNimbleLink*(pkgUrl: PkgUrl, nimblePath: Path, cfgPath: CfgPath) =
   let nimbleLink = toLinkPath(pkgUrl)
@@ -135,26 +135,27 @@ proc createNimbleLink*(pkgUrl: PkgUrl, nimblePath: Path, cfgPath: CfgPath) =
   writeFile($nimbleLink, "$1\n$2" % [$nimblePath, $cfgPath])
 
 proc isWindowsAbsoluteFile*(raw: string): bool =
-  raw.match(peg"^ {'file://'?} {[A-Z] ':' ['/'\\]} .*")
+  raw.match(peg"^ {'file://'?} {[A-Z] ':' ['/'\\]} .*") or raw.match(peg"^ {'link://'?} {[A-Z] ':' ['/'\\]} .*")
 
 proc toWindowsFileUrl*(raw: string): string =
   let rawPath = raw.replace('\\', '/')
   if rawPath.isWindowsAbsoluteFile():
-    result = rawPath.replace("file://", "file:///")
+    result = rawPath
+    result = result.replace("file://", "file:///")
+    result = result.replace("link://", "link:///")
   else:
     result = rawPath
 
 proc fixFileRelativeUrl*(u: Uri, isWindowsTest: bool = false): Uri =
-  if isWindowsTest or defined(windows) and u.scheme == "file" and u.hostname.len() > 0:
+  if isWindowsTest or defined(windows) and u.scheme in ["file", "link"] and u.hostname.len() > 0:
     result = parseUri(toWindowsFileUrl($u))
   else:
     result = u
 
-  if result.scheme == "file" and result.hostname.len() > 0:
+  if result.scheme in ["file", "link"] and result.hostname.len() > 0:
     # fix relative paths
     var url = (project().string / (result.hostname & result.path)).absolutePath
-    # url = absolutePath(url)
-    url = "file://" & url
+    url = result.scheme & "://" & url
     if isWindowsTest or defined(windows):
       url = toWindowsFileUrl(url)
     result = parseUri(url)
@@ -197,7 +198,7 @@ proc createUrlSkipPatterns*(raw: string, skipDirTest = false, forceWindows: bool
 
       u.scheme = "ssh"
 
-    if u.scheme == "file":
+    if u.scheme in ["file", "link"]:
       # fix missing absolute paths
       u = fixFileRelativeUrl(u)
       hasShortName = true

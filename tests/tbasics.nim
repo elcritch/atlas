@@ -145,20 +145,21 @@ suite "urls and naming":
     check isWindowsAbsoluteFile("file://D:\\a\\atlas\\atlas\\buildGraph\\proj_a")
     check isWindowsAbsoluteFile("D:/a/atlas/atlas/buildGraph/proj_a")
     check isWindowsAbsoluteFile("file://D:/a/atlas/atlas/buildGraph/proj_a")
+    check isWindowsAbsoluteFile("link://D:/a/atlas/atlas/buildGraph/proj_a")
 
     let ua = fixFileRelativeUrl(parseUri("file://D:\\a\\atlas\\atlas\\buildGraph\\proj_a"), isWindowsTest = true)
-    echo "FIXFILEABSOLUTEURL: ", $ua, " repr: ", ua.repr
     check ua.hostname == ""
     check ua.path == "/D:/a/atlas/atlas/buildGraph/proj_a"
+
+    let ul = fixFileRelativeUrl(parseUri("link://D:\\a\\atlas\\atlas\\buildGraph\\proj_a"), isWindowsTest = true)
+    check ul.hostname == ""
+    check ul.path == "/D:/a/atlas/atlas/buildGraph/proj_a"
 
   test "proj_a windows path url with createUrlSkipPatterns":
     project(Path("D:\\a\\atlas\\atlas"))
     defer: project(ws)
 
     let upkg = createUrlSkipPatterns("D:\\a\\atlas\\atlas\\buildGraph\\proj_a", true, forceWindows = true)
-    echo "upkg: ", $upkg
-    echo "upkg: ", upkg.repr
-    echo ""
     check upkg.url.hostname == ""
     check $upkg.url == "file:///D:/a/atlas/atlas/buildGraph/proj_a"
     check $upkg.projectName == "proj_a"

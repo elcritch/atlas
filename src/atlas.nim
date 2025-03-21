@@ -12,7 +12,7 @@
 import std / [parseopt, files, dirs, strutils, os, osproc, tables, sets, json, jsonutils, uri, paths]
 import basic / [versions, context, osutils, packageinfos,
                 configutils, nimblechecksums, reporters,
-                nimbleparser, gitops, pkgurls, nimblecontext]
+                nimbleparser, gitops, pkgurls, nimblecontext, compiledpatterns]
 import depgraphs, nimenv, lockfiles, confighandler, dependencies, pkgsearch
 
 from std/terminal import isatty
@@ -487,6 +487,13 @@ proc atlasRun*(params: seq[string]) =
       nimbleFiles.add(nimbleFile)
     elif nimbleFiles.len() > 1:
       error "atlas:link", "Ambiguous Nimble files found: " & $nimbleFiles
+
+    let linkDir = Path(args[0]).absolutePath
+    if not linkDir.dirExists():
+      fatal "cannot link to directory that does not exist: " & $linkDir
+
+    let linkUri = createUrlSkipPatterns("link://" & linkDir.string)
+    discard context().nameOverrides.addPattern(linkUri.projectName, $linkUri.url)
 
     info "atlas:link", "modifying nimble file to use package:", args[0], "at:", $nimbleFiles[0]
     patchNimbleFile(nc, nimbleFiles[0], args[0])

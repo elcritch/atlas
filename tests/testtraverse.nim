@@ -311,7 +311,7 @@ suite "test expand with git tags":
         let proj_c = Path(".." / "ws_testtraverse" / "deps" / "proj_c").absolutePath()
         let proj_d = Path(".." / "ws_testtraverse" / "deps" / "proj_d").absolutePath()
 
-        discard context().nameOverrides.addPattern("ws_testtraverse", "atlas-link://" & ws_testtraverse.string)
+        discard context().nameOverrides.addPattern("ws_testtraverse", "link://" & ws_testtraverse.string)
 
         var nc = createNimbleContext()
         nc.put("ws_testtraverse", toPkgUriRaw(parseUri "https://example.com/buildGraph/ws_testtraverse"))
@@ -345,7 +345,7 @@ suite "test expand with git tags":
 
         check sp.len() == 6
         check $sp[0].url == "atlas://project/ws_testtraverselinked.nimble"
-        check $sp[1].url == "atlas-link://" & ws_testtraverse.string
+        check $sp[1].url == "link://" & ws_testtraverse.string
         check $sp[2].url == "https://example.com/buildGraph/proj_a"
         check $sp[3].url == "https://example.com/buildGraph/proj_b"
         check $sp[4].url == "https://example.com/buildGraph/proj_c"
@@ -353,7 +353,7 @@ suite "test expand with git tags":
 
         let sp0: Package = sp[0] # proj ws_testtraversallinked
         testRequirements(sp0, @[vt"#head@-"], [
-          ("atlas-link://" & ws_testtraverse.string, "*"),
+          ("link://" & ws_testtraverse.string, "*"),
         ])
 
         let sp2: Package = sp[2] # proj A
