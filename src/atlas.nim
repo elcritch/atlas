@@ -201,7 +201,6 @@ proc autoProject(currentDir: Path): bool =
 
 proc findProjectNimbleFile(writeNimbleFile: bool = false): Path =
   var nimbleFiles = findNimbleFile(project(), "")
-  debug "atlas", "found nimble files:", $nimbleFiles
 
   if nimbleFiles.len() == 0 and writeNimbleFile:
     let nimbleFile = project() / Path(splitPath($paths.getCurrentDir()).tail & ".nimble")
