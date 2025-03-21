@@ -4,10 +4,6 @@ import basic/[context, pkgurls, deptypes, nimblecontext, compiledpatterns, osuti
 when false:
   from nameresolver import resolvePackage
 
-proc initBasicWorkspace(typ: type AtlasContext): AtlasContext =
-  result.project = currentSourcePath().parentDir / "ws_basic"
-  result.origDepsDir = result.project
-
 suite "urls and naming":
   var 
     nc: NimbleContext
@@ -17,6 +13,7 @@ suite "urls and naming":
     nc = createUnfilledNimbleContext()
     # setAtlasVerbosity(Trace)
     setAtlasErrorsColor(fgMagenta)
+    project(Path("tests/ws_basic"))
     ws = absolutePath(project())
     nc.put("npeg", toPkgUriRaw(parseUri "https://github.com/zevv/npeg"))
     nc.put("sync", toPkgUriRaw(parseUri "https://github.com/planetis-m/sync"))
