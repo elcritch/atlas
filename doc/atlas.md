@@ -144,13 +144,18 @@ You can override how Atlas resolves a package name or a URL. The overrides use
 a simple pattern matching language and are flexible enough to integrate private
 gitlab repositories.
 
-To setup an override file, edit the `$project/atlas.config` file to contain
-a line like `overrides="urls.rules"`. Then create a file `urls.rules` that can
-contain lines like:
-
 ```
-customProject -> https://gitlab.company.com/customProject
-https://github.com/araq/ormin -> https://github.com/useMyForkInstead/ormin
+{
+  "resolver": "SemVer",
+  "nameOverrides": {
+    "customProject": "https://gitlab.company.com/customProject"
+  },
+  "urlOverrides": {
+    "https://github.com/araq/ormin": "https://github.com/useMyForkInstead/ormin"
+  },
+  "plugins": "",
+}
+
 ```
 
 The `$` has a special meaning in a pattern:
@@ -167,7 +172,7 @@ The `$` has a special meaning in a pattern:
 For example, here is how to override any github link:
 
 ```
-https://github.com/$+ -> https://utopia.forall/$#
+"https://github.com/$+": "https://utopia.forall/$#"
 ```
 
 You can use `$1` or `$#` to refer to captures.
