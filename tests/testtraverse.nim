@@ -310,7 +310,22 @@ suite "test expand with git tags":
         nc.put("proj_d", toPkgUriRaw(parseUri "https://example.com/buildGraph/proj_d"))
 
         let ws_testtraverse = Path(".." / "ws_testtraverse").absolutePath()
+        let deps = Path(".." / "ws_testtraverse" / "deps").absolutePath()
+        let proj_a = Path(".." / "ws_testtraverse" / "deps" / "proj_a").absolutePath()
+        let proj_b = Path(".." / "ws_testtraverse" / "deps" / "proj_b").absolutePath()
+        let proj_c = Path(".." / "ws_testtraverse" / "deps" / "proj_c").absolutePath()
+        let proj_d = Path(".." / "ws_testtraverse" / "deps" / "proj_d").absolutePath()
+
         createNimbleLink(nc.createUrl("ws_testtraverse"), ws_testtraverse / Path("ws_testtraverse.nimble"), ws_testtraverse.CfgPath)
+        createNimbleLink(nc.createUrl("proj_a"), proj_a / Path("proj_a.nimble"), proj_a.CfgPath)
+        createNimbleLink(nc.createUrl("proj_b"), proj_b / Path("proj_b.nimble"), proj_b.CfgPath)
+        createNimbleLink(nc.createUrl("proj_c"), proj_c / Path("proj_c.nimble"), proj_c.CfgPath)
+        createNimbleLink(nc.createUrl("proj_d"), proj_d / Path("proj_d.nimble"), proj_d.CfgPath)
+
+        check nc.createUrl("proj_a").toDirectoryPath() == proj_a
+        check nc.createUrl("proj_b").toDirectoryPath() == proj_b
+        check nc.createUrl("proj_c").toDirectoryPath() == proj_c
+        check nc.createUrl("proj_d").toDirectoryPath() == proj_d
 
         # let pkgA = nc.createUrl("proj_a")
 
