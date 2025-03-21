@@ -226,6 +226,20 @@ suite "urls and naming":
     for name, url in nc.nameToUrl:
       echo "\t", name, " ".repeat(50 - len($(name))), url
 
+  test "createUrl with Path":
+    let nestedPath = Path"tests" / Path"ws_basic"
+    createDir(nestedPath)
+    let upkg = nc.createUrlFromPath(nestedPath)
+    echo "UPKG: ", upkg
+    check upkg.url.scheme == "atlas"
+    check upkg.projectName == "ws_basic"
+
+    let lpkg = nc.createUrlFromPath(nestedPath, isLinkPath = true)
+    echo "LPKG: ", lpkg.url
+    check lpkg.url.scheme == "link"
+    check lpkg.projectName == "ws_basic"
+    check lpkg.toOriginalPath() == Path("tests/ws_basic").absolutePath()
+
   # test "createUrl with Path":
   #   let testPath = Path(paths.getCurrentDir()) / Path"test_project"
   #   let upkg = nc.createUrlFromPath(testPath)

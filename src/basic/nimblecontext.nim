@@ -87,8 +87,7 @@ proc putFromPath*(nc: var NimbleContext, name: string, url: PkgUrl): bool =
 
 proc createUrl*(nc: var NimbleContext, nameOrig: string): PkgUrl =
   ## primary point to createUrl's from a name or argument
-  ## TODO: add unit tests!
-  doAssert not nameOrig.isAbsolute(), "createUrl does not support absolute paths: " & $nameOrig
+  doAssert not nameOrig.isAbsolute(), "createUrl does not support relative paths: " & $nameOrig
 
   var didReplace = false
   var name = nameOrig
@@ -130,17 +129,23 @@ proc createUrl*(nc: var NimbleContext, nameOrig: string): PkgUrl =
 proc createUrlFromPath*(nc: var NimbleContext, orig: Path, isLinkPath = false): PkgUrl =
   let absPath = absolutePath(orig)
   # Check if this is an Atlas project or if it's the current project
+  let prefix = if isLinkPath: "link://" else: "atlas://"
   if isProject(absPath) or absPath == absolutePath(project()):
-    # Find nimble files in the project directory
-    let nimbleFiles = findNimbleFile(absPath, "")
-    if nimbleFiles.len > 0:
-      # Use the first nimble file found as the project identifier
-      let url = parseUri("atlas://project/" & $nimbleFiles[0].splitPath().tail)
+    if isLinkPath:
+      let url = parseUri(prefix & $absPath)
       result = toPkgUriRaw(url)
     else:
-      # Fallback to directory name if no nimble file found
-      let url = parseUri("atlas://project/" & $orig.splitPath().tail)
-      result = toPkgUriRaw(url)
+      # Find nimble files in the project directory
+      let nimbleFiles = findNimbleFile(absPath, "")
+      if nimbleFiles.len > 0:
+        # Use the first nimble file found as the project identifier
+        let url = parseUri(prefix & $nimbleFiles[0])
+        result = toPkgUriRaw(url)
+      else:
+        # Fallback to directory name if no nimble file found
+        let nimble = $(absPath.splitPath().tail) & ".nimble"
+        let url = parseUri(prefix & $absPath / nimble)
+        result = toPkgUriRaw(url)
   else:
     error "atlas:nimblecontext", "createUrlFromPath: not a project: " & $absPath
     # let fileUrl = "file://" & $absPath
