@@ -167,15 +167,8 @@ proc createUrlSkipPatterns*(raw: string, skipDirTest = false, forceWindows: bool
 
     cleanupUrl(u)
     result = PkgUrl(qualifiedName: extractProjectName(u), u: u, hasShortName: hasShortName)
-
   # trace result, "created url raw:", repr(raw), "url:", repr(result)
 
 proc toPkgUriRaw*(u: Uri, hasShortName: bool = false): PkgUrl =
   result = createUrlSkipPatterns($u, true)
   result.hasShortName = hasShortName
-
-# proc dir*(s: PkgUrl): string =
-#   if isFileProtocol(s):
-#     result = substr(s.u, len("file://"))
-#   else:
-#     result = s.projectName
