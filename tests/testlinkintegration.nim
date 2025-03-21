@@ -7,6 +7,7 @@ import basic/[deptypes, nimblecontext]
 import dependencies
 import depgraphs
 import testerutils
+import atlas
 
 ensureGitHttpServer()
 
@@ -32,7 +33,7 @@ proc setupGraphNoGitTags*(): seq[string] =
 
 suite "test link integration":
   setup:
-    # setAtlasVerbosity(Warning)
+    setAtlasVerbosity(Warning)
     # setAtlasVerbosity(Trace)
     context().nameOverrides = Patterns()
     context().urlOverrides = Patterns()
@@ -83,10 +84,10 @@ suite "test link integration":
         check $graph.pkgs[nc.createUrl("proj_d")].activeVersion == $findCommit("proj_d", "1.0.0")
 
   test "expand using http urls with link files":
-      # setAtlasVerbosity(Info)
+      setAtlasVerbosity(Trace)
       withDir "tests/ws_link_integration":
         removeDir("deps")
-        project(paths.getCurrentDir())
+        # project(paths.getCurrentDir())
         context().flags = {KeepWorkspace, ListVersions}
         context().defaultAlgo = SemVer
 
@@ -98,6 +99,7 @@ suite "test link integration":
         nc.put("proj_d", toPkgUriRaw(parseUri "https://example.com/buildGraph/proj_d", true))
         let dir = paths.getCurrentDir().absolutePath
 
+        atlasRun(@["link", "../ws_link_semver"])
 
         var graph = dir.expand(nc, AllReleases, onClone=DoClone)
 

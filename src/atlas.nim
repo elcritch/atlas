@@ -172,14 +172,17 @@ proc detectProject(customProject = Path ""): bool =
     warn "atlas", "using global project:", $project()
   else:
     var cwd = paths.getCurrentDir().absolutePath
+    debug "atlas", "finding project from current dir:", $cwd
 
     while cwd.string.len() > 0:
+      debug "atlas", "checking project config:", $(cwd / Path("atlas.config"))
       if cwd.getProjectConfig().fileExists():
         break
       cwd = cwd.parentDir()
     project(cwd)
   
   if project().len() > 0:
+    debug "atlas", "project found:", $project()
     result = getProjectConfig().fileExists()
     if result:
       project(project().absolutePath)
@@ -369,7 +372,7 @@ proc parseAtlasOptions(params: seq[string], action: var string, args: var seq[st
   if action != "tag":
     createDir(depsDir())
 
-proc mainRun(params: seq[string]) =
+proc atlasRun*(params: seq[string]) =
   var action = ""
   var args: seq[string] = @[]
   template singleArg() =
@@ -522,10 +525,10 @@ proc mainRun(params: seq[string]) =
   else:
     fatal "Invalid action: " & action
 
-proc main =
+proc main() =
   setContext AtlasContext()
   try:
-    mainRun(commandLineParams())
+    atlasRun(commandLineParams())
   finally:
     atlasWritePendingMessages()
   if atlasErrors() > 0 and IgnoreErrors notin context().flags:
