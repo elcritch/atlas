@@ -93,9 +93,9 @@ proc toDirectoryPath*(pkgUrl: PkgUrl): Path =
 
 proc toLinkPath*(pkgUrl: PkgUrl): Path =
   if pkgUrl.url.scheme == "atlas":
-    Path""
+    result = Path("")
   else:
-    Path(pkgUrl.toDirectoryPath().string & ".link")
+    result = Path(pkgUrl.toDirectoryPath().string & ".nimble-link")
 
 proc isWindowsAbsoluteFile*(raw: string): bool =
   raw.match(peg"^ {'file://'?} {[A-Z] ':' ['/'\\]} .*")
