@@ -200,7 +200,7 @@ proc createWorkspace() =
   createDir(depsDir())
   if not fileExists(getProjectConfig()):
     writeDefaultConfigFile()
-    info project(), "created atlas.project"
+    info project(), "created atlas.config"
   if depsDir() != Path "":
     if not dirExists(absoluteDepsDir(project(), depsDir())):
       info depsDir(), "creating deps directory"

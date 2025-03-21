@@ -70,7 +70,7 @@ source $WORKSPACE/nim-2.0.0/activate.sh
 Atlas also supports vendoring using an "inverted project". The project layout is where the project is a top-level subfolder like `vendor/` or `deps/` in your project. Like this:
 
 ```
-someProject/vendor/atlas.project
+someProject/vendor/atlas.config
 someProject/vendor/dep1/
 ...
 ```

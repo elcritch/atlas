@@ -18,7 +18,7 @@ Atlas uses three concepts:
 ### Workspaces
 
 Every project is isolated, nothing is shared between workspaces.
-A project is a directory that has a file `atlas.project` inside it. Use `atlas init`
+A project is a directory that has a file `atlas.config` inside it. Use `atlas init`
 to create a project out of the current working directory.
 
 Projects plus their dependencies are stored in a project:
@@ -144,7 +144,7 @@ You can override how Atlas resolves a package name or a URL. The overrides use
 a simple pattern matching language and are flexible enough to integrate private
 gitlab repositories.
 
-To setup an override file, edit the `$project/atlas.project` file to contain
+To setup an override file, edit the `$project/atlas.config` file to contain
 a line like `overrides="urls.rules"`. Then create a file `urls.rules` that can
 contain lines like:
 
@@ -261,7 +261,7 @@ easy to integrate foreign projects as dependencies into your project.
 This is accomplished by Atlas plugins. A plugin is a NimScript snippet that can call into
 external tools via `exec`.
 
-To enable plugins, add the line `plugins="_plugins"` to your `atlas.project` file. Then create
+To enable plugins, add the line `plugins="_plugins"` to your `atlas.config` file. Then create
 a directory `_plugins` in your project. Every `*.nims` file inside the plugins directory is
 integrated into Atlas.
 
