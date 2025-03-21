@@ -326,7 +326,7 @@ proc expand*(path: Path, nc: var NimbleContext; mode: TraversalMode, onClone: Pa
       of Found:
         info pkg.projectName, "Processing package at:", pkg.ondisk.relativeToWorkspace()
         # processing = true
-        let mode = if pkg.isRoot: CurrentCommit else: mode
+        let mode = if pkg.isRoot or pkg.isLinkedProject: CurrentCommit else: mode
         nc.traverseDependency(pkg, mode, @[])
         trace pkg.projectName, "processed pkg:", $pkg
         # for vtag, reqs in pkg.versions:

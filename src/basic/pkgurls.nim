@@ -122,7 +122,7 @@ proc isLinkPath*(pkgUrl: PkgUrl): bool =
   result = fileExists(toLinkPath(pkgUrl))
 
 proc isLinkedProject*(pkgUrl: PkgUrl): bool =
-  result = pkgUrl.url.scheme == "link"
+  result = pkgUrl.url.scheme == "atlas-link"
 
 proc createNimbleLink*(pkgUrl: PkgUrl, nimblePath: Path, cfgPath: CfgPath) =
   let nimbleLink = toLinkPath(pkgUrl)

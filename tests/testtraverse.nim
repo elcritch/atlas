@@ -310,7 +310,7 @@ suite "test expand with git tags":
         let proj_c = Path(".." / "ws_testtraverse" / "deps" / "proj_c").absolutePath()
         let proj_d = Path(".." / "ws_testtraverse" / "deps" / "proj_d").absolutePath()
 
-        discard context().nameOverrides.addPattern("ws_testtraverse", "link://" & ws_testtraverse.string)
+        discard context().nameOverrides.addPattern("ws_testtraverse", "atlas-link://" & ws_testtraverse.string)
 
         var nc = createNimbleContext()
         nc.put("ws_testtraverse", toPkgUriRaw(parseUri "https://example.com/buildGraph/ws_testtraverse"))
@@ -338,13 +338,13 @@ suite "test expand with git tags":
 
         let graph = dir.expand(nc, AllReleases, onClone=DoClone)
 
-        checkpoint "\tgraph:\n" & $graph.toJson(ToJsonOptions(enumMode: joptEnumString))
+        echo "\tgraph:\n" & $graph.toJson(ToJsonOptions(enumMode: joptEnumString))
         let sp = graph.pkgs.values().toSeq()
         let vt = toVersionTag
 
         check sp.len() == 6
         check $sp[0].url == "atlas://project/ws_testtraverselinked.nimble"
-        check $sp[1].url == "linked://" & ws_testtraverse.string
+        check $sp[1].url == "atlas-link://" & ws_testtraverse.string
         check $sp[2].url == "https://example.com/buildGraph/proj_a"
         check $sp[3].url == "https://example.com/buildGraph/proj_b"
         check $sp[4].url == "https://example.com/buildGraph/proj_c"
