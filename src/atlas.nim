@@ -78,7 +78,6 @@ Options:
   --resolver=minver|semver|maxver
                         which resolution algorithm to use, default is semver
   --showGraph           show the dependency graph
-  --keepWorkspace       do not update/overwrite `atlas.project`
   --list                list all available and installed versions
   --version             show the version
   --ignoreUrls          don't error on mismatching urls
@@ -163,11 +162,11 @@ proc updateDir(dir, filter: string) =
       trace file, "updating directory"
       gitops.updateDir(file.Path, filter)
 
-proc detectWorkspace(customWorkspace = Path ""): bool =
+proc detectProject(customProject = Path ""): bool =
   ## find project by checking `currentDir` and its parents.
-  if customWorkspace.string.len() > 0:
-    warn "atlas", "using custom project:", $customWorkspace
-    project(customWorkspace)
+  if customProject.string.len() > 0:
+    warn "atlas", "using custom project:", $customProject
+    project(customProject)
   elif GlobalWorkspace in context().flags:
     project(Path(getHomeDir() / ".atlas"))
     warn "atlas", "using global project:", $project()
@@ -310,7 +309,6 @@ proc parseAtlasOptions(params: seq[string], action: var string, args: var seq[st
       of "dumpformular": context().flags.incl DumpFormular
       of "showgraph": context().flags.incl ShowGraph
       of "ignoreurls": context().flags.incl IgnoreGitRemoteUrls
-      of "keepworkspace": context().flags.incl KeepWorkspace
       of "keep": context().flags.incl Keep
       of "autoenv": context().flags.incl AutoEnv
       of "noexec": context().flags.incl NoExec
@@ -354,7 +352,7 @@ proc parseAtlasOptions(params: seq[string], action: var string, args: var seq[st
       else: writeHelp()
     of cmdEnd: assert false, "cannot happen"
 
-  if detectWorkspace():
+  if detectProject():
     notice "atlas:project", "Using project directory:", $project()
     readConfig()
   elif action notin ["init", "tag"]:
