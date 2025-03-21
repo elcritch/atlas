@@ -30,7 +30,7 @@ proc setupGraphNoGitTags*(): seq[string] =
   for proj in projs:
     result.add(ospaths2.getCurrentDir() / "buildGraphNoGitTags" / proj)
 
-suite "test link":
+suite "test link integration":
   setup:
     # setAtlasVerbosity(Warning)
     # setAtlasVerbosity(Trace)
