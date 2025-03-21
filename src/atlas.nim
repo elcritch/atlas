@@ -199,6 +199,21 @@ proc autoProject(currentDir: Path): bool =
   if project().len() > 0:
     result = project().dirExists()
 
+proc findProjectNimbleFile(writeNimbleFile: bool = false): Path =
+  var nimbleFiles = findNimbleFile(project())
+
+  if nimbleFiles.len() == 0 and writeNimbleFile:
+    let nimbleFile = project() / Path(splitPath($paths.getCurrentDir()).tail & ".nimble")
+    debug "atlas:link", "writing nimble file:", $nimbleFile
+    writeFile($nimbleFile, "")
+    nimbleFiles.add(nimbleFile)
+  elif nimbleFiles.len() == 0:
+    fatal "No Nimble file found in project"
+  elif nimbleFiles.len() > 1:
+    fatal "Ambiguous Nimble files found: " & $nimbleFiles
+  else:
+    result = nimbleFiles[0]
+
 proc createWorkspace() =
   createDir(depsDir())
   if not fileExists(getProjectConfig()):
@@ -451,61 +466,35 @@ proc atlasRun*(params: seq[string]) =
   of "use":
     singleArg()
 
-    var nimbleFiles = findNimbleFile(project())
     var nc = createNimbleContext()
-
-    if nimbleFiles.len() == 0:
-      let nimbleFile = project() / Path(splitPath($paths.getCurrentDir()).tail & ".nimble")
-      trace "atlas:use", "using nimble file:", $nimbleFile
-      writeFile($nimbleFile, "")
-      nimbleFiles.add(nimbleFile)
-    elif nimbleFiles.len() > 1:
-      error "atlas:use", "Ambiguous Nimble files found: " & $nimbleFiles
+    let nimbleFile = findProjectNimbleFile(writeNimbleFile = true)
 
     info "atlas:use", "modifying nimble file to use package:", args[0], "at:", $nimbleFiles[0]
     patchNimbleFile(nc, nimbleFiles[0], args[0])
 
     if atlasErrors() > 0:
       discard "don't continue for 'cannot resolve'"
-    elif nimbleFiles.len() == 1:
-      installDependencies(nc, nimbleFiles[0].Path)
-    elif nimbleFiles.len() > 1:
-      error args[0], "ambiguous .nimble file"
-    else:
-      error args[0], "cannot find .nimble file"
+    installDependencies(nc, nimbleFile)
 
   of "link":
     singleArg()
 
-    var nimbleFiles = findNimbleFile(project())
-    var nc = createNimbleContext()
+    var linkDir = Path(args[0]).absolutePath
+    if linkDir.splitFile().ext == "nimble":
+      linkDir = linkDir.parentDir()
 
-    if nimbleFiles.len() == 0:
-      let nimbleFile = project() / Path(splitPath($paths.getCurrentDir()).tail & ".nimble")
-      debug "atlas:link", "using nimble file:", $nimbleFile
-      writeFile($nimbleFile, "")
-      nimbleFiles.add(nimbleFile)
-    elif nimbleFiles.len() > 1:
-      error "atlas:link", "Ambiguous Nimble files found: " & $nimbleFiles
-
-    let linkDir = Path(args[0]).absolutePath
     if not linkDir.dirExists():
       fatal "cannot link to directory that does not exist: " & $linkDir
 
     let linkUri = toPkgUriRaw(parseUri("link://" & linkDir.string))
     discard context().nameOverrides.addPattern(linkUri.projectName, $linkUri.url)
+    info "atlas:link", "link uri:", $linkUri
 
-    info "atlas:link", "modifying nimble file to use package:", args[0], "at:", $nimbleFiles[0]
-    patchNimbleFile(nc, nimbleFiles[0], args[0])
+    let nimbleFile = findProjectNimbleFile(writeNimbleFile = true)
+    info "atlas:link", "modifying nimble file to use package:", args[0], "at:", $nimbleFile
+    patchNimbleFile(nc, nimbleFile, args[0])
 
-    if atlasErrors() > 0:
-      discard "don't continue for 'cannot resolve'"
-    elif nimbleFiles.len() == 1:
-      installDependencies(nc, nimbleFiles[0].Path)
-    elif nimbleFiles.len() > 1:
-      error args[0], "ambiguous .nimble file"
-    else:
-      error args[0], "cannot find .nimble file"
+    # installDependencies(nc, nimbleFile)
 
   of "pin":
     optSingleArg($LockFileName)
