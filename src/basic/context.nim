@@ -16,7 +16,7 @@ const
   TestsDir* = "atlas/tests"
 
 const
-  AtlasWorkspaceFile = Path "atlas.project"
+  AtlasProjectConfig = Path "atlas.config"
 
 type
   CfgPath* = distinct string # put into a config `--path:"../x"`
@@ -85,16 +85,16 @@ proc depsDir*(relative = false): Path =
 proc relativeToWorkspace*(path: Path): string =
   result = "$project/" & $path.relativePath(project())
 
-proc getWorkspaceConfig*(project = project()): Path =
+proc getProjectConfig*(project = project()): Path =
   ## prefer project atlas.config if found
   ## otherwise default to one in deps/
   ## the deps path will be the default for auto-created ones
-  result = project / AtlasWorkspaceFile
+  result = project / AtlasProjectConfig
   if fileExists(result): return
-  result = depsDir() / AtlasWorkspaceFile
+  result = depsDir() / AtlasProjectConfig
 
-proc isWorkspace*(dir: Path): bool =
-  fileExists(getWorkspaceConfig(dir))
+proc isProject*(dir: Path): bool =
+  fileExists(getProjectConfig(dir))
 
 proc `==`*(a, b: CfgPath): bool {.borrow.}
 

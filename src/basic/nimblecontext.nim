@@ -127,7 +127,7 @@ proc createUrl*(nc: var NimbleContext, nameOrig: string): PkgUrl =
 proc createUrlFromPath*(nc: var NimbleContext, orig: Path): PkgUrl =
   let absPath = absolutePath(orig)
   # Check if this is an Atlas project or if it's the current project
-  if isWorkspace(absPath) or absPath == absolutePath(project()):
+  if isProject(absPath) or absPath == absolutePath(project()):
     # Find nimble files in the project directory
     let nimbleFiles = findNimbleFile(absPath, "")
     if nimbleFiles.len > 0:

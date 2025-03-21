@@ -191,7 +191,7 @@ When completed, run `source nim-1.6.12/activate.sh` on UNIX and `nim-1.6.12/acti
 ## Dependency resolution
 
 To change the used dependency resolution mechanism, edit the `resolver` value of
-your `atlas.project` file. The possible values are:
+your `atlas.config` file. The possible values are:
 
 ### MaxVer
 

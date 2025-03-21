@@ -184,7 +184,7 @@ proc detectProject(customProject = Path ""): bool =
     if result:
       project(project().absolutePath)
 
-proc autoWorkspace(currentDir: Path): bool =
+proc autoProject(currentDir: Path): bool =
   var cwd = currentDir
   while cwd.len > 0:
     if dirExists(cwd / Path ".git"):
@@ -309,7 +309,7 @@ proc parseAtlasOptions(params: seq[string], action: var string, args: var seq[st
       of "dumpformular": context().flags.incl DumpFormular
       of "showgraph": context().flags.incl ShowGraph
       of "ignoreurls": context().flags.incl IgnoreGitRemoteUrls
-      of "keep": context().flags.incl Keep
+      of "keepworkspace": context().flags.incl KeepWorkspace
       of "autoenv": context().flags.incl AutoEnv
       of "noexec": context().flags.incl NoExec
       of "list":
@@ -358,7 +358,7 @@ proc parseAtlasOptions(params: seq[string], action: var string, args: var seq[st
   elif action notin ["init", "tag"]:
     notice "atlas:project", "Using project directory:", $project()
     if autoinit:
-      if autoWorkspace(paths.getCurrentDir()):
+      if autoProject(paths.getCurrentDir()):
         createWorkspace()
       else:
         fatal "No project found and unable to auto init project. Run `atlas init` if you want this current directory to be your project."
