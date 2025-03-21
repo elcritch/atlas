@@ -364,7 +364,6 @@ suite "test expand with git tags":
           ("https://example.com/buildGraph/proj_b", ">= 1.1.0"),
           ("https://example.com/buildGraph/proj_b", ">= 1.0.0"),
         ])
-
       
 
 suite "test expand with no git tags":
