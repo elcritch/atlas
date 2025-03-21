@@ -128,7 +128,7 @@ proc generateDepGraph(g: DepGraph) =
 
 proc afterGraphActions(g: DepGraph) =
   if atlasErrors() == 0 and KeepWorkspace notin context().flags:
-    writeConfig(g)
+    writeConfig()
 
   if ShowGraph in context().flags:
     generateDepGraph g
@@ -499,6 +499,7 @@ proc atlasRun*(params: seq[string]) =
     info "atlas:link", "modifying nimble file to use package:", linkUri.projectName, "at:", $nimbleFile
     patchNimbleFile(nc, nimbleFile, linkUri.projectName)
 
+    writeConfig()
     # installDependencies(nc, nimbleFile)
 
   of "pin":

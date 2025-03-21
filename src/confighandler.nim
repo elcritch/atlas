@@ -17,7 +17,7 @@ proc readPluginsDir(dir: Path) =
       extractPluginInfo f, context().plugins
 
 type
-  JsonConfig = object
+  JsonConfig* = object
     deps: string
     nameOverrides: Table[string, string]
     urlOverrides: Table[string, string]
@@ -38,8 +38,7 @@ proc writeDefaultConfigFile*() =
   let configFile = getProjectConfig()
   writeFile($configFile, pretty %*config)
 
-proc readConfig*() =
-  let configFile = getProjectConfig()
+proc readConfigFile*(configFile: Path): JsonConfig =
   var f = newFileStream($configFile, fmRead)
   if f == nil:
     warn "atlas:config", "could not read project config:", $configFile
@@ -47,37 +46,44 @@ proc readConfig*() =
 
   try:
     let j = parseJson(f, $configFile)
-    let m = j.jsonTo(JsonConfig, Joptions(allowExtraKeys: true, allowMissingKeys: true))
-    if m.deps.len > 0:
-      context().depsDir = m.deps.Path
-    
-    # Handle package name overrides
-    for key, val in m.nameOverrides:
-      let err = context().nameOverrides.addPattern(key, val)
-      if err.len > 0:
-        error configFile, "invalid name override pattern: " & err
+    result = j.jsonTo(JsonConfig, Joptions(allowExtraKeys: true, allowMissingKeys: true))
 
-    # Handle URL overrides  
-    for key, val in m.urlOverrides:
-      let err = context().urlOverrides.addPattern(key, val)
-      if err.len > 0:
-        error configFile, "invalid URL override pattern: " & err
-
-    # Handle package overrides
-    for key, val in m.pkgOverrides:
-      context().pkgOverrides[key] = parseUri(val)
-    if m.resolver.len > 0:
-      try:
-        context().defaultAlgo = parseEnum[ResolutionAlgorithm](m.resolver)
-      except ValueError:
-        warn configFile, "ignored unknown resolver: " & m.resolver
-    if m.plugins.len > 0:
-      context().pluginsFile = m.plugins.Path
-      readPluginsDir(m.plugins.Path)
   finally:
     close f
 
-proc writeConfig*(graph: DepGraph) =
+proc readConfig*() =
+  let configFile = getProjectConfig()
+  let m = readConfigFile(configFile)
+
+  if m.deps.len > 0:
+    context().depsDir = m.deps.Path
+  
+  # Handle package name overrides
+  for key, val in m.nameOverrides:
+    let err = context().nameOverrides.addPattern(key, val)
+    if err.len > 0:
+      error configFile, "invalid name override pattern: " & err
+
+  # Handle URL overrides  
+  for key, val in m.urlOverrides:
+    let err = context().urlOverrides.addPattern(key, val)
+    if err.len > 0:
+      error configFile, "invalid URL override pattern: " & err
+
+  # Handle package overrides
+  for key, val in m.pkgOverrides:
+    context().pkgOverrides[key] = parseUri(val)
+  if m.resolver.len > 0:
+    try:
+      context().defaultAlgo = parseEnum[ResolutionAlgorithm](m.resolver)
+    except ValueError:
+      warn configFile, "ignored unknown resolver: " & m.resolver
+  if m.plugins.len > 0:
+    context().pluginsFile = m.plugins.Path
+    readPluginsDir(m.plugins.Path)
+
+
+proc writeConfig*() =
   # TODO: serialize graph in a smarter way
 
   let config = JsonConfig(
@@ -87,7 +93,11 @@ proc writeConfig*(graph: DepGraph) =
     pkgOverrides: context().pkgOverrides.pairs().toSeq().mapIt((it[0], $it[1])).toTable(),
     plugins: $context().pluginsFile,
     resolver: $context().defaultAlgo,
-    graph: newJNull(),
+    graph: newJNull()
   )
+
+  let jcfg = toJson(config)
+  doAssert not jcfg.isNil()
   let configFile = getProjectConfig()
-  writeFile($configFile, pretty %*config)
+  debug "atlas", "writing config file: ", $configFile
+  writeFile($configFile, pretty(jcfg))

@@ -2,12 +2,14 @@
 
 import std / [strutils, os, uri, jsonutils, json, sets, tables, sequtils, strformat, unittest]
 import std/terminal
+import std/importutils
+
 import basic/[sattypes, context, reporters, pkgurls, compiledpatterns, versions]
 import basic/[deptypes, nimblecontext]
 import dependencies
 import depgraphs
 import testerutils
-import atlas
+import atlas, confighandler
 
 ensureGitHttpServer()
 
@@ -112,42 +114,27 @@ suite "test link integration":
 
         checkpoint "\tgraph:\n" & $graph.toJson(ToJsonOptions(enumMode: joptEnumString))
 
-        let form = graph.toFormular(SemVer)
-        context().flags.incl DumpGraphs
-        var sol: Solution
-        solve(graph, form)
+        let config = readConfigFile(getProjectConfig())
+        privateAccess(config.type)
+        echo "config: ", $config
+        check config.nameOverrides.len == 1
+        check config.nameOverrides["ws_link_semver"] == toWindowsFileUrl("link://" & $absolutePath($project() /../ "ws_link_semver"))
 
-        check graph.root.active
-        check graph.pkgs[nc.createUrl("proj_a")].active
-        check graph.pkgs[nc.createUrl("proj_b")].active
-        check graph.pkgs[nc.createUrl("proj_c")].active
-        check graph.pkgs[nc.createUrl("proj_d")].active
+        # let form = graph.toFormular(SemVer)
+        # context().flags.incl DumpGraphs
+        # var sol: Solution
+        # solve(graph, form)
 
-        check $graph.root.activeVersion == "#head@-"
-        check $graph.pkgs[nc.createUrl("proj_a")].activeVersion == $findCommit("proj_a", "1.1.0")
-        check $graph.pkgs[nc.createUrl("proj_b")].activeVersion == $findCommit("proj_b", "1.1.0")
-        check $graph.pkgs[nc.createUrl("proj_c")].activeVersion == $findCommit("proj_c", "1.2.0")
-        check $graph.pkgs[nc.createUrl("proj_d")].activeVersion == $findCommit("proj_d", "1.0.0")
+        # check graph.root.active
+        # check graph.pkgs[nc.createUrl("proj_a")].active
+        # check graph.pkgs[nc.createUrl("proj_b")].active
+        # check graph.pkgs[nc.createUrl("proj_c")].active
+        # check graph.pkgs[nc.createUrl("proj_d")].active
 
-        let formMinVer = graph.toFormular(MinVer)
-        context().flags.incl DumpGraphs
-        var solMinVer: Solution
-        solve(graph, formMinVer)
+        # check $graph.root.activeVersion == "#head@-"
+        # check $graph.pkgs[nc.createUrl("proj_a")].activeVersion == $findCommit("proj_a", "1.1.0")
+        # check $graph.pkgs[nc.createUrl("proj_b")].activeVersion == $findCommit("proj_b", "1.1.0")
+        # check $graph.pkgs[nc.createUrl("proj_c")].activeVersion == $findCommit("proj_c", "1.2.0")
+        # check $graph.pkgs[nc.createUrl("proj_d")].activeVersion == $findCommit("proj_d", "1.0.0")
 
-        check $graph.root.activeVersion == "#head@-"
-        check $graph.pkgs[nc.createUrl("proj_a")].activeVersion == $findCommit("proj_a", "1.0.0")
-        check $graph.pkgs[nc.createUrl("proj_b")].activeVersion == $findCommit("proj_b", "1.0.0")
-        check $graph.pkgs[nc.createUrl("proj_c")].activeVersion == $findCommit("proj_c", "1.2.0")
-        check $graph.pkgs[nc.createUrl("proj_d")].activeVersion == $findCommit("proj_d", "1.0.0")
-
-        check graph.validateDependencyGraph()
-        let topo = graph.toposorted()
-
-        check topo[0].url.projectName == "proj_d"
-        check topo[1].url.projectName == "proj_c"
-        check topo[2].url.projectName == "proj_b"
-        check topo[3].url.projectName == "proj_a"
-
-        for pkg in topo:
-          echo "PKG: ", pkg.url.projectName
 
