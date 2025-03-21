@@ -43,7 +43,7 @@ suite "test link integration":
 
   test "setup and test target project":
       # setAtlasVerbosity(Info)
-      withDir "tests/ws_semver_unit":
+      withDir "tests/ws_link_semver":
         removeDir("deps")
         project(paths.getCurrentDir())
         context().flags = {KeepWorkspace, ListVersions}
@@ -84,7 +84,7 @@ suite "test link integration":
 
   test "expand using http urls with link files":
       # setAtlasVerbosity(Info)
-      withDir "tests/ws_testtraverselinked":
+      withDir "tests/ws_link_integration":
         removeDir("deps")
         project(paths.getCurrentDir())
         context().flags = {KeepWorkspace, ListVersions}
