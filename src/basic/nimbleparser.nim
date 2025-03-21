@@ -67,11 +67,13 @@ proc patchNimbleFile*(nc: var NimbleContext;
                       nimbleFile: Path, name: string) =
   var url = nc.createUrl(name)  # This will handle both name and URL overrides internally
   
-  debug nimbleFile, "patching nimble file to use package:", name, "url:", $url
+  debug nimbleFile, "patching nimble file:", $nimbleFile, "to use package:", name, "url:", $url
 
   if url.isEmpty:
     error name, "cannot resolve package name: " & name
     return
+
+  doAssert nimbleFile.string.fileExists()
 
   let release = parseNimbleFile(nc, nimbleFile)
   # see if we have this requirement already listed. If so, do nothing:

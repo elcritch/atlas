@@ -14,13 +14,14 @@ type
     hasPackageList*: bool
     notFoundNames: HashSet[string]
 
-proc findNimbleFile*(nimbleFile: Path): seq[Path] =
-  if fileExists(nimbleFile):
-    result.add nimbleFile
-
 proc findNimbleFile*(dir: Path, projectName: string): seq[Path] =
-  var nimbleFile = dir / Path(projectName & ".nimble")
-  result = findNimbleFile(nimbleFile)
+  if dir.splitFile().ext == "nimble":
+    result = @[dir]
+  else:
+    let nimbleFile = dir / Path(projectName & ".nimble")
+    if fileExists(nimbleFile):
+      result = @[nimbleFile]
+
   if result.len() == 0:
     for file in walkFiles($dir / "*.nimble"):
       result.add Path(file)

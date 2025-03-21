@@ -200,17 +200,20 @@ proc autoProject(currentDir: Path): bool =
     result = project().dirExists()
 
 proc findProjectNimbleFile(writeNimbleFile: bool = false): Path =
-  var nimbleFiles = findNimbleFile(project())
+  var nimbleFiles = findNimbleFile(project(), "")
+  debug "atlas", "found nimble files:", $nimbleFiles
 
   if nimbleFiles.len() == 0 and writeNimbleFile:
     let nimbleFile = project() / Path(splitPath($paths.getCurrentDir()).tail & ".nimble")
     debug "atlas:link", "writing nimble file:", $nimbleFile
     writeFile($nimbleFile, "")
-    nimbleFiles.add(nimbleFile)
+    result = nimbleFile
   elif nimbleFiles.len() == 0:
     fatal "No Nimble file found in project"
+    quit(1)
   elif nimbleFiles.len() > 1:
     fatal "Ambiguous Nimble files found: " & $nimbleFiles
+    quit(1)
   else:
     result = nimbleFiles[0]
 
@@ -469,11 +472,12 @@ proc atlasRun*(params: seq[string]) =
     var nc = createNimbleContext()
     let nimbleFile = findProjectNimbleFile(writeNimbleFile = true)
 
-    info "atlas:use", "modifying nimble file to use package:", args[0], "at:", $nimbleFiles[0]
-    patchNimbleFile(nc, nimbleFiles[0], args[0])
+    info "atlas:use", "modifying nimble file to use package:", args[0], "at:", $nimbleFile
+    patchNimbleFile(nc, nimbleFile, args[0])
 
     if atlasErrors() > 0:
-      discard "don't continue for 'cannot resolve'"
+      fatal "cannot continue"
+
     installDependencies(nc, nimbleFile)
 
   of "link":
@@ -490,9 +494,11 @@ proc atlasRun*(params: seq[string]) =
     discard context().nameOverrides.addPattern(linkUri.projectName, $linkUri.url)
     info "atlas:link", "link uri:", $linkUri
 
+    var nc = createNimbleContext()
+
     let nimbleFile = findProjectNimbleFile(writeNimbleFile = true)
-    info "atlas:link", "modifying nimble file to use package:", args[0], "at:", $nimbleFile
-    patchNimbleFile(nc, nimbleFile, args[0])
+    info "atlas:link", "modifying nimble file to use package:", linkUri.projectName, "at:", $nimbleFile
+    patchNimbleFile(nc, nimbleFile, linkUri.projectName)
 
     # installDependencies(nc, nimbleFile)
 
