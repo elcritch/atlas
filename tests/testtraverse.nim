@@ -296,7 +296,7 @@ suite "test expand with git tags":
         let deps = setupGraph()
 
       withDir "tests/ws_testtraverselinked":
-        setAtlasVerbosity(Trace)
+        # setAtlasVerbosity(Trace)
         removeDir("deps")
         project(paths.getCurrentDir())
         context().flags = {KeepWorkspace, ListVersions}
