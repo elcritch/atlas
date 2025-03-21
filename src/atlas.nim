@@ -409,7 +409,7 @@ proc atlasRun*(params: seq[string]) =
   parseAtlasOptions(params, action, args)
 
   if action notin ["init", "tag"]:
-    doAssert project().string != "" and project().dirExists()
+    doAssert project().string != "" and project().dirExists(), "project was not set"
 
   if action in ["install", "update", "use"]:
     context().flags.incl ListVersions
