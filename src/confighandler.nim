@@ -12,7 +12,7 @@ import std / [strutils, os, streams, json, tables, jsonutils, uri, sequtils]
 import basic/[versions, context, reporters, compiledpatterns, parse_requires, deptypes]
 
 proc readPluginsDir(dir: Path) =
-  for k, f in walkDir($(workspace() / dir)):
+  for k, f in walkDir($(project() / dir)):
     if k == pcFile and f.endsWith(".nims"):
       extractPluginInfo f, context().plugins
 
@@ -42,7 +42,7 @@ proc readConfig*() =
   let configFile = getWorkspaceConfig()
   var f = newFileStream($configFile, fmRead)
   if f == nil:
-    warn "atlas:config", "could not read workspace config:", $configFile
+    warn "atlas:config", "could not read project config:", $configFile
     return
 
   let j = parseJson(f, $configFile)

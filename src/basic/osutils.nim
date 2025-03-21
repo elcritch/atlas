@@ -47,13 +47,13 @@ proc readableFile*(s: Path, path: Path): Path =
     s
 
 
-proc absoluteDepsDir*(workspace, value: Path): Path =
+proc absoluteDepsDir*(project, value: Path): Path =
   if value == Path ".":
-    result = workspace
+    result = project
   elif isAbsolute(value):
     result = value
   else:
-    result = workspace / value
+    result = project / value
 
 
 proc silentExec*(cmd: string; args: openArray[string]): (string, ResultCode) =

@@ -279,7 +279,7 @@ proc checkDuplicateModules(graph: var DepGraph) =
   for name, dupePkgs in moduleNames:
     if not context().pkgOverrides.hasKey(name):
       error "atlas:resolved", "duplicate module name:", name, "with pkgs:", dupePkgs.mapIt(it.url.projectName).join(", ")
-      notice "atlas:resolved", "please add an entry to `pkgOverrides` to the current workspace config to select one of: "
+      notice "atlas:resolved", "please add an entry to `pkgOverrides` to the current project config to select one of: "
       for pkg in dupePkgs:
         notice "...", "   \"$1\": \"$2\", " % [$pkg.url.shortName(), $pkg.url]
     
@@ -389,11 +389,11 @@ proc solve*(graph: var DepGraph; form: Form) =
     var notFoundCount = 0
     for pkg in values(graph.pkgs):
       if pkg.isRoot and pkg.state != Processed:
-        error workspace(), "invalid find package: " & pkg.url.projectName & " in state: " & $pkg.state & " error: " & $pkg.errors
+        error project(), "invalid find package: " & pkg.url.projectName & " in state: " & $pkg.state & " error: " & $pkg.errors
         inc notFoundCount
     if notFoundCount > 0:
       return
-    error workspace(), "version conflict; for more information use --showGraph"
+    error project(), "version conflict; for more information use --showGraph"
     for pkg in mvalues(graph.pkgs):
       var usedVersionCount = 0
       for (ver, rel) in validVersions(pkg):

@@ -16,7 +16,7 @@ const
   TestsDir* = "atlas/tests"
 
 const
-  AtlasWorkspaceFile = Path "atlas.workspace"
+  AtlasWorkspaceFile = Path "atlas.project"
 
 type
   CfgPath* = distinct string # put into a config `--path:"../x"`
@@ -49,7 +49,7 @@ type
     NimbleCommitsMax # takes the newest commit for each version
 
   AtlasContext* = object
-    workspace*: Path = Path"."
+    project*: Path = Path"."
     depsDir*: Path = Path"deps"
     flags*: set[Flag] = {}
     nameOverrides*: Patterns
@@ -68,11 +68,11 @@ proc setContext*(ctx: AtlasContext) =
 proc context*(): var AtlasContext =
   atlasContext
 
-proc workspace*(): Path =
-  atlasContext.workspace
+proc project*(): Path =
+  atlasContext.project
 
-proc workspace*(ws: Path) =
-  atlasContext.workspace = ws
+proc project*(ws: Path) =
+  atlasContext.project = ws
 
 proc depsDir*(relative = false): Path =
   if atlasContext.depsDir == Path"":
@@ -80,16 +80,16 @@ proc depsDir*(relative = false): Path =
   elif relative or atlasContext.depsDir.isAbsolute:
     result = atlasContext.depsDir
   else:
-    result = atlasContext.workspace / atlasContext.depsDir
+    result = atlasContext.project / atlasContext.depsDir
 
 proc relativeToWorkspace*(path: Path): string =
-  result = "$workspace/" & $path.relativePath(workspace())
+  result = "$project/" & $path.relativePath(project())
 
-proc getWorkspaceConfig*(workspace = workspace()): Path =
-  ## prefer workspace atlas.config if found
+proc getWorkspaceConfig*(project = project()): Path =
+  ## prefer project atlas.config if found
   ## otherwise default to one in deps/
   ## the deps path will be the default for auto-created ones
-  result = workspace / AtlasWorkspaceFile
+  result = project / AtlasWorkspaceFile
   if fileExists(result): return
   result = depsDir() / AtlasWorkspaceFile
 
@@ -99,11 +99,11 @@ proc isWorkspace*(dir: Path): bool =
 proc `==`*(a, b: CfgPath): bool {.borrow.}
 
 proc displayName(c: AtlasContext; p: string): string =
-  if p == c.workspace.string:
+  if p == c.project.string:
     p.absolutePath
   elif $c.depsDir != "" and p.isRelativeTo($c.depsDir):
     p.relativePath($c.depsDir)
-  elif p.isRelativeTo($c.workspace):
-    p.relativePath($c.workspace)
+  elif p.isRelativeTo($c.project):
+    p.relativePath($c.project)
   else:
     p

@@ -128,7 +128,7 @@ proc createGraphFromWorkspace*(): DepGraph =
   let configFile = getWorkspaceConfig()
   var f = newFileStream($configFile, fmRead)
   if f == nil:
-    error configFile, "could not open workspace config:", $configFile
+    error configFile, "could not open project config:", $configFile
     return
   try:
     let j = parseJson(f, $configFile)

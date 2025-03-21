@@ -5,8 +5,8 @@ when false:
   from nameresolver import resolvePackage
 
 proc initBasicWorkspace(typ: type AtlasContext): AtlasContext =
-  result.workspace = currentSourcePath().parentDir / "ws_basic"
-  result.origDepsDir = result.workspace
+  result.project = currentSourcePath().parentDir / "ws_basic"
+  result.origDepsDir = result.project
 
 suite "urls and naming":
   var 
@@ -17,7 +17,7 @@ suite "urls and naming":
     nc = createUnfilledNimbleContext()
     # setAtlasVerbosity(Trace)
     setAtlasErrorsColor(fgMagenta)
-    ws = absolutePath(workspace())
+    ws = absolutePath(project())
     nc.put("npeg", toPkgUriRaw(parseUri "https://github.com/zevv/npeg"))
     nc.put("sync", toPkgUriRaw(parseUri "https://github.com/planetis-m/sync"))
     nc.put("regex", toPkgUriRaw(parseUri "https://github.com/nitely/nim-regex"))
@@ -152,8 +152,8 @@ suite "urls and naming":
     check ua.path == "/D:/a/atlas/atlas/buildGraph/proj_a"
 
   test "proj_a windows path url with createUrlSkipPatterns":
-    workspace(Path("D:\\a\\atlas\\atlas"))
-    defer: workspace(ws)
+    project(Path("D:\\a\\atlas\\atlas"))
+    defer: project(ws)
 
     let upkg = createUrlSkipPatterns("D:\\a\\atlas\\atlas\\buildGraph\\proj_a", true, forceWindows = true)
     echo "upkg: ", $upkg
@@ -162,7 +162,7 @@ suite "urls and naming":
     check upkg.url.hostname == ""
     check $upkg.url == "file:///D:/a/atlas/atlas/buildGraph/proj_a"
     check $upkg.projectName == "proj_a"
-    check upkg.toOriginalPath(isWindowsTest = true) == Path($workspace() & "\\buildGraph\\proj_a")
+    check upkg.toOriginalPath(isWindowsTest = true) == Path($project() & "\\buildGraph\\proj_a")
     check toWindowsFileUrl("file://D:\\a\\atlas\\atlas") == "file:///D:/a/atlas/atlas"
     check toWindowsFileUrl("file://regular/unix/path") == "file://regular/unix/path"
 
@@ -184,10 +184,10 @@ suite "urls and naming":
     check upkg.toDirectoryPath() == ws / Path"deps" / Path("proj_b")
     check upkg.toLinkPath() == ws / Path"deps" / Path("proj_b.nimble-link")
 
-  test "workspace atlas url":
-    let upkg = nc.createUrl("atlas://workspace/test.nimble")
-    check upkg.url.hostname == "workspace"
-    check $upkg.url == "atlas://workspace/test.nimble"
+  test "project atlas url":
+    let upkg = nc.createUrl("atlas://project/test.nimble")
+    check upkg.url.hostname == "project"
+    check $upkg.url == "atlas://project/test.nimble"
     check $upkg.projectName == "test"
     check upkg.toDirectoryPath() == ws
     check upkg.toLinkPath() == Path""

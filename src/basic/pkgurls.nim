@@ -81,7 +81,7 @@ proc toOriginalPath*(pkgUrl: PkgUrl, isWindowsTest: bool = false): Path =
 
 proc toDirectoryPath*(pkgUrl: PkgUrl): Path =
   if pkgUrl.url.scheme == "atlas":
-    result = workspace()
+    result = project()
   elif pkgUrl.url.scheme == "file":
     # file:// urls are used for local source paths, not dependency paths
     result = depsDir() / Path(pkgUrl.projectName())
@@ -115,7 +115,7 @@ proc fixFileRelativeUrl*(u: Uri, isWindowsTest: bool = false): Uri =
 
   if result.scheme == "file" and result.hostname.len() > 0:
     # fix relative paths
-    var url = (workspace().string / (result.hostname & result.path)).absolutePath
+    var url = (project().string / (result.hostname & result.path)).absolutePath
     # url = absolutePath(url)
     url = "file://" & url
     if isWindowsTest or defined(windows):
