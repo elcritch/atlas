@@ -23,6 +23,7 @@ type
     ondisk*: Path
     nimbleFile*: Path
     active*: bool
+    isLinkedProject*: bool
     isRoot*: bool
     errors*: seq[string]
 

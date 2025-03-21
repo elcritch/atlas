@@ -303,21 +303,21 @@ suite "test expand with git tags":
         context().depsDir = Path "deps"
         context().nameOverrides = Patterns()
 
-        # discard context().overrides.addPattern("does_not_exist", "file://./buildGraph/does_not_exist")
-        # discard context().overrides.addPattern("$+", "http://localhost:4242/buildGraph/$#")
-        var nc = createNimbleContext()
-        nc.put("ws_testtraverse", toPkgUriRaw(parseUri "https://example.com/buildGraph/ws_testtraverse"))
-        nc.put("proj_a", toPkgUriRaw(parseUri "https://example.com/buildGraph/proj_a"))
-        nc.put("proj_b", toPkgUriRaw(parseUri "https://example.com/buildGraph/proj_b"))
-        nc.put("proj_c", toPkgUriRaw(parseUri "https://example.com/buildGraph/proj_c"))
-        nc.put("proj_d", toPkgUriRaw(parseUri "https://example.com/buildGraph/proj_d"))
-
         let ws_testtraverse = Path(".." / "ws_testtraverse").absolutePath()
         let deps = Path(".." / "ws_testtraverse" / "deps").absolutePath()
         let proj_a = Path(".." / "ws_testtraverse" / "deps" / "proj_a").absolutePath()
         let proj_b = Path(".." / "ws_testtraverse" / "deps" / "proj_b").absolutePath()
         let proj_c = Path(".." / "ws_testtraverse" / "deps" / "proj_c").absolutePath()
         let proj_d = Path(".." / "ws_testtraverse" / "deps" / "proj_d").absolutePath()
+
+        discard context().nameOverrides.addPattern("ws_testtraverse", "link://" & ws_testtraverse.string)
+
+        var nc = createNimbleContext()
+        nc.put("ws_testtraverse", toPkgUriRaw(parseUri "https://example.com/buildGraph/ws_testtraverse"))
+        nc.put("proj_a", toPkgUriRaw(parseUri "https://example.com/buildGraph/proj_a"))
+        nc.put("proj_b", toPkgUriRaw(parseUri "https://example.com/buildGraph/proj_b"))
+        nc.put("proj_c", toPkgUriRaw(parseUri "https://example.com/buildGraph/proj_c"))
+        nc.put("proj_d", toPkgUriRaw(parseUri "https://example.com/buildGraph/proj_d"))
 
         createNimbleLink(nc.createUrl("ws_testtraverse"), ws_testtraverse / Path("ws_testtraverse.nimble"), ws_testtraverse.CfgPath)
         createNimbleLink(nc.createUrl("proj_a"), proj_a / Path("proj_a.nimble"), proj_a.CfgPath)
@@ -344,7 +344,7 @@ suite "test expand with git tags":
 
         check sp.len() == 6
         check $sp[0].url == "atlas://project/ws_testtraverselinked.nimble"
-        check $sp[1].url == "linked://../ws_testtraverse"
+        check $sp[1].url == "linked://" & ws_testtraverse.string
         check $sp[2].url == "https://example.com/buildGraph/proj_a"
         check $sp[3].url == "https://example.com/buildGraph/proj_b"
         check $sp[4].url == "https://example.com/buildGraph/proj_c"

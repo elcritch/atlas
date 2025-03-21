@@ -252,6 +252,7 @@ proc loadDependency*(
 ) = 
   doAssert pkg.ondisk.string == ""
   pkg.ondisk = pkg.url.toDirectoryPath()
+  pkg.isLinkedProject = pkg.url.isLinkedProject()
   let todo = if dirExists(pkg.ondisk): DoNothing else: DoClone
 
   debug pkg.url.projectName, "loading dependency todo:", $todo, "dest:", $pkg.ondisk

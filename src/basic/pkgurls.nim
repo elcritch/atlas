@@ -121,6 +121,9 @@ proc toLinkPath*(pkgUrl: PkgUrl): Path =
 proc isLinkPath*(pkgUrl: PkgUrl): bool =
   result = fileExists(toLinkPath(pkgUrl))
 
+proc isLinkedProject*(pkgUrl: PkgUrl): bool =
+  result = pkgUrl.url.scheme == "link"
+
 proc createNimbleLink*(pkgUrl: PkgUrl, nimblePath: Path, cfgPath: CfgPath) =
   let nimbleLink = toLinkPath(pkgUrl)
   if nimbleLink.fileExists():
