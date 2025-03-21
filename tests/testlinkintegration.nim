@@ -87,9 +87,16 @@ suite "test link integration":
       setAtlasVerbosity(Trace)
       withDir "tests/ws_link_integration":
         removeDir("deps")
-        # project(paths.getCurrentDir())
+        project(paths.getCurrentDir())
         context().flags = {KeepWorkspace, ListVersions}
         context().defaultAlgo = SemVer
+
+        createDir("deps")
+        writeFile("deps" / "atlas.config", dedent"""
+        {
+          "deps": "deps"
+        }
+        """)
 
         expectedVersionWithGitTags()
         var nc = createNimbleContext()

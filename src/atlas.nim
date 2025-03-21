@@ -175,7 +175,7 @@ proc detectProject(customProject = Path ""): bool =
     debug "atlas", "finding project from current dir:", $cwd
 
     while cwd.string.len() > 0:
-      debug "atlas", "checking project config:", $(cwd / Path("atlas.config"))
+      debug "atlas", "checking project config:", $(cwd.getProjectConfig())
       if cwd.getProjectConfig().fileExists():
         break
       cwd = cwd.parentDir()
