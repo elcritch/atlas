@@ -84,7 +84,6 @@ proc toDirectoryPath*(pkgUrl: PkgUrl): Path =
     result = workspace()
   elif pkgUrl.url.scheme == "file":
     # file:// urls are used for local source paths, not dependency paths
-    # result = Path(pkgUrl.url.path)
     result = depsDir() / Path(pkgUrl.projectName())
   else:
     result = depsDir() / Path(pkgUrl.projectName())
