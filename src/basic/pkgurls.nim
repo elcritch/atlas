@@ -6,7 +6,7 @@
 #    distribution, for details about the copyright.
 #
 
-import std / [hashes, uri, os, strutils, os, sequtils, pegs, json]
+import std / [hashes, uri, os, strutils, files, dirs, sequtils, pegs, json]
 import compiledpatterns, gitops, reporters, context
 
 export uri
@@ -79,6 +79,9 @@ proc toOriginalPath*(pkgUrl: PkgUrl, isWindowsTest: bool = false): Path =
   else:
     raise newException(ValueError, "Invalid file path: " & $pkgUrl.url)
 
+proc linkPath*(path: Path): Path =
+  result = Path(path.string & ".nimble-link")
+
 proc toDirectoryPath*(pkgUrl: PkgUrl): Path =
   if pkgUrl.url.scheme == "atlas":
     result = project()
@@ -87,6 +90,19 @@ proc toDirectoryPath*(pkgUrl: PkgUrl): Path =
     result = depsDir() / Path(pkgUrl.projectName())
   else:
     result = depsDir() / Path(pkgUrl.projectName())
+  
+  if not dirExists(result) and fileExists(result.linkPath()):
+    # prefer the directory path if it exists (?)
+    let linkPath = result.linkPath()
+    let link = readFile($linkPath)
+    let lines = link.split("\n")
+    if lines.len != 2:
+      warn pkgUrl.projectName(), "invalid link file:", $linkPath
+    else:
+      let nimble = Path(lines[0])
+      result = nimble.splitFile().dir
+      info pkgUrl.projectName(), "link file to:", $result
+
   result = result.absolutePath
   trace pkgUrl, "found directory path:", $result
   doAssert result.len() > 0
