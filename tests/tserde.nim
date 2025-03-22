@@ -28,6 +28,16 @@ suite "json serde":
     upkg2.fromJson(jn)
     check upkg2[0] == upkg
 
+  test "json serde nimble release":
+    var nc = createUnfilledNimbleContext()
+    nc.put("foobar", toPkgUriRaw(parseUri "https://github.com/nimble-test/foobar.git"))
+    let release = NimbleRelease(version: Version"1.0.0", requirements: @[(nc.createUrl("foobar"), p"1.0.0")])
+    let jnRelease = toJson(release)
+    echo "jnRelease: ", pretty(jnRelease)
+    var release2: NimbleRelease
+    release2.fromJson(jnRelease)
+    check release == release2
+
   test "json serde version interval":
 
     let interval = p"1.0.0"

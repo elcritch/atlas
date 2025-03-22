@@ -102,11 +102,23 @@ proc toJsonHook*(r: NimbleRelease, opt: ToJsonOptions = ToJsonOptions()): JsonNo
     result["hasInstallHooks"] = toJson(r.hasInstallHooks, opt)
   if r.srcDir != Path "":
     result["srcDir"] = toJson(r.srcDir, opt)
-  # if r.version != Version"":
   result["version"] = toJson(r.version, opt)
-  # if r.vid != NoVar:
-  #   result["varId"] = toJson(r.vid, opt)
   result["status"] = toJson(r.status, opt)
+  if r.err != "":
+    result["err"] = toJson(r.err, opt)
+
+proc fromJsonHook*(r: var NimbleRelease; b: JsonNode; opt = Joptions()) =
+  if r.isNil:
+    r = new(NimbleRelease)
+  r.version.fromJson(b["version"])
+  r.requirements.fromJson(b["requirements"])
+  r.status.fromJson(b["status"])
+  if b.hasKey("hasInstallHooks"):
+    r.hasInstallHooks = b["hasInstallHooks"].getBool()
+  if b.hasKey("srcDir"):
+    r.srcDir.fromJson(b["srcDir"])
+  if b.hasKey("err"):
+    r.err = b["err"].getStr()
 
 proc hash*(r: Package): Hash =
   ## use pkg name and url for identification and lookups
@@ -142,11 +154,6 @@ proc hash*(r: PackageVersion): Hash =
   result = hash(r.vtag)
 proc `==`*(a, b: PackageVersion): bool =
   result = a.vtag == b.vtag
-
-proc toJsonHook*(t: Table[VersionTag, NimbleRelease], opt: ToJsonOptions): JsonNode =
-  result = newJObject()
-  for k, v in t:
-    result[repr(k)] = toJson(v, opt)
 
 proc toJsonHook*(t: OrderedTable[PackageVersion, NimbleRelease], opt: ToJsonOptions): JsonNode =
   result = newJArray()
