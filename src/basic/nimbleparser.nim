@@ -6,8 +6,8 @@
 #    distribution, for details about the copyright.
 #
 
-import std / [os, uri, paths, strutils, tables, unicode, hashes, json, jsonutils]
-import sattypes, deptypes, nimblecontext, versions, context, reporters, gitops, parse_requires, pkgurls, compiledpatterns
+import std / [os, uri, paths, strutils, json]
+import deptypes, nimblecontext, versions, context, reporters, parse_requires, pkgurls
 
 proc addError*(err: var string; nimbleFile: string; msg: string) =
   if err.len > 0: err.add "\n"

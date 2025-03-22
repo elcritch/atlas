@@ -9,7 +9,7 @@
 ## Lockfile implementation.
 
 import std / [sequtils, paths, dirs, files, strutils, tables, sets, os, json, jsonutils]
-import basic/[lockfiletypes, context, osutils, gitops, nimblechecksums, compilerversions,
+import basic/[lockfiletypes, context, pkgurls, osutils, gitops, nimblechecksums, compilerversions,
   configutils, depgraphtypes, reporters, nimbleparser, nimblecontext]
 import depgraphs, dependencies
 
@@ -38,7 +38,7 @@ proc fromPrefixedPath*(path: Path): Path =
     return path
 
 proc genLockEntry(lf: var LockFile; w: Package) =
-  lf.items[w.url.projectName] = LockFileEntry(
+  lf.items[w.url.projectName()] = LockFileEntry(
     dir: prefixedPath(w.ondisk),
     url: $w.url.url,
     commit: $currentGitCommit(w.ondisk),

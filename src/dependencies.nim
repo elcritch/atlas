@@ -6,15 +6,10 @@
 #    distribution, for details about the copyright.
 #
 
-import std / [os, strutils, uri, tables, sequtils, unicode, sequtils, sets, json, hashes, algorithm, paths, files, dirs]
-import basic/[context, deptypes, versions, osutils, nimbleparser, packageinfos, reporters, gitops, parse_requires, pkgurls, compiledpatterns, sattypes, nimblecontext]
+import std / [os, strutils, uri, tables, sequtils, sets, hashes, algorithm, paths, dirs]
+import basic/[context, deptypes, versions, osutils, nimbleparser, reporters, gitops, pkgurls, nimblecontext]
 
 export deptypes, versions
-
-when defined(nimAtlasBootstrap):
-  import ../dist/sat/src/sat/satvars
-else:
-  import sat/satvars
 
 proc collectNimbleVersions*(nc: NimbleContext; pkg: Package): seq[VersionTag] =
   let nimbleFiles = findNimbleFile(pkg)
@@ -64,7 +59,6 @@ proc processNimbleRelease(
     # warn pkg.url.projectName, "processRelease unable to checkout commit ", $release, "at:", $pkg.ondisk
     # result = NimbleRelease(status: HasBrokenRelease, err: "error checking out release")
 
-  var badNimbleFile = false
   if nimbleFiles.len() == 0:
     info "processRelease", "skipping release: missing nimble file:", $release
     result = NimbleRelease(status: HasUnknownNimbleFile, err: "missing nimble file")
@@ -284,7 +278,6 @@ proc expandGraph*(path: Path, nc: var NimbleContext; mode: TraversalMode, onClon
   var root = Package(url: url, isRoot: true)
   # nc.loadDependency(pkg)
 
-  var processed = initHashSet[PkgUrl]()
   result = DepGraph(root: root, mode: mode)
   nc.packageToDependency[root.url] = root
 

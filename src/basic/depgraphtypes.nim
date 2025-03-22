@@ -53,7 +53,6 @@ proc toposorted*(graph: DepGraph): seq[Package] =
 proc validateDependencyGraph*(graph: DepGraph): bool =
   ## Checks if the dependency graph is valid (no cycles)
   var visited = initTable[PkgUrl, VisitState]()
-  var valid = true
   
   # Initialize all packages as not visited
   for url, pkg in graph.pkgs:

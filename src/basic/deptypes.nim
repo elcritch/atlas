@@ -1,7 +1,7 @@
-import std/[unicode, paths, sha1, tables, json, jsonutils, hashes]
-import sattypes, pkgurls, versions, context, compiledpatterns
+import std/[paths, tables, json, jsonutils, hashes]
+import sattypes, pkgurls, versions, context
 
-export sha1, tables
+export tables
 
 type
 
