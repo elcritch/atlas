@@ -92,6 +92,12 @@ proc validateDependencyGraph*(graph: DepGraph): bool =
 proc toJsonHook*(vid: VarId): JsonNode = toJson($(int(vid)))
 proc toJsonHook*(p: Path): JsonNode = toJson($(p))
 
+proc fromJsonHook*(a: var VarId; b: JsonNode; opt = Joptions()) =
+  a = VarId(int(b.getInt()))
+
+proc fromJsonHook*(a: var Path; b: JsonNode; opt = Joptions()) =
+  a = Path(b.getStr())
+
 proc dumpJson*(d: DepGraph, filename: string, full = true, pretty = true) =
   let jn = toJson(d, ToJsonOptions(enumMode: joptEnumString))
   if pretty:

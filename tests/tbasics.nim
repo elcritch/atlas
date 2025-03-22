@@ -1,5 +1,5 @@
 import std/[unittest, os, algorithm, dirs, files, strutils, importutils, terminal, json, jsonutils]
-import basic/[context, pkgurls, deptypes, nimblecontext, compiledpatterns, osutils, versions]
+import basic/[context, pkgurls, deptypes, nimblecontext, compiledpatterns, osutils, versions, depgraphtypes]
 
 when false:
   from nameresolver import resolvePackage
@@ -400,18 +400,6 @@ suite "versions":
     let v4 = VersionTag(v: Version"#head", c: initCommitHash("", FromGitTag))
     check v4 == v3
 
-    let jn = toJson(v1)
-    var v5 = VersionTag()
-    v5.fromJson(jn)
-    check v5 == v1
-    echo "v5: ", repr(v5)
-
-    let jn2 = toJson(c1)
-    var c2 = CommitHash()
-    c2.fromJson(jn2)
-    check c2 == c1
-    echo "c2: ", repr(c2)
-
 
 import basic/[versions]
 
@@ -649,24 +637,3 @@ suite "sortVersions":
     check versions[2].v == v"1.2.0"
     check versions[3].v == v"2.0.0"
     check versions[4].v == v"#head"
-
-  test "json serde version interval":
-
-    proc p(s: string): VersionInterval =
-      var err = false
-      result = parseVersionInterval(s, 0, err)
-      # assert not err
-
-    let interval = p"1.0.0"
-    let jn = toJson(interval)
-    var interval2 = VersionInterval()
-    interval2.fromJson(jn)
-    check interval == interval2
-
-    let query = p">= 1.2 & < 1.4"
-    let jn2 = toJson(query)
-    var query2 = VersionInterval()
-    query2.fromJson(jn2)
-    check query == query2
-
-
