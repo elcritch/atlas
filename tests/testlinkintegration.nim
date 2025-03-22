@@ -1,8 +1,7 @@
 # Small program that runs the test cases
 
-import std / [strutils, os, uri, jsonutils, json, sets, tables, sequtils, strformat, unittest]
+import std / [strutils, os, uri, jsonutils, json, tables, sequtils, unittest]
 import std/terminal
-import std/importutils
 
 import basic/[sattypes, context, reporters, pkgurls, compiledpatterns, versions]
 import basic/[deptypes, nimblecontext]
