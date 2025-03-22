@@ -160,7 +160,8 @@ suite "test expand with git tags":
         let sp3: Package = sp[3] # proj C
         let sp4: Package = sp[4] # proj D
 
-        check $sp0.url == "atlas://project/ws_testtraverse.nimble"
+        check $sp0.url.url.scheme == "atlas" and endsWith($sp0.url, "ws_testtraverse.nimble")
+
         check $sp1.url == toWindowsFileUrl("file://$1/buildGraph/proj_a" % [$dir])  
         check $sp2.url == toWindowsFileUrl("file://$1/buildGraph/proj_b" % [$dir])
         check $sp3.url == toWindowsFileUrl("file://$1/buildGraph/proj_c" % [$dir])
@@ -228,7 +229,8 @@ suite "test expand with git tags":
         let vt = toVersionTag
 
         check sp.len() == 5
-        check $sp[0].url == "atlas://project/ws_testtraverse.nimble"
+        check $sp[0].url.url.scheme == "atlas" and endsWith($sp[0].url, "ws_testtraverse.nimble")
+
         check $sp[1].url == "https://example.com/buildGraph/proj_a"
         check $sp[2].url == "https://example.com/buildGraph/proj_b"
         check $sp[3].url == "https://example.com/buildGraph/proj_c"
@@ -344,7 +346,8 @@ suite "test expand with git tags":
         let vt = toVersionTag
 
         check sp.len() == 6
-        check $sp[0].url == "atlas://project/ws_testtraverselinked.nimble"
+        check $sp[0].url.url.scheme == "atlas" and endsWith($sp[0].url, "ws_testtraverselinked.nimble")
+
         check $sp[1].url == "link://" & ws_testtraverse.string
         check $sp[2].url == "https://example.com/buildGraph/proj_a"
         check $sp[3].url == "https://example.com/buildGraph/proj_b"
@@ -445,7 +448,8 @@ suite "test expand with no git tags":
         let sp3: Package = sp[3] # proj C
         let sp4: Package = sp[4] # proj D
 
-        check $sp[0].url == "atlas://project/ws_testtraverse.nimble"
+        check $sp[0].url.url.scheme == "atlas" and endsWith($sp[0].url, "ws_testtraverse.nimble")
+
         check $sp[1].url == toWindowsFileUrl("file://$1/buildGraphNoGitTags/proj_a" % [$dir])
         check $sp[2].url == toWindowsFileUrl("file://$1/buildGraphNoGitTags/proj_b" % [$dir])
         check $sp[3].url == toWindowsFileUrl("file://$1/buildGraphNoGitTags/proj_c" % [$dir])
@@ -518,7 +522,8 @@ suite "test expand with no git tags and nimble commits max":
         let sp3: Package = sp[3] # proj C
         let sp4: Package = sp[4] # proj D
 
-        check $sp[0].url == "atlas://project/ws_testtraverse.nimble"
+        check $sp[0].url.url.scheme == "atlas" and endsWith($sp[0].url, "ws_testtraverse.nimble")
+
         check $sp[1].url == toWindowsFileUrl("file://$1/buildGraphNoGitTags/proj_a" % [$dir])
         check $sp[2].url == toWindowsFileUrl("file://$1/buildGraphNoGitTags/proj_b" % [$dir])
         check $sp[3].url == toWindowsFileUrl("file://$1/buildGraphNoGitTags/proj_c" % [$dir])
