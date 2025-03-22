@@ -1,4 +1,4 @@
-import std/[paths, tables, files, os, uri, sequtils, dirs, sets, strutils, unicode]
+import std/[paths, tables, files, os, uri, dirs, sets, strutils, unicode]
 import context, packageinfos, reporters, pkgurls, gitops, compiledpatterns, deptypes, versions
 
 type

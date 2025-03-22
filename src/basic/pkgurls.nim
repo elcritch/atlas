@@ -7,7 +7,7 @@
 #
 
 import std / [hashes, uri, os, strutils, files, dirs, sequtils, pegs, json, jsonutils]
-import compiledpatterns, gitops, reporters, context
+import gitops, reporters, context
 
 export uri
 

@@ -6,7 +6,7 @@
 #    distribution, for details about the copyright.
 #
 
-import std/[os, strutils, dirs, files]
+import std/[os, strutils, files]
 import context, osutils, parse_requires, reporters
 
 export parse_requires

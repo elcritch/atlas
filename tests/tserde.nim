@@ -1,5 +1,5 @@
-import std/[unittest, os, algorithm, dirs, files, strutils, importutils, terminal, json, jsonutils]
-import basic/[context, pkgurls, deptypes, nimblecontext, compiledpatterns, osutils, versions, depgraphtypes]
+import std/[unittest, json, jsonutils]
+import basic/[context, pkgurls, deptypes, nimblecontext, depgraphtypes]
 import basic/[sattypes, versions]
 
 proc p(s: string): VersionInterval =

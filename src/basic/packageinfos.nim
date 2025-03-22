@@ -6,7 +6,7 @@
 #    distribution, for details about the copyright.
 #
 
-import std / [json, os, sets, strutils, paths, files, dirs, httpclient, uri, json, jsonutils]
+import std / [json, os, sets, strutils, paths, dirs, httpclient, uri]
 import context, reporters, gitops
 
 const

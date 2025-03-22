@@ -9,11 +9,11 @@
 ## Simple tool to automate frequent workflows: Can "clone"
 ## a Nimble dependency and its dependencies recursively.
 
-import std / [parseopt, files, dirs, strutils, os, osproc, tables, sets, json, jsonutils, uri, paths]
-import basic / [versions, context, osutils, packageinfos,
-                configutils, nimblechecksums, reporters,
+import std / [parseopt, files, dirs, strutils, os, osproc, tables, sets, json, uri, paths]
+import basic / [versions, context, osutils, configutils, reporters,
                 nimbleparser, gitops, pkgurls, nimblecontext, compiledpatterns]
-import depgraphs, nimenv, lockfiles, confighandler, dependencies, pkgsearch
+import depgraphs, nimenv, lockfiles, confighandler, dependencies
+
 
 from std/terminal import isatty
 
@@ -452,19 +452,10 @@ proc atlasRun*(params: seq[string]) =
     newProject(args[0])
 
   of "install":
-
-    var nimbleFiles = findNimbleFile(project(), project().splitPath().tail.string)
-
-    if nimbleFiles.len() == 0:
-      let nimbleFile = project() / Path(splitPath($paths.getCurrentDir()).tail & ".nimble")
-      error "atlas:install", "expected nimble file in project, but none found"
-      quit(1)
-    elif nimbleFiles.len() > 1:
-      error "atlas:install", "Ambiguous Nimble files found: " & $nimbleFiles
-      quit(1)
+    let nimbleFile = findProjectNimbleFile()
 
     var nc = createNimbleContext()
-    installDependencies(nc, nimbleFiles[0].Path)
+    installDependencies(nc, nimbleFile)
 
   of "use":
     singleArg()
