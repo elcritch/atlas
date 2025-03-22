@@ -48,7 +48,7 @@ suite "test link integration":
       withDir "tests/ws_link_semver":
         removeDir("deps")
         project(paths.getCurrentDir())
-        context().flags = {KeepWorkspace, ListVersions}
+        context().flags = {ListVersions}
         context().defaultAlgo = SemVer
 
         expectedVersionWithGitTags()
@@ -63,7 +63,7 @@ suite "test link integration":
 
         let dir = paths.getCurrentDir().absolutePath
 
-        var graph = dir.expandGraph(nc, AllReleases, onClone=DoClone)
+        var graph = dir.loadWorkspace(nc, AllReleases, onClone=DoClone, doSolve=true)
 
         echo "\tgraph:\n" & $graph.toJson(ToJsonOptions(enumMode: joptEnumString))
 

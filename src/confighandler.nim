@@ -123,7 +123,7 @@ proc readDepGraph*(nc: var NimbleContext, ctx: AtlasContext, path: Path): DepGra
 proc loadDepGraph*(nc: var NimbleContext, nimbleFile: Path): DepGraph =
   doAssert nimbleFile.isAbsolute() and endsWith($nimbleFile, ".nimble") and fileExists($nimbleFile)
   let projectDir = nimbleFile.parentDir()
-  var ctx = AtlasContext()
+  var ctx = AtlasContext(projectDir: projectDir)
   readAtlasContext(ctx, projectDir)
   let configFile = depGraphCacheFile(ctx)
   debug "atlas", "reading dep graph from: ", $configFile
