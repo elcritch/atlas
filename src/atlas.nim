@@ -107,6 +107,33 @@ proc tag(field: Natural) =
   if atlasErrors() == oldErrors:
     tag(newTag)
 
+proc findProjectNimbleFile(writeNimbleFile: bool = false): Path =
+  var nimbleFiles = findNimbleFile(project(), "")
+
+  if nimbleFiles.len() == 0 and writeNimbleFile:
+    let nimbleFile = project() / Path(splitPath($paths.getCurrentDir()).tail & ".nimble")
+    debug "atlas:link", "writing nimble file:", $nimbleFile
+    writeFile($nimbleFile, "")
+    result = nimbleFile
+  elif nimbleFiles.len() == 0:
+    fatal "No Nimble file found in project"
+    quit(1)
+  elif nimbleFiles.len() > 1:
+    fatal "Ambiguous Nimble files found: " & $nimbleFiles
+    quit(1)
+  else:
+    result = nimbleFiles[0]
+
+proc createWorkspace() =
+  createDir(depsDir())
+  if not fileExists(getProjectConfig()):
+    writeDefaultConfigFile()
+    info project(), "created atlas.config"
+  if depsDir() != Path "":
+    if not dirExists(absoluteDepsDir(project(), depsDir())):
+      info depsDir(), "creating deps directory"
+    createDir absoluteDepsDir(project(), depsDir())
+
 proc generateDepGraph(g: DepGraph) =
   proc repr(pkg: Package): string =
     $(pkg.url.url / $pkg.activeVersion.commit)
@@ -162,6 +189,28 @@ proc updateDir(dir, filter: string) =
       trace file, "updating directory"
       gitops.updateDir(file.Path, filter)
 
+proc linkPackage(linkedNimbles: seq[Path], linkDir: Path) =
+  let linkedNimble = linkedNimbles[0]
+
+  let linkUri = toPkgUriRaw(parseUri("link://" & linkDir.string))
+  discard context().nameOverrides.addPattern(linkUri.projectName, $linkUri.url)
+  info "atlas:link", "link uri:", $linkUri
+
+  var nc = createNimbleContext()
+
+  let nimbleFile = findProjectNimbleFile(writeNimbleFile = true)
+  info "atlas:link", "modifying nimble file to use package:", linkUri.projectName, "at:", $nimbleFile
+  patchNimbleFile(nc, nimbleFile, linkUri.projectName)
+
+  writeConfig()
+  info "atlas:link", "current project dir:", $project()
+
+  echo "\n\n==============\n\n"
+  # Load linked project's config to get its deps dir
+  info "atlas:link", "linked project dir:", $linkDir
+  var linkNc = createNimbleContext()
+
+
 proc detectProject(customProject = Path ""): bool =
   ## find project by checking `currentDir` and its parents.
   if customProject.string.len() > 0:
@@ -198,33 +247,6 @@ proc autoProject(currentDir: Path): bool =
 
   if project().len() > 0:
     result = project().dirExists()
-
-proc findProjectNimbleFile(writeNimbleFile: bool = false): Path =
-  var nimbleFiles = findNimbleFile(project(), "")
-
-  if nimbleFiles.len() == 0 and writeNimbleFile:
-    let nimbleFile = project() / Path(splitPath($paths.getCurrentDir()).tail & ".nimble")
-    debug "atlas:link", "writing nimble file:", $nimbleFile
-    writeFile($nimbleFile, "")
-    result = nimbleFile
-  elif nimbleFiles.len() == 0:
-    fatal "No Nimble file found in project"
-    quit(1)
-  elif nimbleFiles.len() > 1:
-    fatal "Ambiguous Nimble files found: " & $nimbleFiles
-    quit(1)
-  else:
-    result = nimbleFiles[0]
-
-proc createWorkspace() =
-  createDir(depsDir())
-  if not fileExists(getProjectConfig()):
-    writeDefaultConfigFile()
-    info project(), "created atlas.config"
-  if depsDir() != Path "":
-    if not dirExists(absoluteDepsDir(project(), depsDir())):
-      info depsDir(), "creating deps directory"
-    createDir absoluteDepsDir(project(), depsDir())
 
 proc listOutdated() =
   let dir = project()
@@ -476,23 +498,15 @@ proc atlasRun*(params: seq[string]) =
     if not linkDir.dirExists():
       fatal "cannot link to directory that does not exist: " & $linkDir
 
-    let linkUri = toPkgUriRaw(parseUri("link://" & linkDir.string))
-    discard context().nameOverrides.addPattern(linkUri.projectName, $linkUri.url)
-    info "atlas:link", "link uri:", $linkUri
+    let linkedNimbles = linkDir.findNimbleFile()
+    if linkedNimbles.len() == 0:
+      fatal "cannot link to directory that does not contain a nimble file: " & $linkDir
+      quit(2)
+    elif linkedNimbles.len() > 1:
+      fatal "cannot link to directory that contains multiple nimble files: " & $linkDir
+      quit(2)
 
-    var nc = createNimbleContext()
-
-    let nimbleFile = findProjectNimbleFile(writeNimbleFile = true)
-    info "atlas:link", "modifying nimble file to use package:", linkUri.projectName, "at:", $nimbleFile
-    patchNimbleFile(nc, nimbleFile, linkUri.projectName)
-
-    writeConfig()
-    info "atlas:link", "current project dir:", $project()
-
-    echo "\n\n==============\n\n"
-    # Load linked project's config to get its deps dir
-    info "atlas:link", "linked project dir:", $linkDir
-    var linkNc = createNimbleContext()
+    linkPackage(linkedNimbles, linkDir)
 
 
   of "pin":
