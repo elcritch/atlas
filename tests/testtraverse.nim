@@ -356,6 +356,7 @@ suite "test expand with git tags":
         let graph = dir.expandGraph(nc, AllReleases, onClone=DoClone)
 
         checkpoint "\tgraph:\n" & $graph.toJson(ToJsonOptions(enumMode: joptEnumString))
+        echo "\tgraph:\n" & $graph.toJson(ToJsonOptions(enumMode: joptEnumString))
         let sp = graph.pkgs.values().toSeq()
         let vt = toVersionTag
 

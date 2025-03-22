@@ -118,6 +118,8 @@ proc toDirectoryPath*(pkgUrl: PkgUrl): Path =
 proc toLinkPath*(pkgUrl: PkgUrl): Path =
   if pkgUrl.url.scheme == "atlas":
     result = Path("")
+  elif pkgUrl.url.scheme == "link":
+    result = depsDir() / Path(pkgUrl.projectName() & ".nimble-link")
   else:
     result = Path(toDirectoryPath(pkgUrl, true).string & ".nimble-link")
 
@@ -129,6 +131,7 @@ proc isLinkedProject*(pkgUrl: PkgUrl): bool =
 
 proc createNimbleLink*(pkgUrl: PkgUrl, nimblePath: Path, cfgPath: CfgPath) =
   let nimbleLink = toLinkPath(pkgUrl)
+  trace "nimble:link", "creating link at:", $nimbleLink, "from:", $nimblePath
   if nimbleLink.fileExists():
     return
 
