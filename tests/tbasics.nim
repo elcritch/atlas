@@ -10,7 +10,7 @@ suite "urls and naming":
     nc = createUnfilledNimbleContext()
     # setAtlasVerbosity(Trace)
     setAtlasErrorsColor(fgMagenta)
-    project(Path("tests/ws_basic"))
+    project(Path("tests/ws_basic").absolutePath())
     ws = absolutePath(project())
     nc.put("npeg", toPkgUriRaw(parseUri "https://github.com/zevv/npeg"))
     nc.put("sync", toPkgUriRaw(parseUri "https://github.com/planetis-m/sync"))
@@ -135,6 +135,13 @@ suite "urls and naming":
     check $upkg.projectName == "proj_a"
     check upkg.toDirectoryPath() == ws / Path"deps" / Path("proj_a")
     check upkg.toLinkPath() == ws / Path"deps" / Path("proj_a.nimble-link")
+    check not upkg.isLinkPath()
+
+  test "link path":
+    let upkg = nc.createUrl("link://" & ws.string)
+    check upkg.url.scheme == "link"
+    check upkg.toDirectoryPath() == ws
+    check upkg.toLinkPath() == ws / Path"deps" / Path"ws_basic.nimble-link"
     check not upkg.isLinkPath()
 
   test "windows absolute file url basics":
