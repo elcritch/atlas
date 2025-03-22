@@ -158,7 +158,7 @@ proc toWindowsFileUrl*(raw: string): string =
     result = rawPath
 
 proc fixFileRelativeUrl*(u: Uri, isWindowsTest: bool = false): Uri =
-  if isWindowsTest or defined(windows) and u.scheme in ["file", "link"] and u.hostname.len() > 0:
+  if isWindowsTest or defined(windows) and u.scheme in ["file", "link", "atlas"] and u.hostname.len() > 0:
     result = parseUri(toWindowsFileUrl($u))
   else:
     result = u
