@@ -279,7 +279,7 @@ proc loadDependency*(
       pkg.state = Error
       pkg.errors.add "ondisk location missing"
 
-proc expandGraph*(path: Path, nc: var NimbleContext; mode: TraversalMode, onClone: PackageAction, isLinkPath = false): DepGraph =
+proc expand*(path: Path, nc: var NimbleContext; mode: TraversalMode, onClone: PackageAction, isLinkPath = false): DepGraph =
   ## Expand the graph by adding all dependencies.
   
   doAssert path.string != "."
@@ -343,3 +343,9 @@ proc expandGraph*(path: Path, nc: var NimbleContext; mode: TraversalMode, onClon
       nc.traverseDependency(pkg, ExplicitVersions, versions.toSeq())
 
   info "atlas:expand", "Finished expanding packages for:", $root.projectName
+
+proc findProjects*(path: Path): seq[Path] =
+  result = @[]
+  for k, f in walkDir(path):
+    if k == pcDir and dirExists(f / Path".git"):
+      result.add(f)
