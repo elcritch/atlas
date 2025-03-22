@@ -193,6 +193,7 @@ proc updateDir(dir, filter: string) =
 
 proc linkPackage(linkDir, linkedNimble: Path) =
 
+  echo "LINKING: NAME OVERRIDES: ", $context().nameOverrides
   let linkUri = toPkgUriRaw(parseUri("link://" & $linkedNimble))
   discard context().nameOverrides.addPattern(linkUri.projectName, $linkUri.url)
   info "atlas:link", "link uri:", $linkUri
@@ -407,7 +408,6 @@ proc parseAtlasOptions(params: seq[string], action: var string, args: var seq[st
   if detectProject():
     notice "atlas:project", "Using project directory:", $project()
     readConfig()
-    notice "atlas:project", "Using project directory:post:", $project()
   elif action notin ["init", "tag"]:
     notice "atlas:project", "Using project directory:", $project()
     if autoinit:

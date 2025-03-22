@@ -105,7 +105,13 @@ suite "test link integration":
         createDir("deps")
         writeFile("deps" / "atlas.config", dedent"""
         {
-          "deps": "deps"
+          "deps": "deps",
+          "nameOverrides": {
+            "proj_a": "https://example.com/buildGraph/proj_a",
+            "proj_b": "https://example.com/buildGraph/proj_b",
+            "proj_c": "https://example.com/buildGraph/proj_c",
+            "proj_d": "https://example.com/buildGraph/proj_d"
+          }
         }
         """)
 
@@ -124,7 +130,7 @@ suite "test link integration":
         let config = readConfigFile(getProjectConfig())
         echo "config: ", $config
         check project() == paths.getCurrentDir()
-        check config.nameOverrides.len == 1
+        check config.nameOverrides.len == 5
         check config.nameOverrides["ws_link_semver"] == toWindowsFileUrl("link://" & $absolutePath($project() /../ "ws_link_semver" / "ws_link_semver.nimble"))
 
         # let form = graph.toFormular(SemVer)

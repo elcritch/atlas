@@ -53,7 +53,7 @@ proc readConfigFile*(configFile: Path): JsonConfig =
 
 proc readAtlasContext*(ctx: var AtlasContext, projectDir: Path) =
   let configFile = projectDir.getProjectConfig()
-  debug "atlas:config", "reading config file: ", $configFile
+  info "atlas:config", "Reading config file: ", $configFile
   let m = readConfigFile(configFile)
 
   ctx.projectDir = projectDir
@@ -87,8 +87,7 @@ proc readAtlasContext*(ctx: var AtlasContext, projectDir: Path) =
   
 
 proc readConfig*() =
-  var ctx = context()
-  readAtlasContext(ctx, project())
+  readAtlasContext(context(), project())
   # trace "atlas:config", "read config file: ", repr context()
 
 proc writeConfig*() =
