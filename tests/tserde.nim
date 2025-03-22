@@ -26,13 +26,19 @@ suite "json serde":
     query2.fromJson(jn2)
     check query == query2
 
-  test "json serde version":
+  test "var ids":
     let var1 = VarId(1)
     let jn = toJson(var1)
     var var2 = VarId(0)
     var2.fromJson(jn)
     check var1 == var2
 
+  test "path":
+    let path1 = Path("test.nim")
+    let jn = toJson(path1)
+    var path2: Path
+    path2.fromJson(jn)
+    check path1 == path2
 
   test "test version tag and commit hash str":
     let c1 = initCommitHash("24870f48c40da2146ce12ff1e675e6e7b9748355", FromNone)
@@ -87,3 +93,4 @@ suite "json serde":
     check v9 == v8
     echo "v9: ", repr(v9)
     
+  
