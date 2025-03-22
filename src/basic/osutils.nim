@@ -81,14 +81,6 @@ template withDir*(dir: Path; body: untyped) =
   finally:
     setCurrentDir($oldDir)
 
-template withDir*(dir: Path; body: untyped) =
-  let oldDir = paths.getCurrentDir()
-  try:
-    setCurrentDir($dir)
-    body
-  finally:
-    setCurrentDir($oldDir)
-
 template tryWithDir*(dir: Path; body: untyped) =
   let oldDir = paths.getCurrentDir()
   try:
