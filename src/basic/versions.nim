@@ -444,6 +444,10 @@ proc toJsonHook*(v: VersionInterval): JsonNode = toJson($(v))
 proc toJsonHook*(v: Version): JsonNode = toJson($v)
 proc toJsonHook*(v: VersionTag): JsonNode = toJson(repr(v))
 
+proc fromJson*(a: var VersionInterval; b: JsonNode; opt = Joptions()) =
+  var err = false
+  a = parseVersionInterval(b.getStr(), 0, err)
+
 proc toVersion*(str: string): Version =
   if str == "~": result = Version("")
   else: result = parseVersion(str, 0)

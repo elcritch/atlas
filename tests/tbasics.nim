@@ -1,4 +1,4 @@
-import std/[unittest, os, algorithm, dirs, files, strutils, importutils, terminal]
+import std/[unittest, os, algorithm, dirs, files, strutils, importutils, terminal, json, jsonutils]
 import basic/[context, pkgurls, deptypes, nimblecontext, compiledpatterns, osutils, versions]
 
 when false:
@@ -25,11 +25,11 @@ suite "urls and naming":
     check upkg.url.hostname == "github.com"
     check $upkg.url == "https://github.com/disruptek/balls"
     check $upkg.projectName == "balls.disruptek.github.com"
-    check upkg.toDirectoryPath(context()) == ws / Path"deps" / Path("balls.disruptek.github.com")
-    check upkg.toLinkPath(context()) == ws / Path"deps" / Path("balls.disruptek.github.com.nimble-link")
+    check upkg.toDirectoryPath() == ws / Path"deps" / Path("balls.disruptek.github.com")
+    check upkg.toLinkPath() == ws / Path"deps" / Path("balls.disruptek.github.com.nimble-link")
     expect ValueError:
       discard nc.createUrl("balls")
-    check not upkg.isLinkPath(context())
+    check not upkg.isLinkPath()
 
   test "balls url using packageExtras":
     nc.put("balls", toPkgUriRaw(parseUri "https://github.com/disruptek/balls.git", true))
@@ -40,8 +40,8 @@ suite "urls and naming":
     check upkg.url.hostname == "github.com"
     check $upkg.url == "https://github.com/disruptek/balls"
     check $upkg.projectName == "balls"
-    check upkg.toDirectoryPath(context()) == ws / Path"deps" / Path("balls")
-    check upkg.toLinkPath(context()) == ws / Path"deps" / Path("balls.nimble-link")
+    check upkg.toDirectoryPath() == ws / Path"deps" / Path("balls")
+    check upkg.toLinkPath() == ws / Path"deps" / Path("balls.nimble-link")
 
   test "balls url using nameOverrides":
     discard nc.nameOverrides.addPattern("balls", "https://github.com/disruptek/balls.git")
@@ -49,32 +49,32 @@ suite "urls and naming":
     check upkg.url.hostname == "github.com"
     check $upkg.url == "https://github.com/disruptek/balls"
     check $upkg.projectName == "balls.disruptek.github.com"
-    check upkg.toDirectoryPath(context()) == ws / Path"deps" / Path("balls.disruptek.github.com")
-    check upkg.toLinkPath(context()) == ws / Path"deps" / Path("balls.disruptek.github.com.nimble-link")
+    check upkg.toDirectoryPath() == ws / Path"deps" / Path("balls.disruptek.github.com")
+    check upkg.toLinkPath() == ws / Path"deps" / Path("balls.disruptek.github.com.nimble-link")
 
   test "git url with colon":
     let upkg = nc.createUrl("git://github.com:disruptek/cutelog")
     check upkg.url.hostname == "github.com"
     check $upkg.url == "ssh://github.com/disruptek/cutelog"
     check $upkg.projectName == "cutelog.disruptek.github.com"
-    check upkg.toDirectoryPath(context()) == ws / Path"deps" / Path("cutelog.disruptek.github.com")
-    check upkg.toLinkPath(context()) == ws / Path"deps" / Path("cutelog.disruptek.github.com.nimble-link")
+    check upkg.toDirectoryPath() == ws / Path"deps" / Path("cutelog.disruptek.github.com")
+    check upkg.toLinkPath() == ws / Path"deps" / Path("cutelog.disruptek.github.com.nimble-link")
 
   test "git url with colon and port":
     let upkg = nc.createUrl("git://github.com:1234/disruptek/cutelog")
     check upkg.url.hostname == "github.com"
     check $upkg.url == "ssh://github.com:1234/disruptek/cutelog"
     check $upkg.projectName == "cutelog.disruptek.github.com"
-    check upkg.toDirectoryPath(context()) == ws / Path"deps" / Path("cutelog.disruptek.github.com")
-    check upkg.toLinkPath(context()) == ws / Path"deps" / Path("cutelog.disruptek.github.com.nimble-link")
+    check upkg.toDirectoryPath() == ws / Path"deps" / Path("cutelog.disruptek.github.com")
+    check upkg.toLinkPath() == ws / Path"deps" / Path("cutelog.disruptek.github.com.nimble-link")
 
   test "git url no colon":
     let upkg = nc.createUrl("git://github.com/disruptek/cutelog")
     check upkg.url.hostname == "github.com"
     check $upkg.url == "ssh://github.com/disruptek/cutelog"
     check $upkg.projectName == "cutelog.disruptek.github.com"
-    check upkg.toDirectoryPath(context()) == ws / Path"deps" / Path("cutelog.disruptek.github.com")
-    check upkg.toLinkPath(context()) == ws / Path"deps" / Path("cutelog.disruptek.github.com.nimble-link")
+    check upkg.toDirectoryPath() == ws / Path"deps" / Path("cutelog.disruptek.github.com")
+    check upkg.toLinkPath() == ws / Path"deps" / Path("cutelog.disruptek.github.com.nimble-link")
 
   test "npeg url":
     # setAtlasVerbosity(Trace)
@@ -82,8 +82,8 @@ suite "urls and naming":
     check upkg.url.hostname == "github.com"
     check $upkg.url == "https://github.com/zevv/npeg"
     check $upkg.projectName == "npeg"
-    check upkg.toDirectoryPath(context()) == ws / Path"deps" / Path("npeg")
-    check upkg.toLinkPath(context()) == ws / Path"deps" / Path("npeg.nimble-link")
+    check upkg.toDirectoryPath() == ws / Path"deps" / Path("npeg")
+    check upkg.toLinkPath() == ws / Path"deps" / Path("npeg.nimble-link")
     let npkg = nc.createUrl("npeg")
     check npkg.url.hostname == "github.com"
     check $npkg.url == "https://github.com/zevv/npeg"
@@ -93,8 +93,8 @@ suite "urls and naming":
     check upkg.url.hostname == "github.com"
     check $upkg.url == "https://github.com/elcritch/npeg"
     check $upkg.projectName == "npeg.elcritch.github.com"
-    check upkg.toDirectoryPath(context()) == ws / Path"deps" / Path("npeg.elcritch.github.com")
-    check upkg.toLinkPath(context()) == ws / Path"deps" / Path("npeg.elcritch.github.com.nimble-link")
+    check upkg.toDirectoryPath() == ws / Path"deps" / Path("npeg.elcritch.github.com")
+    check upkg.toLinkPath() == ws / Path"deps" / Path("npeg.elcritch.github.com.nimble-link")
     let npkg = nc.createUrl("npeg")
     check npkg.url.hostname == "github.com"
     check $npkg.url == "https://github.com/zevv/npeg"
@@ -104,8 +104,8 @@ suite "urls and naming":
     check upkg.url.hostname == "github.com"
     check $upkg.url == "https://github.com/planetis-m/sync"
     check $upkg.projectName == "sync"
-    check upkg.toDirectoryPath(context()) == ws / Path"deps" / Path("sync")
-    check upkg.toLinkPath(context()) == ws / Path"deps" / Path("sync.nimble-link")
+    check upkg.toDirectoryPath() == ws / Path"deps" / Path("sync")
+    check upkg.toLinkPath() == ws / Path"deps" / Path("sync.nimble-link")
     let npkg = nc.createUrl("sync")
     check npkg.url.hostname == "github.com"
     check $npkg.url == "https://github.com/planetis-m/sync"
@@ -115,8 +115,8 @@ suite "urls and naming":
     check upkg.url.hostname == "github.com"
     check $upkg.url == "https://github.com/juancarlospaco/nim-bytes2human"
     check $upkg.projectName == "nim-bytes2human.juancarlospaco.github.com"
-    check upkg.toDirectoryPath(context()) == ws / Path"deps" / Path("nim-bytes2human.juancarlospaco.github.com")
-    check upkg.toLinkPath(context()) == ws / Path"deps" / Path("nim-bytes2human.juancarlospaco.github.com.nimble-link")
+    check upkg.toDirectoryPath() == ws / Path"deps" / Path("nim-bytes2human.juancarlospaco.github.com")
+    check upkg.toLinkPath() == ws / Path"deps" / Path("nim-bytes2human.juancarlospaco.github.com.nimble-link")
     expect ValueError:
       discard nc.createUrl("bytes2human")
 
@@ -125,8 +125,8 @@ suite "urls and naming":
     check upkg.url.hostname == "github.com"
     check $upkg.url == "ssh://git@github.com/elcritch/atlas"
     check $upkg.projectName == "atlas.elcritch.github.com"
-    check upkg.toDirectoryPath(context()) == ws / Path"deps" / Path("atlas.elcritch.github.com")
-    check upkg.toLinkPath(context()) == ws / Path"deps" / Path("atlas.elcritch.github.com.nimble-link")
+    check upkg.toDirectoryPath() == ws / Path"deps" / Path("atlas.elcritch.github.com")
+    check upkg.toLinkPath() == ws / Path"deps" / Path("atlas.elcritch.github.com.nimble-link")
     expect ValueError:
       discard nc.createUrl("atlas")
 
@@ -136,9 +136,9 @@ suite "urls and naming":
     let upkg = nc.createUrl(pth)
     check upkg.url.hostname == ""
     check $upkg.projectName == "proj_a"
-    check upkg.toDirectoryPath(context()) == ws / Path"deps" / Path("proj_a")
-    check upkg.toLinkPath(context()) == ws / Path"deps" / Path("proj_a.nimble-link")
-    check not upkg.isLinkPath(context())
+    check upkg.toDirectoryPath() == ws / Path"deps" / Path("proj_a")
+    check upkg.toLinkPath() == ws / Path"deps" / Path("proj_a.nimble-link")
+    check not upkg.isLinkPath()
 
   test "windows absolute file url basics":
     check isWindowsAbsoluteFile("D:\\a\\atlas\\atlas\\buildGraph\\proj_a")
@@ -194,25 +194,25 @@ suite "urls and naming":
     else:
       check $upkg.url == pth % [ospaths2.getCurrentDir()]
     check $upkg.projectName == "proj_b"
-    check upkg.toDirectoryPath(context()) == ws / Path"deps" / Path("proj_b")
-    check upkg.toLinkPath(context()) == ws / Path"deps" / Path("proj_b.nimble-link")
+    check upkg.toDirectoryPath() == ws / Path"deps" / Path("proj_b")
+    check upkg.toLinkPath() == ws / Path"deps" / Path("proj_b.nimble-link")
 
   test "project atlas url":
     let upkg = nc.createUrl("atlas://project/test.nimble")
     check upkg.url.hostname == "project"
     check $upkg.url == "atlas://project/test.nimble"
     check $upkg.projectName == "test"
-    check upkg.toDirectoryPath(context()) == ws
-    check upkg.toLinkPath(context()) == Path""
-    check not upkg.isLinkPath(context())
+    check upkg.toDirectoryPath() == ws
+    check upkg.toLinkPath() == Path""
+    check not upkg.isLinkPath()
 
   test "foobar link file":
     let upkg = nc.createUrl("foobar")
-    check upkg.toLinkPath(context()) == ws / Path"deps" / Path("foobar.nimble-link")
-    check upkg.isLinkPath(context())
-    check upkg.toDirectoryPath(context()) == ws / Path"remote-deps" / Path("foobar")
-    echo "LINKPATH: ", upkg.toLinkPath(context())
-    check upkg.toLinkPath(context()).fileExists()
+    check upkg.toLinkPath() == ws / Path"deps" / Path("foobar.nimble-link")
+    check upkg.isLinkPath()
+    check upkg.toDirectoryPath() == ws / Path"remote-deps" / Path("foobar")
+    echo "LINKPATH: ", upkg.toLinkPath()
+    check upkg.toLinkPath().fileExists()
 
   test "print names":
     let upkg = nc.createUrl("https://github.com/disruptek/balls.git")
@@ -636,3 +636,22 @@ suite "sortVersions":
     check versions[2].v == v"1.2.0"
     check versions[3].v == v"2.0.0"
     check versions[4].v == v"#head"
+
+  test "json serde":
+
+    proc p(s: string): VersionInterval =
+      var err = false
+      result = parseVersionInterval(s, 0, err)
+      # assert not err
+
+    let interval = p"1.0.0"
+    let jn = toJson(interval)
+    var interval2 = VersionInterval()
+    interval2.fromJson(jn)
+    check interval == interval2
+
+    let query = p">= 1.2 & < 1.4"
+    let jn2 = toJson(query)
+    var query2 = VersionInterval()
+    query2.fromJson(jn2)
+    check query == query2

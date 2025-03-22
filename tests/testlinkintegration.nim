@@ -85,6 +85,15 @@ suite "test link integration":
         check $graph.pkgs[nc.createUrl("proj_c")].activeVersion == $findCommit("proj_c", "1.2.0")
         check $graph.pkgs[nc.createUrl("proj_d")].activeVersion == $findCommit("proj_d", "1.0.0")
 
+        # let graph2 = loadJson("graph-solved.json")
+
+        let jnRoot = toJson(graph.root)
+        var graphRoot: Package
+        graphRoot.fromJson(jnRoot)
+        echo "graphRoot: ", $graphRoot.toJson(ToJsonOptions(enumMode: joptEnumString))
+
+        # check graph.toJson(ToJsonOptions(enumMode: joptEnumString)) == graph2.toJson(ToJsonOptions(enumMode: joptEnumString))
+
   test "expand using http urls with link files":
       setAtlasVerbosity(Trace)
       withDir "tests/ws_link_integration":

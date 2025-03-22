@@ -99,6 +99,13 @@ proc dumpJson*(d: DepGraph, filename: string, full = true, pretty = true) =
   else:
     writeFile(filename, $(jn))
 
+proc loadJson*(json: JsonNode): DepGraph =
+  result.fromJson(json)
+
+proc loadJson*(filename: string): DepGraph =
+  let jn = parseJson(filename)
+  result.fromJson(jn, Joptions(allowMissingKeys: true, allowExtraKeys: true))
+
 proc toDestDir*(g: DepGraph; d: Package): Path =
   result = d.ondisk
 
