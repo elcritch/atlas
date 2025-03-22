@@ -289,8 +289,6 @@ proc newProject(projectName: string) =
 
 proc parseAtlasOptions(params: seq[string], action: var string, args: var seq[string]) =
   var autoinit = false
-  var explicitProjectOverride = false
-  var explicitDepsDirOverride = false
   if existsEnv("NO_COLOR") or not isatty(stdout) or (getEnv("TERM") == "dumb"):
     setAtlasNoColors(true)
   for kind, key, val in getopt(params):
@@ -318,7 +316,6 @@ proc parseAtlasOptions(params: seq[string], action: var string, args: var seq[st
       of "deps":
         if val.len > 0:
           context().depsDir = Path val
-          explicitDepsDirOverride = true
         else:
           writeHelp()
       of "shallow": context().flags.incl ShallowClones
@@ -385,8 +382,6 @@ proc parseAtlasOptions(params: seq[string], action: var string, args: var seq[st
     elif action notin ["search", "list"]:
       fatal "No project found. Run `atlas init` if you want this current directory to be your project."
 
-  # if not explicitDepsDirOverride and action notin ["init", "tag"] and context().depsDir.len == 0:
-  #   context().depsDir = Path "deps"
   if action != "tag":
     createDir(depsDir())
 
