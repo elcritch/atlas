@@ -206,8 +206,6 @@ suite "test expand with git tags":
         context().depsDir = Path "deps_http"
         context().nameOverrides = Patterns()
 
-        # discard context().overrides.addPattern("does_not_exist", "file://./buildGraph/does_not_exist")
-        # discard context().overrides.addPattern("$+", "http://localhost:4242/buildGraph/$#")
         var nc = createNimbleContext()
         nc.put("proj_a", toPkgUriRaw(parseUri "https://example.com/buildGraph/proj_a"))
         nc.put("proj_b", toPkgUriRaw(parseUri "https://example.com/buildGraph/proj_b"))
@@ -297,8 +295,24 @@ suite "test expand with git tags":
         removeDir("deps")
         let deps = setupGraph()
 
+        var nc = createNimbleContext()
+        nc.put("proj_a", toPkgUriRaw(parseUri "https://example.com/buildGraph/proj_a"))
+        nc.put("proj_b", toPkgUriRaw(parseUri "https://example.com/buildGraph/proj_b"))
+        nc.put("proj_c", toPkgUriRaw(parseUri "https://example.com/buildGraph/proj_c"))
+        nc.put("proj_d", toPkgUriRaw(parseUri "https://example.com/buildGraph/proj_d"))
+        # nc.nameToUrl["does_not_exist"] = toPkgUri(parseUri "https://example.com/buildGraph/does_not_exist")
+
+        let pkgA = nc.createUrl("proj_a")
+
+        check $pkgA == "https://example.com/buildGraph/proj_a"
+
+        # let deps = setupGraph()
+        let dir = paths.getCurrentDir().absolutePath
+
+        let graph = dir.expandGraph(nc, AllReleases, onClone=DoClone)
+
       withDir "tests/ws_testtraverselinked":
-        # setAtlasVerbosity(Trace)
+        setAtlasVerbosity(Trace)
         removeDir("deps")
         project(paths.getCurrentDir())
         context().flags = {KeepWorkspace, ListVersions}

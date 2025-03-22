@@ -84,8 +84,10 @@ proc linkPath*(path: Path): Path =
 proc toDirectoryPath(pkgUrl: PkgUrl, isLinkFile: bool): Path =
   trace pkgUrl, "toDirectoryPath: ", $pkgUrl.url
 
-  if pkgUrl.url.scheme in ["atlas", "link"]:
+  if pkgUrl.url.scheme == "atlas":
     result = project()
+  elif pkgUrl.url.scheme == "link":
+    result = pkgUrl.toOriginalPath()
   elif pkgUrl.url.scheme == "file":
     # file:// urls are used for local source paths, not dependency paths
     result = depsDir() / Path(pkgUrl.projectName())
