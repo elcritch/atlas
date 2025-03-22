@@ -122,7 +122,7 @@ suite "test link integration":
 
         var graph = dir.expandGraph(nc, AllReleases, onClone=DoClone)
 
-        checkpoint "\tgraph:\n" & $graph.toJson(ToJsonOptions(enumMode: joptEnumString))
+        echo "\tgraph:\n" & $graph.toJson(ToJsonOptions(enumMode: joptEnumString))
 
         let config = readConfigFile(getProjectConfig())
         echo "config: ", $config

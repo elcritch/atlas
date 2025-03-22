@@ -210,8 +210,8 @@ proc linkPackage(linkDir, linkedNimble: Path) =
   echo "\n\n==============\n\n"
   # Load linked project's config to get its deps dir
   info "atlas:link", "linked project dir:", $linkDir
-  var lnc = createNimbleContext()
-  let lgraph = loadDepGraph(lnc, linkedNimble)
+  # var lnc = createNimbleContext()
+  let lgraph = loadDepGraph(nc, linkedNimble)
 
   # Create links for all nimble files and links in the linked project
   for pkg in allNodes(lgraph):
@@ -219,6 +219,7 @@ proc linkPackage(linkDir, linkedNimble: Path) =
     let srcDir = if pkg.activeNimbleRelease().isNil: Path"" else: pkg.activeNimbleRelease().srcDir
     createNimbleLink(pkg.url, pkg.ondisk, CfgPath(srcDir))
 
+  installDependencies(nc, nimbleFile)
 
 proc detectProject(customProject = Path ""): bool =
   ## find project by checking `currentDir` and its parents.
