@@ -236,10 +236,12 @@ suite "urls and naming":
       echo "\t", name, " ".repeat(50 - len($(name))), url
 
   test "createUrl with Path":
+    setAtlasVerbosity(Trace)
     let nestedPath = Path"tests" / Path"ws_basic"
     createDir(nestedPath)
     let upkg = nc.createUrlFromPath(nestedPath)
     echo "UPKG: ", upkg
+    echo "UPKG: ", upkg.repr
     check upkg.url.scheme == "atlas"
     check upkg.projectName == "ws_basic"
 
