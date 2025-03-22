@@ -113,7 +113,7 @@ proc pinGraph*(graph: DepGraph; lockFile: Path; exportNimble = false) =
   info project, "pinning lockfile: " & $lockFile
 
   var nc = createNimbleContext()
-  var graph = project.expand(nc, CurrentCommit, onClone=DoNothing)
+  var graph = project.expandGraph(nc, CurrentCommit, onClone=DoNothing)
 
   for pkg in toposorted(graph):
     if pkg.isRoot:
@@ -154,7 +154,7 @@ proc pinProject*(lockFile: Path, exportNimble = false) =
   let project = project()
 
   var nc = createNimbleContext()
-  let graph = project.expand(nc, CurrentCommit, onClone=DoNothing) 
+  let graph = project.expandGraph(nc, CurrentCommit, onClone=DoNothing) 
   pinGraph graph, lockFile
 
 proc compareVersion(key, wanted, got: string) =

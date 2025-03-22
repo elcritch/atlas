@@ -406,7 +406,7 @@ proc solve*(graph: var DepGraph; form: Form) =
     dumpJson(graph, "graph-solved.json")
 
 proc loadWorkspace*(path: Path, nc: var NimbleContext, mode: TraversalMode, onClone: PackageAction, doSolve: bool): DepGraph =
-  result = path.expand(nc, mode, onClone)
+  result = path.expandGraph(nc, mode, onClone)
 
   if doSolve:
     let form = result.toFormular(context().defaultAlgo)

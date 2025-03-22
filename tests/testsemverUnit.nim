@@ -62,7 +62,7 @@ suite "graph solve":
 
         let dir = paths.getCurrentDir().absolutePath
 
-        var graph = dir.expand(nc, AllReleases, onClone=DoClone)
+        var graph = dir.expandGraph(nc, AllReleases, onClone=DoClone)
 
         checkpoint "\tgraph:\n" & $graph.toJson(ToJsonOptions(enumMode: joptEnumString))
 
@@ -120,7 +120,7 @@ suite "graph solve":
 
         let dir = paths.getCurrentDir().absolutePath
 
-        var graph = dir.expand(nc, AllReleases, onClone=DoClone)
+        var graph = dir.expandGraph(nc, AllReleases, onClone=DoClone)
 
         let sp = graph.pkgs.values().toSeq()
 
@@ -196,7 +196,7 @@ suite "test expand with no git tags":
 
         let dir = paths.getCurrentDir().absolutePath
 
-        var graph = dir.expand(nc, AllReleases, onClone=DoClone)
+        var graph = dir.expandGraph(nc, AllReleases, onClone=DoClone)
 
         checkpoint "\tgraph:\n" & $graph.toJson(ToJsonOptions(enumMode: joptEnumString))
 
@@ -264,7 +264,7 @@ suite "test expand with no git tags":
 
         let dir = paths.getCurrentDir().absolutePath
 
-        var graph = dir.expand(nc, AllReleases, onClone=DoClone)
+        var graph = dir.expandGraph(nc, AllReleases, onClone=DoClone)
 
         checkpoint "\tgraph:\n" & $graph.toJson(ToJsonOptions(enumMode: joptEnumString))
 

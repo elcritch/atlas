@@ -64,7 +64,7 @@ suite "test link integration":
 
         let dir = paths.getCurrentDir().absolutePath
 
-        var graph = dir.expand(nc, AllReleases, onClone=DoClone)
+        var graph = dir.expandGraph(nc, AllReleases, onClone=DoClone)
 
         echo "\tgraph:\n" & $graph.toJson(ToJsonOptions(enumMode: joptEnumString))
 
@@ -111,7 +111,7 @@ suite "test link integration":
         check project() == paths.getCurrentDir()
         atlasRun(@["link", "../ws_link_semver"])
 
-        var graph = dir.expand(nc, AllReleases, onClone=DoClone)
+        var graph = dir.expandGraph(nc, AllReleases, onClone=DoClone)
 
         checkpoint "\tgraph:\n" & $graph.toJson(ToJsonOptions(enumMode: joptEnumString))
 

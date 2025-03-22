@@ -146,7 +146,7 @@ suite "test expand with git tags":
         let deps = setupGraph()
         let dir = paths.getCurrentDir().absolutePath
 
-        let graph = dir.expand(nc, AllReleases, onClone=DoClone)
+        let graph = dir.expandGraph(nc, AllReleases, onClone=DoClone)
 
         checkpoint "\tgraph:\n" & $graph.toJson(ToJsonOptions(enumMode: joptEnumString))
         let sp = graph.pkgs.values().toSeq()
@@ -221,7 +221,7 @@ suite "test expand with git tags":
         # let deps = setupGraph()
         let dir = paths.getCurrentDir().absolutePath
 
-        let graph = dir.expand(nc, AllReleases, onClone=DoClone)
+        let graph = dir.expandGraph(nc, AllReleases, onClone=DoClone)
 
         checkpoint "\tgraph:\n" & $graph.toJson(ToJsonOptions(enumMode: joptEnumString))
         let sp = graph.pkgs.values().toSeq()
@@ -261,7 +261,7 @@ suite "test expand with git tags":
 
       # TODO: add a specific version to the requirements for a to include non-tagged 7ca5581cd
       # TODO: then check that the expanded graph has the correct version
-      let graph = project().expand(nc, AllReleases, onClone=DoClone)
+      let graph = project().expandGraph(nc, AllReleases, onClone=DoClone)
 
       checkpoint "\tgraph:\n" & $graph.toJson(ToJsonOptions(enumMode: joptEnumString))
 
@@ -337,7 +337,7 @@ suite "test expand with git tags":
 
         let dir = paths.getCurrentDir().absolutePath
 
-        let graph = dir.expand(nc, AllReleases, onClone=DoClone)
+        let graph = dir.expandGraph(nc, AllReleases, onClone=DoClone)
 
         checkpoint "\tgraph:\n" & $graph.toJson(ToJsonOptions(enumMode: joptEnumString))
         let sp = graph.pkgs.values().toSeq()
@@ -433,7 +433,7 @@ suite "test expand with no git tags":
         let deps = setupGraphNoGitTags()
         let dir = paths.getCurrentDir().absolutePath
 
-        let graph = dir.expand(nc, AllReleases, onClone=DoClone)
+        let graph = dir.expandGraph(nc, AllReleases, onClone=DoClone)
 
         checkpoint "\tgraph:\n" & $graph.toJson(ToJsonOptions(enumMode: joptEnumString))
         let sp = graph.pkgs.values().toSeq()
@@ -505,7 +505,7 @@ suite "test expand with no git tags and nimble commits max":
         let deps = setupGraphNoGitTags()
         let dir = paths.getCurrentDir().absolutePath
 
-        let graph = dir.expand(nc, AllReleases, onClone=DoClone)
+        let graph = dir.expandGraph(nc, AllReleases, onClone=DoClone)
 
         checkpoint "\tgraph:\n" & $graph.toJson(ToJsonOptions(enumMode: joptEnumString))
         let sp = graph.pkgs.values().toSeq()
