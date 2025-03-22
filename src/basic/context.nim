@@ -16,7 +16,11 @@ const
   TestsDir* = "atlas/tests"
 
 const
-  AtlasProjectConfig = Path "atlas.config"
+  AtlasProjectConfig = Path"atlas.config"
+  DefaultPackagesSubDir* = Path"_packages"
+  DefaultCachesSubDir* = Path"_caches"
+  DefaultNimbleCachesSubDir* = Path"_nimbles"
+
 
 type
   CfgPath* = distinct string # put into a config `--path:"../x"`
@@ -81,6 +85,15 @@ proc depsDir*(relative = false): Path =
     result = atlasContext.depsDir
   else:
     result = atlasContext.projectDir / atlasContext.depsDir
+
+proc packagesDirectory*(): Path =
+  depsDir() / DefaultPackagesSubDir
+
+proc cachesDirectory*(): Path =
+  depsDir() / DefaultCachesSubDir
+
+proc nimbleCachesDirectory*(): Path =
+  depsDir() / DefaultNimbleCachesSubDir
 
 
 proc relativeToWorkspace*(path: Path): string =
