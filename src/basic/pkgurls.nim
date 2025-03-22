@@ -217,8 +217,12 @@ proc createUrlSkipPatterns*(raw: string, skipDirTest = false, forceWindows: bool
       # fix missing absolute paths
       u = fixFileRelativeUrl(u, isWindowsTest = forceWindows)
       hasShortName = true
+      if u.scheme == "atlas":
+        echo "ATLAS URL: FIXED RELATIVE PATH: ", $u
 
     cleanupUrl(u)
+    if u.scheme == "atlas":
+      echo "ATLAS URL: CLEANED URL: ", $u
     result = PkgUrl(qualifiedName: extractProjectName(u), u: u, hasShortName: hasShortName)
   # trace result, "created url raw:", repr(raw), "url:", repr(result)
 
