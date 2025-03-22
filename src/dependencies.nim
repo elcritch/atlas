@@ -242,10 +242,10 @@ proc loadDependency*(
 ) = 
   doAssert pkg.ondisk.string == ""
   pkg.ondisk = pkg.url.toDirectoryPath()
-  pkg.isLinkedProject = pkg.url.isLinkedProject()
+  pkg.isAtlasProject = pkg.url.isAtlasProject()
   let todo = if dirExists(pkg.ondisk): DoNothing else: DoClone
 
-  debug pkg.url.projectName, "loading dependency isLinked:", $pkg.isLinkedProject
+  debug pkg.url.projectName, "loading dependency isLinked:", $pkg.isAtlasProject
   debug pkg.url.projectName, "loading dependency todo:", $todo, "ondisk:", $pkg.ondisk
   case todo
   of DoClone:
@@ -318,7 +318,7 @@ proc expandGraph*(path: Path, nc: var NimbleContext; mode: TraversalMode, onClon
       of Found:
         info pkg.projectName, "Processing package at:", pkg.ondisk.relativeToWorkspace()
         # processing = true
-        let mode = if pkg.isRoot or pkg.isLinkedProject: CurrentCommit else: mode
+        let mode = if pkg.isRoot or pkg.isAtlasProject: CurrentCommit else: mode
         nc.traverseDependency(pkg, mode, @[])
         trace pkg.projectName, "processed pkg:", $pkg
         processing = true

@@ -23,7 +23,7 @@ type
     ondisk*: Path
     nimbleFile*: Path
     active*: bool
-    isLinkedProject*: bool
+    isAtlasProject*: bool # true if the package is an atlas project
     isRoot*: bool
     errors*: seq[string]
     originHead*: CommitHash

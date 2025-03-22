@@ -217,7 +217,12 @@ proc linkPackage(linkDir, linkedNimble: Path) =
   for pkg in allNodes(lgraph):
     echo "pkg: ", $pkg.url.projectName, " at: ", $pkg.ondisk
     let srcDir = if pkg.activeNimbleRelease().isNil: Path"" else: pkg.activeNimbleRelease().srcDir
-    createNimbleLink(pkg.url, pkg.ondisk, CfgPath(srcDir))
+    let nimbleFiles = pkg.ondisk.findNimbleFile()
+    if nimbleFiles.len() != 1:
+      error $pkg.url.projectName, "error finding nimble file; got:", $nimbleFiles
+      continue
+    let nimble = nimbleFiles[0]
+    createNimbleLink(pkg.url, nimble, CfgPath(srcDir))
 
   let url = nc.createUrl("ws_link_semver")
   error "NimbleContext:ws_link_semver: ", $url, "projectName:", url.projectName, " repr: ", repr(url)
