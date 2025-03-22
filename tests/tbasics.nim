@@ -141,6 +141,8 @@ suite "urls and naming":
     let upkg = nc.createUrl("link://" & ws.string)
     check upkg.url.scheme == "link"
     check upkg.toDirectoryPath() == ws
+    # we want this so we can follow the nimble-link just like a normal package
+    # even though it's a link to another project
     check upkg.toLinkPath() == ws / Path"deps" / Path"ws_basic.nimble-link"
     check not upkg.isLinkPath()
 
