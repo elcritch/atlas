@@ -112,10 +112,15 @@ proc loadJson*(nc: var NimbleContext, json: JsonNode): DepGraph =
   result.fromJson(json, Joptions(allowMissingKeys: true, allowExtraKeys: true))
   var pkgs = result.pkgs
   result.pkgs.clear()
+
   for url, pkg in pkgs:
     let url2 = nc.createUrl($pkg.url)
+    echo "restoring url: ", $pkg.url, " to ", $url2.projectName()
     pkg.url = url2
     result.pkgs[url2] = pkg
+  
+  let rootUrl = nc.createUrl($result.root.url)
+  result.root = result.pkgs[rootUrl]
 
 proc loadJson*(nc: var NimbleContext, filename: string): DepGraph =
   let jn = parseJson(filename)

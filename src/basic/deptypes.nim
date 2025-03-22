@@ -58,6 +58,9 @@ const
 
   FileWorkspace* = "file://"
 
+proc `==`*(a, b: Package): bool =
+  result = a[] == b[]
+
 proc toPkgVer*(vtag: VersionTag): PackageVersion =
   result = PackageVersion(vtag: vtag)
 

@@ -21,6 +21,10 @@ suite "json serde":
     check upkg == upkg2
     echo "upkg2: ", $(upkg2)
 
+    let url2 = nc.createUrl("https://github.com/nimble-test/foobar")
+    check url2.projectName() == "foobar"
+
+
   test "pkg url, version interval":
     let upkg = nc.createUrl("foobar")
     let jn = toJson((upkg, p"1.0.0"))
@@ -55,7 +59,9 @@ suite "json serde":
     echo "root: ", graph.root.repr
     echo "root2: ", graph2.root.repr
 
-    check graph.root == graph2.root
+    echo "root2.url: ", $(graph2.root.url), " project name: ", graph2.root.url.projectName()
+
+    check graph.root.url == graph2.root.url
 
     check graph.pkgs[url] == graph2.pkgs[url]
     check graph.pkgs[url2] == graph2.pkgs[url2]
