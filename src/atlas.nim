@@ -219,6 +219,8 @@ proc linkPackage(linkDir, linkedNimble: Path) =
     let srcDir = if pkg.activeNimbleRelease().isNil: Path"" else: pkg.activeNimbleRelease().srcDir
     createNimbleLink(pkg.url, pkg.ondisk, CfgPath(srcDir))
 
+  let url = nc.createUrl("ws_link_semver")
+  error "NimbleContext:ws_link_semver: ", $url, "projectName:", url.projectName, " repr: ", repr(url)
   installDependencies(nc, nimbleFile)
 
 proc detectProject(customProject = Path ""): bool =

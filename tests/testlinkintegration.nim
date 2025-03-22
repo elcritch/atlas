@@ -111,15 +111,12 @@ suite "test link integration":
 
         expectedVersionWithGitTags()
         var nc = createNimbleContext()
-        nc.put("proj_a", toPkgUriRaw(parseUri "https://example.com/buildGraph/proj_a", true))
-        nc.put("proj_b", toPkgUriRaw(parseUri "https://example.com/buildGraph/proj_b", true))
-        nc.put("proj_c", toPkgUriRaw(parseUri "https://example.com/buildGraph/proj_c", true))
-        nc.put("proj_d", toPkgUriRaw(parseUri "https://example.com/buildGraph/proj_d", true))
         let dir = paths.getCurrentDir().absolutePath
 
         check project() == paths.getCurrentDir()
         atlasRun(@["link", "../ws_link_semver"])
 
+        echo "\n\n==============\n\n"
         var graph = dir.expandGraph(nc, AllReleases, onClone=DoClone)
 
         echo "\tgraph:\n" & $graph.toJson(ToJsonOptions(enumMode: joptEnumString))
