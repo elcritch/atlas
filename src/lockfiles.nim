@@ -10,7 +10,7 @@
 
 import std / [sequtils, paths, dirs, files, strutils, tables, sets, os, json, jsonutils]
 import basic/[lockfiletypes, context, osutils, gitops, nimblechecksums, compilerversions,
-  configutils, depgraphtypes, reporters, nimbleparser, pkgurls, nimblecontext]
+  configutils, depgraphtypes, reporters, nimbleparser, nimblecontext]
 import depgraphs, dependencies
 
 const
@@ -234,11 +234,6 @@ proc listChanged*(lockFile: Path) =
     compareVersion "nim", lf.nimVersion, detectNimVersion()
     compareVersion "gcc", lf.gccVersion, detectGccVersion()
     compareVersion "clang", lf.clangVersion, detectClangVersion()
-
-proc withoutSuffix(s, suffix: string): string =
-  result = s
-  if result.endsWith(suffix):
-    result.setLen result.len - suffix.len
 
 proc replay*(lockFile: Path) =
   ## replays the given lockfile by cloning and updating all the deps
