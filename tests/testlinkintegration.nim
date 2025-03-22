@@ -66,7 +66,7 @@ suite "test link integration":
 
         var graph = dir.expand(nc, AllReleases, onClone=DoClone)
 
-        checkpoint "\tgraph:\n" & $graph.toJson(ToJsonOptions(enumMode: joptEnumString))
+        echo "\tgraph:\n" & $graph.toJson(ToJsonOptions(enumMode: joptEnumString))
 
         let form = graph.toFormular(SemVer)
         context().flags.incl DumpGraphs
