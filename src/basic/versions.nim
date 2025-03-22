@@ -440,17 +440,10 @@ proc `$`*(i: VersionInterval): string =
     of verSpecial:
       result = $i.a.v
 
-proc toJsonHook*(v: VersionInterval): JsonNode = toJson($(v))
-proc toJsonHook*(v: Version): JsonNode = toJson($v)
-proc toJsonHook*(v: VersionTag): JsonNode = toJson(repr(v))
-
-proc fromJson*(a: var VersionInterval; b: JsonNode; opt = Joptions()) =
-  var err = false
-  a = parseVersionInterval(b.getStr(), 0, err)
-
 proc toVersion*(str: string): Version =
   if str == "~": result = Version("")
   else: result = parseVersion(str, 0)
+
 
 proc toCommitHash*(str: string, origin = FromNone): CommitHash =
   if str == "-": result = initCommitHash("", origin)
@@ -477,3 +470,18 @@ proc hash*(v: VersionTag): Hash =
 
 proc `==`*(a, b: VersionTag): bool =
   result = a.v == b.v and a.c == b.c
+
+proc toJsonHook*(v: VersionInterval): JsonNode = toJson($(v))
+proc toJsonHook*(v: Version): JsonNode = toJson($v)
+proc toJsonHook*(v: VersionTag): JsonNode = toJson(repr(v))
+
+proc fromJsonHook*(a: var VersionInterval; b: JsonNode; opt = Joptions()) =
+  var err = false
+  a = parseVersionInterval(b.getStr(), 0, err)
+
+
+proc fromJsonHook*(a: var Version; b: JsonNode; opt = Joptions()) =
+  a = toVersion(b.getStr())
+
+proc fromJsonHook*(a: var VersionTag; b: JsonNode; opt = Joptions()) =
+  a = toVersionTag(b.getStr())

@@ -400,6 +400,19 @@ suite "versions":
     let v4 = VersionTag(v: Version"#head", c: initCommitHash("", FromGitTag))
     check v4 == v3
 
+    let jn = toJson(v1)
+    var v5 = VersionTag()
+    v5.fromJson(jn)
+    check v5 == v1
+    echo "v5: ", repr(v5)
+
+    let jn2 = toJson(c1)
+    var c2 = CommitHash()
+    c2.fromJson(jn2)
+    check c2 == c1
+    echo "c2: ", repr(c2)
+
+
 import basic/[versions]
 
 template v(x): untyped = Version(x)
@@ -655,3 +668,5 @@ suite "sortVersions":
     var query2 = VersionInterval()
     query2.fromJson(jn2)
     check query == query2
+
+
