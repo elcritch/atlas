@@ -9,7 +9,7 @@
 ## Configuration handling.
 
 import std / [strutils, os, streams, json, tables, jsonutils, uri, sequtils]
-import basic/[versions, depgraphtypes, context, reporters, compiledpatterns, parse_requires, deptypes]
+import basic/[versions, depgraphtypes, nimblecontext, deptypesjson, context, reporters, compiledpatterns, parse_requires, deptypes]
 
 proc readPluginsDir(dir: Path) =
   for k, f in walkDir($(project() / dir)):
@@ -51,7 +51,9 @@ proc readConfigFile*(configFile: Path): JsonConfig =
   finally:
     close f
 
-proc readAtlasContext*(ctx: var AtlasContext, configFile: Path, projectDir: Path) =
+proc readAtlasContext*(ctx: var AtlasContext, projectDir: Path) =
+  let configFile = projectDir.getProjectConfig()
+  debug "atlas:config", "reading config file: ", $configFile
   let m = readConfigFile(configFile)
 
   ctx.projectDir = projectDir
@@ -86,7 +88,7 @@ proc readAtlasContext*(ctx: var AtlasContext, configFile: Path, projectDir: Path
 
 proc readConfig*() =
   var ctx = context()
-  readAtlasContext(ctx, getProjectConfig(), project())
+  readAtlasContext(ctx, project())
   # trace "atlas:config", "read config file: ", repr context()
 
 proc writeConfig*() =
@@ -108,8 +110,21 @@ proc writeConfig*() =
   debug "atlas", "writing config file: ", $configFile
   writeFile($configFile, pretty(jcfg))
 
-proc writeDepInfo*(g: DepGraph) =
-  # dumpJson(g, "atlas.cache.json", pretty = true)
-  let opts = ToJsonOptions(enumMode: joptEnumString)
+proc writeDepGraph*(g: DepGraph) =
+  let configFile = depGraphCacheFile(context())
+  debug "atlas", "writing dep graph to: ", $configFile
+  dumpJson(g, $configFile, pretty = true)
 
-  # writeFile($configFile, pretty(j))
+proc readDepGraph*(nc: var NimbleContext, ctx: AtlasContext, path: Path): DepGraph =
+  let configFile = depGraphCacheFile(ctx)
+  debug "atlas", "reading dep graph from: ", $configFile
+  result = loadJson(nc, $configFile)
+
+proc loadDepGraph*(nc: var NimbleContext, nimbleFile: Path): DepGraph =
+  doAssert nimbleFile.isAbsolute() and endsWith($nimbleFile, ".nimble") and fileExists($nimbleFile)
+  let projectDir = nimbleFile.parentDir()
+  var ctx = AtlasContext()
+  readAtlasContext(ctx, projectDir)
+  let configFile = depGraphCacheFile(ctx)
+  debug "atlas", "reading dep graph from: ", $configFile
+  result = loadJson(nc, $configFile)

@@ -52,7 +52,7 @@ type
     IncludeTagsAndNimbleCommits # include nimble commits and tags in the solver
     NimbleCommitsMax # takes the newest commit for each version
 
-  AtlasContext* = ref object
+  AtlasContext* = object
     projectDir*: Path = Path"."
     depsDir*: Path = Path"deps"
     flags*: set[Flag] = {}
@@ -95,6 +95,8 @@ proc cachesDirectory*(): Path =
 proc nimbleCachesDirectory*(): Path =
   depsDir() / DefaultNimbleCachesSubDir
 
+proc depGraphCacheFile*(ctx: AtlasContext): Path =
+  ctx.depsDir / Path"atlas.cache.json"
 
 proc relativeToWorkspace*(path: Path): string =
   result = "$project/" & $path.relativePath(project())

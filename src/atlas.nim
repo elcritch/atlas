@@ -211,6 +211,7 @@ proc linkPackage(linkDir, linkedNimble: Path) =
   # Load linked project's config to get its deps dir
   info "atlas:link", "linked project dir:", $linkDir
   var lnc = createNimbleContext()
+  let lgraph = loadDepGraph(lnc, linkedNimble)
 
   # Create links for all nimble files and links in the linked project
 
