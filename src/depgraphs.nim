@@ -403,6 +403,7 @@ proc solve*(graph: var DepGraph; form: Form) =
           if solution.isTrue(ver.vid):
             error pkg.url.projectName, string(ver.version()) & " required"
   if DumpGraphs in context().flags:
+    info "atlas:graph", "dumping graph after solving"
     dumpJson(graph, "graph-solved.json")
 
 proc loadWorkspace*(path: Path, nc: var NimbleContext, mode: TraversalMode, onClone: PackageAction, doSolve: bool): DepGraph =
