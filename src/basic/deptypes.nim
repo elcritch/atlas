@@ -177,6 +177,14 @@ proc toJsonHook*(t: OrderedTable[PkgUrl, Package], opt: ToJsonOptions): JsonNode
   for k, v in t:
     result[$(k)] = toJson(v, opt)
 
+proc fromJsonHook*(t: var OrderedTable[PkgUrl, Package]; b: JsonNode; opt = Joptions()) =
+  for k, v in b:
+    var url: PkgUrl
+    url.fromJson(toJson(k))
+    var pkg: Package
+    pkg.fromJson(v)
+    t[url] = pkg
+
 proc activeNimbleRelease*(pkg: Package): NimbleRelease =
   if pkg.activeVersion.isNil:
     result = nil

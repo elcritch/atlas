@@ -8,10 +8,11 @@ proc p(s: string): VersionInterval =
   # assert not err
 
 suite "json serde":
-
-  test "pkg url":
+  setup:
     var nc = createUnfilledNimbleContext()
     nc.put("foobar", toPkgUriRaw(parseUri "https://github.com/nimble-test/foobar.git"))
+
+  test "pkg url":
     let upkg = nc.createUrl("foobar")
     let jn = toJson(upkg)
     var upkg2: PkgUrl
@@ -20,17 +21,24 @@ suite "json serde":
     echo "upkg2: ", $(upkg2)
 
   test "pkg url, version interval":
-    var nc = createUnfilledNimbleContext()
-    nc.put("foobar", toPkgUriRaw(parseUri "https://github.com/nimble-test/foobar.git"))
     let upkg = nc.createUrl("foobar")
     let jn = toJson((upkg, p"1.0.0"))
     var upkg2: (PkgUrl, VersionInterval)
     upkg2.fromJson(jn)
     check upkg2[0] == upkg
 
+  test "json serde ordered table":
+    var table: OrderedTable[PkgUrl, Package]
+    let url = nc.createUrl("foobar")
+    var pkg = Package(url: url)
+    table[url] = pkg
+    let jn = toJson(table)
+    var table2: OrderedTable[PkgUrl, Package]
+    table2.fromJson(jn)
+    check table == table2
+
+
   test "json serde nimble release":
-    var nc = createUnfilledNimbleContext()
-    nc.put("foobar", toPkgUriRaw(parseUri "https://github.com/nimble-test/foobar.git"))
     let release = NimbleRelease(version: Version"1.0.0", requirements: @[(nc.createUrl("foobar"), p"1.0.0")])
     let jnRelease = toJson(release)
     echo "jnRelease: ", pretty(jnRelease)
