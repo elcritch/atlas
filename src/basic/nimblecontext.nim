@@ -140,14 +140,12 @@ proc createUrlFromPath*(nc: var NimbleContext, orig: Path, isLinkPath = false): 
         # Use the first nimble file found as the project identifier
         trace "atlas:nimblecontext", "createUrlFromPath: found nimble file: ", $nimbleFiles[0]
         let url = parseUri(prefix & $nimbleFiles[0])
-        trace "atlas:nimblecontext", "createUrlFromPath: parsed url: ", $url
         result = toPkgUriRaw(url)
       else:
         # Fallback to directory name if no nimble file found
         let nimble = $(absPath.splitPath().tail) & ".nimble"
         trace "atlas:nimblecontext", "createUrlFromPath: no nimble file found, trying directory name: ", $nimble
         let url = parseUri(prefix & $absPath / nimble)
-        trace "atlas:nimblecontext", "createUrlFromPath: trying directory name: ", $url
         result = toPkgUriRaw(url)
   else:
     error "atlas:nimblecontext", "createUrlFromPath: not a project: " & $absPath

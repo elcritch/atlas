@@ -328,7 +328,7 @@ suite "test expand with git tags":
         let proj_c = Path(".." / "ws_testtraverse" / "deps" / "proj_c").absolutePath()
         let proj_d = Path(".." / "ws_testtraverse" / "deps" / "proj_d").absolutePath()
 
-        discard context().nameOverrides.addPattern("ws_testtraverse", "link://" & $(ws_testtraverse / Path("ws_testtraverse.nimble")))
+        discard context().nameOverrides.addPattern("ws_testtraverse", toWindowsFileUrl("link://" & $(ws_testtraverse / Path("ws_testtraverse.nimble"))))
 
         var nc = createNimbleContext()
         nc.put("ws_testtraverse", toPkgUriRaw(parseUri "https://example.com/buildGraph/ws_testtraverse"))
@@ -363,7 +363,7 @@ suite "test expand with git tags":
         check sp.len() == 6
         check $sp[0].url.url.scheme == "atlas" and endsWith($sp[0].url, "ws_testtraverselinked.nimble")
 
-        check $sp[1].url == "link://" & $(ws_testtraverse / Path("ws_testtraverse.nimble"))
+        check $sp[1].url == toWindowsFileUrl("link://" & $(ws_testtraverse / Path("ws_testtraverse.nimble")))
         check $sp[2].url == "https://example.com/buildGraph/proj_a"
         check $sp[3].url == "https://example.com/buildGraph/proj_b"
         check $sp[4].url == "https://example.com/buildGraph/proj_c"
@@ -371,7 +371,7 @@ suite "test expand with git tags":
 
         let sp0: Package = sp[0] # proj ws_testtraversallinked
         testRequirements(sp0, @[vt"#head@-"], [
-          ("link://" & $(ws_testtraverse / Path"ws_testtraverse.nimble"), "*"),
+          (toWindowsFileUrl("link://" & $(ws_testtraverse / Path"ws_testtraverse.nimble")), "*"),
         ])
 
         let sp2: Package = sp[2] # proj A
