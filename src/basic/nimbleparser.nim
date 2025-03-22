@@ -57,7 +57,6 @@ proc parseNimbleFile*(nc: var NimbleContext;
       else:
         result.requirements.add (url, query)
 
-
 proc genRequiresLine(u: string): string =
   result = "requires \"$1\"\n" % u.escape("", "")
 
