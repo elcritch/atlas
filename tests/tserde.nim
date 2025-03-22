@@ -2,17 +2,33 @@ import std/[unittest, os, algorithm, dirs, files, strutils, importutils, termina
 import basic/[context, pkgurls, deptypes, nimblecontext, compiledpatterns, osutils, versions, depgraphtypes]
 import basic/[sattypes, versions]
 
-when false:
-  from nameresolver import resolvePackage
+proc p(s: string): VersionInterval =
+  var err = false
+  result = parseVersionInterval(s, 0, err)
+  # assert not err
 
 suite "json serde":
 
-  test "json serde version interval":
+  test "pkg url":
+    var nc = createUnfilledNimbleContext()
+    nc.put("foobar", toPkgUriRaw(parseUri "https://github.com/nimble-test/foobar.git"))
+    let upkg = nc.createUrl("foobar")
+    let jn = toJson(upkg)
+    var upkg2: PkgUrl
+    upkg2.fromJson(jn)
+    check upkg == upkg2
+    echo "upkg2: ", $(upkg2)
 
-    proc p(s: string): VersionInterval =
-      var err = false
-      result = parseVersionInterval(s, 0, err)
-      # assert not err
+  test "pkg url, version interval":
+    var nc = createUnfilledNimbleContext()
+    nc.put("foobar", toPkgUriRaw(parseUri "https://github.com/nimble-test/foobar.git"))
+    let upkg = nc.createUrl("foobar")
+    let jn = toJson((upkg, p"1.0.0"))
+    var upkg2: (PkgUrl, VersionInterval)
+    upkg2.fromJson(jn)
+    check upkg2[0] == upkg
+
+  test "json serde version interval":
 
     let interval = p"1.0.0"
     let jn = toJson(interval)

@@ -6,7 +6,7 @@
 #    distribution, for details about the copyright.
 #
 
-import std / [hashes, uri, os, strutils, files, dirs, sequtils, pegs, json]
+import std / [hashes, uri, os, strutils, files, dirs, sequtils, pegs, json, jsonutils]
 import compiledpatterns, gitops, reporters, context
 
 export uri
@@ -48,7 +48,6 @@ proc requiresName*(u: PkgUrl): string =
 proc toUri*(u: PkgUrl): Uri = result = u.u
 proc url*(p: PkgUrl): Uri = p.u
 proc `$`*(u: PkgUrl): string = $u.u
-proc toJsonHook*(v: PkgUrl): JsonNode = %($(v))
 proc hash*(a: PkgUrl): Hash {.inline.} = hash(a.u)
 proc `==`*(a, b: PkgUrl): bool {.inline.} = a.u == b.u
 
@@ -214,3 +213,8 @@ proc createUrlSkipPatterns*(raw: string, skipDirTest = false, forceWindows: bool
 proc toPkgUriRaw*(u: Uri, hasShortName: bool = false): PkgUrl =
   result = createUrlSkipPatterns($u, true)
   result.hasShortName = hasShortName
+
+proc toJsonHook*(v: PkgUrl): JsonNode = %($(v))
+
+proc fromJsonHook*(a: var PkgUrl; b: JsonNode; opt = Joptions()) =
+  a = toPkgUriRaw(parseUri(b.getStr()))

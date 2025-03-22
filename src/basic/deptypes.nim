@@ -89,6 +89,10 @@ proc toJsonHook*(v: (PkgUrl, VersionInterval), opt: ToJsonOptions): JsonNode =
   result["url"] = toJsonHook(v[0])
   result["version"] = toJsonHook(v[1])
 
+proc fromJsonHook*(a: var (PkgUrl, VersionInterval); b: JsonNode; opt = Joptions()) =
+  a[0].fromJson(b["url"])
+  a[1].fromJson(b["version"])
+
 proc toJsonHook*(r: NimbleRelease, opt: ToJsonOptions = ToJsonOptions()): JsonNode =
   if r == nil:
     return newJNull()

@@ -1,9 +1,6 @@
 import std/[unittest, os, algorithm, dirs, files, strutils, importutils, terminal, json, jsonutils]
 import basic/[context, pkgurls, deptypes, nimblecontext, compiledpatterns, osutils, versions, depgraphtypes]
 
-when false:
-  from nameresolver import resolvePackage
-
 suite "urls and naming":
   var 
     nc: NimbleContext
