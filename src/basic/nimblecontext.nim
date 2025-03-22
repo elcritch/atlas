@@ -146,6 +146,7 @@ proc createUrlFromPath*(nc: var NimbleContext, orig: Path, isLinkPath = false): 
         let nimble = $(absPath.splitPath().tail) & ".nimble"
         trace "atlas:nimblecontext", "createUrlFromPath: no nimble file found, trying directory name: ", $nimble
         let url = parseUri(prefix & $absPath / nimble)
+        trace "atlas:nimblecontext", "createUrlFromPath: trying directory name: ", $url
         result = toPkgUriRaw(url)
   else:
     error "atlas:nimblecontext", "createUrlFromPath: not a project: " & $absPath
