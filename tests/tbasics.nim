@@ -138,9 +138,12 @@ suite "urls and naming":
     check not upkg.isLinkPath()
 
   test "link path":
-    let upkg = nc.createUrl("link://" & ws.string)
+    let upkg = nc.createUrl("link://" & $(ws / Path"ws_basic.nimble"))
     check upkg.url.scheme == "link"
-    check upkg.toDirectoryPath() == ws
+    echo "LINK:UPKG: ", upkg.projectName, " url: ", $upkg.url
+    check upkg.toDirectoryPath() == ws / Path"ws_basic.nimble"
+    check upkg.projectName == "ws_basic"
+
     # we want this so we can follow the nimble-link just like a normal package
     # even though it's a link to another project
     check upkg.toLinkPath() == ws / Path"deps" / Path"ws_basic.nimble-link"

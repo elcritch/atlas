@@ -189,10 +189,9 @@ proc updateDir(dir, filter: string) =
       trace file, "updating directory"
       gitops.updateDir(file.Path, filter)
 
-proc linkPackage(linkedNimbles: seq[Path], linkDir: Path) =
-  let linkedNimble = linkedNimbles[0]
+proc linkPackage(linkDir, linkedNimble: Path) =
 
-  let linkUri = toPkgUriRaw(parseUri("link://" & linkDir.string))
+  let linkUri = toPkgUriRaw(parseUri("link://" & $linkedNimble))
   discard context().nameOverrides.addPattern(linkUri.projectName, $linkUri.url)
   info "atlas:link", "link uri:", $linkUri
 
@@ -208,7 +207,27 @@ proc linkPackage(linkedNimbles: seq[Path], linkDir: Path) =
   echo "\n\n==============\n\n"
   # Load linked project's config to get its deps dir
   info "atlas:link", "linked project dir:", $linkDir
-  var linkNc = createNimbleContext()
+  var lnc = createNimbleContext()
+
+  # Create links for all nimble files and links in the linked project
+  for kind, file in walkDir(linkDir):
+    if kind == pcDir and dirExists(file / Path ".git"):
+      let nimbleFiles = findNimbleFile(file.Path, "")
+      if nimbleFiles.len > 0:
+        let pkgName = file.Path.lastPathPart
+        let pkgUrl = lnc.createUrl(pkgName)
+        info "atlas:link", "creating link for:", pkgName, "at:", $file
+        createNimbleLink(pkgUrl, nimbleFiles[0], file.Path.CfgPath)
+    elif kind == pcFile and file.endsWith(".nimble-link"):
+      let lines = readFile(file).splitLines()
+      if lines.len == 2:
+        let nimblePath = Path(lines[0])
+        let cfgPath = Path(lines[1])
+        let pkgName = nimblePath.splitFile.name
+        let pkgUrl = lnc.createUrl(pkgName)
+        info "atlas:link", "copying link for:", pkgName, "at:", $file 
+        createNimbleLink(pkgUrl, nimblePath, cfgPath.CfgPath)
+
 
 
 proc detectProject(customProject = Path ""): bool =
@@ -506,7 +525,7 @@ proc atlasRun*(params: seq[string]) =
       fatal "cannot link to directory that contains multiple nimble files: " & $linkDir
       quit(2)
 
-    linkPackage(linkedNimbles, linkDir)
+    linkPackage(linkDir, linkedNimbles[0])
 
 
   of "pin":

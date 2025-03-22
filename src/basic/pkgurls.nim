@@ -65,6 +65,8 @@ proc extractProjectName*(url: Uri): tuple[name: string, user: string, host: stri
     result = (n, "", "")
   elif u.scheme == "file":
     result = (n & e, "", "")
+  elif u.scheme == "link":
+    result = (n, "", "")
   else:
     result = (n & e, p, u.hostname)
 
