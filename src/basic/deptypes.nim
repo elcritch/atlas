@@ -84,42 +84,6 @@ proc `$`*(d: Package): string =
 proc projectName*(d: Package): string =
   d.url.projectName()
 
-proc toJsonHook*(v: (PkgUrl, VersionInterval), opt: ToJsonOptions): JsonNode =
-  result = newJObject()
-  result["url"] = toJsonHook(v[0])
-  result["version"] = toJsonHook(v[1])
-
-proc fromJsonHook*(a: var (PkgUrl, VersionInterval); b: JsonNode; opt = Joptions()) =
-  a[0].fromJson(b["url"])
-  a[1].fromJson(b["version"])
-
-proc toJsonHook*(r: NimbleRelease, opt: ToJsonOptions = ToJsonOptions()): JsonNode =
-  if r == nil:
-    return newJNull()
-  result = newJObject()
-  result["requirements"] = toJson(r.requirements, opt)
-  if r.hasInstallHooks:
-    result["hasInstallHooks"] = toJson(r.hasInstallHooks, opt)
-  if r.srcDir != Path "":
-    result["srcDir"] = toJson(r.srcDir, opt)
-  result["version"] = toJson(r.version, opt)
-  result["status"] = toJson(r.status, opt)
-  if r.err != "":
-    result["err"] = toJson(r.err, opt)
-
-proc fromJsonHook*(r: var NimbleRelease; b: JsonNode; opt = Joptions()) =
-  if r.isNil:
-    r = new(NimbleRelease)
-  r.version.fromJson(b["version"])
-  r.requirements.fromJson(b["requirements"])
-  r.status.fromJson(b["status"])
-  if b.hasKey("hasInstallHooks"):
-    r.hasInstallHooks = b["hasInstallHooks"].getBool()
-  if b.hasKey("srcDir"):
-    r.srcDir.fromJson(b["srcDir"])
-  if b.hasKey("err"):
-    r.err = b["err"].getStr()
-
 proc hash*(r: Package): Hash =
   ## use pkg name and url for identification and lookups
   var h: Hash = 0
@@ -154,36 +118,6 @@ proc hash*(r: PackageVersion): Hash =
   result = hash(r.vtag)
 proc `==`*(a, b: PackageVersion): bool =
   result = a.vtag == b.vtag
-
-proc toJsonHook*(t: OrderedTable[PackageVersion, NimbleRelease], opt: ToJsonOptions): JsonNode =
-  result = newJArray()
-  for k, v in t:
-    var tpl = newJArray()
-    tpl.add toJson(k, opt)
-    tpl.add toJson(v, opt)
-    result.add tpl
-    # result[repr(k.vtag)] = toJson(v, opt)
-
-proc fromJsonHook*(t: var OrderedTable[PackageVersion, NimbleRelease]; b: JsonNode; opt = Joptions()) =
-  for item in b:
-    var pv: PackageVersion
-    pv.fromJson(item[0])
-    var release: NimbleRelease
-    release.fromJson(item[1])
-    t[pv] = release
-
-proc toJsonHook*(t: OrderedTable[PkgUrl, Package], opt: ToJsonOptions): JsonNode =
-  result = newJObject()
-  for k, v in t:
-    result[$(k)] = toJson(v, opt)
-
-proc fromJsonHook*(t: var OrderedTable[PkgUrl, Package]; b: JsonNode; opt = Joptions()) =
-  for k, v in b:
-    var url: PkgUrl
-    url.fromJson(toJson(k))
-    var pkg: Package
-    pkg.fromJson(v)
-    t[url] = pkg
 
 proc activeNimbleRelease*(pkg: Package): NimbleRelease =
   if pkg.activeVersion.isNil:

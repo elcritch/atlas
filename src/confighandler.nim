@@ -108,5 +108,8 @@ proc writeConfig*() =
   debug "atlas", "writing config file: ", $configFile
   writeFile($configFile, pretty(jcfg))
 
-proc writeGraph*(g: DepGraph) =
-  dumpJson(g, "atlas.cache.json", pretty = true)
+proc writeDepInfo*(g: DepGraph) =
+  # dumpJson(g, "atlas.cache.json", pretty = true)
+  let opts = ToJsonOptions(enumMode: joptEnumString)
+
+  # writeFile($configFile, pretty(j))

@@ -220,8 +220,3 @@ proc createUrlSkipPatterns*(raw: string, skipDirTest = false, forceWindows: bool
 proc toPkgUriRaw*(u: Uri, hasShortName: bool = false): PkgUrl =
   result = createUrlSkipPatterns($u, true)
   result.hasShortName = hasShortName
-
-proc toJsonHook*(v: PkgUrl): JsonNode = %($(v))
-
-proc fromJsonHook*(a: var PkgUrl; b: JsonNode; opt = Joptions()) =
-  a = toPkgUriRaw(parseUri(b.getStr()))
