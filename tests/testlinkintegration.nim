@@ -66,7 +66,6 @@ suite "test link integration":
         var graph = dir.loadWorkspace(nc, AllReleases, onClone=DoClone, doSolve=true)
         writeDepGraph(graph)
 
-
         echo "\tgraph:\n" & $graph.toJson(ToJsonOptions(enumMode: joptEnumString))
 
         let form = graph.toFormular(SemVer)

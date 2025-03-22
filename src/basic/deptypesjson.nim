@@ -122,5 +122,5 @@ proc loadJson*(nc: var NimbleContext, json: JsonNode): DepGraph =
   result.root = result.pkgs[rootUrl]
 
 proc loadJson*(nc: var NimbleContext, filename: string): DepGraph =
-  let jn = parseJson(filename)
+  let jn = parseFile(filename)
   result = loadJson(nc, jn)
