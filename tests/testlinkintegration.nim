@@ -127,7 +127,7 @@ suite "test link integration":
         echo "config: ", $config
         check project() == paths.getCurrentDir()
         check config.nameOverrides.len == 1
-        check config.nameOverrides["ws_link_semver"] == toWindowsFileUrl("link://" & $absolutePath($project() /../ "ws_link_semver"))
+        check config.nameOverrides["ws_link_semver"] == toWindowsFileUrl("link://" & $absolutePath($project() /../ "ws_link_semver" / "ws_link_semver.nimble"))
 
         # let form = graph.toFormular(SemVer)
         # context().flags.incl DumpGraphs

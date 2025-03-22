@@ -210,24 +210,6 @@ proc linkPackage(linkDir, linkedNimble: Path) =
   var lnc = createNimbleContext()
 
   # Create links for all nimble files and links in the linked project
-  for kind, file in walkDir(linkDir):
-    if kind == pcDir and dirExists(file / Path ".git"):
-      let nimbleFiles = findNimbleFile(file.Path, "")
-      if nimbleFiles.len > 0:
-        let pkgName = file.Path.lastPathPart
-        let pkgUrl = lnc.createUrl(pkgName)
-        info "atlas:link", "creating link for:", pkgName, "at:", $file
-        createNimbleLink(pkgUrl, nimbleFiles[0], file.Path.CfgPath)
-    elif kind == pcFile and file.endsWith(".nimble-link"):
-      let lines = readFile(file).splitLines()
-      if lines.len == 2:
-        let nimblePath = Path(lines[0])
-        let cfgPath = Path(lines[1])
-        let pkgName = nimblePath.splitFile.name
-        let pkgUrl = lnc.createUrl(pkgName)
-        info "atlas:link", "copying link for:", pkgName, "at:", $file 
-        createNimbleLink(pkgUrl, nimblePath, cfgPath.CfgPath)
-
 
 
 proc detectProject(customProject = Path ""): bool =
