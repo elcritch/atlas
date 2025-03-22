@@ -1,7 +1,7 @@
 
 import std / [sets, paths, files, dirs, tables, os, strutils, streams, json, jsonutils, algorithm]
 
-import sattypes, context, deptypes, gitops, reporters, nimbleparser, pkgurls, versions
+import sattypes, context, deptypes, gitops, reporters, nimblecontext, nimbleparser, pkgurls, versions
 
 
 type 
@@ -98,19 +98,28 @@ proc fromJsonHook*(a: var VarId; b: JsonNode; opt = Joptions()) =
 proc fromJsonHook*(a: var Path; b: JsonNode; opt = Joptions()) =
   a = Path(b.getStr())
 
-proc dumpJson*(d: DepGraph, filename: string, full = true, pretty = true) =
-  let jn = toJson(d, ToJsonOptions(enumMode: joptEnumString))
+proc toJsonGraph*(d: DepGraph): JsonNode =
+  result = toJson(d, ToJsonOptions(enumMode: joptEnumString))
+
+proc dumpJson*(d: DepGraph, filename: string, pretty = true) =
+  let jn = toJsonGraph(d)
   if pretty:
     writeFile(filename, pretty(jn))
   else:
     writeFile(filename, $(jn))
 
-proc loadJson*(json: JsonNode): DepGraph =
-  result.fromJson(json)
+proc loadJson*(nc: var NimbleContext, json: JsonNode): DepGraph =
+  result.fromJson(json, Joptions(allowMissingKeys: true, allowExtraKeys: true))
+  var pkgs = result.pkgs
+  result.pkgs.clear()
+  for url, pkg in pkgs:
+    let url2 = nc.createUrl($pkg.url)
+    pkg.url = url2
+    result.pkgs[url2] = pkg
 
-proc loadJson*(filename: string): DepGraph =
+proc loadJson*(nc: var NimbleContext, filename: string): DepGraph =
   let jn = parseJson(filename)
-  result.fromJson(jn, Joptions(allowMissingKeys: true, allowExtraKeys: true))
+  result = loadJson(nc, jn)
 
 proc toDestDir*(g: DepGraph; d: Package): Path =
   result = d.ondisk
