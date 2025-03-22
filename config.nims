@@ -7,6 +7,7 @@ task build, "Build local atlas":
 
 task unitTests, "Runs unit tests":
   exec "nim c -d:debug -r tests/tbasics.nim"
+  exec "nim c -d:debug -r tests/tserde.nim"
   exec "nim c -d:debug -r tests/tgitops.nim"
   exec "nim c -d:debug -r tests/tnimbleparser.nim"
   exec "nim c -d:debug -r tests/testtraverse.nim"
