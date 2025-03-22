@@ -7,9 +7,9 @@
 #
 
 import std / [os, strutils, uri, tables, sequtils, sets, hashes, algorithm, paths, dirs]
-import basic/[context, deptypes, versions, osutils, nimbleparser, reporters, gitops, pkgurls, nimblecontext]
+import basic/[context, deptypes, versions, osutils, nimbleparser, reporters, gitops, pkgurls, nimblecontext, deptypesjson]
 
-export deptypes, versions
+export deptypes, versions, deptypesjson
 
 proc collectNimbleVersions*(nc: NimbleContext; pkg: Package): seq[VersionTag] =
   let nimbleFiles = findNimbleFile(pkg)

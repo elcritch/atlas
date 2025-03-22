@@ -3,8 +3,7 @@ import std / [sets, tables, sequtils, paths, files, os, strutils, json, jsonutil
 import basic/[deptypes, versions, depgraphtypes, osutils, context, gitops, reporters, nimblecontext, pkgurls, deptypesjson]
 import dependencies, runners 
 
-
-export depgraphtypes
+export depgraphtypes, deptypesjson
 
 when defined(nimAtlasBootstrap):
   import ../dist/sat/src/sat/[sat, satvars]

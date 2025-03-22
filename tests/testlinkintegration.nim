@@ -4,7 +4,7 @@ import std / [strutils, os, uri, jsonutils, json, tables, sequtils, unittest]
 import std/terminal
 
 import basic/[sattypes, context, reporters, pkgurls, compiledpatterns, versions]
-import basic/[deptypes, nimblecontext]
+import basic/[deptypes, nimblecontext, deptypesjson]
 import dependencies
 import depgraphs
 import testerutils
