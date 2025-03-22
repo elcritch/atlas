@@ -18,10 +18,10 @@ set PATH="$1";%PATH%
 """
 else:
   const
-    ShellFile = "export PATH=$1:$$PATH\n"
+    ShellFile* = "export PATH=$1:$$PATH\n"
 
 const
-  ActivationFile = when defined(windows): Path "activate.bat" else: Path "activate.sh"
+  ActivationFile* = when defined(windows): Path "activate.bat" else: Path "activate.sh"
 
 proc infoAboutActivation(nimDest: Path, nimVersion: string) =
   when defined(windows):

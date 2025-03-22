@@ -10,7 +10,7 @@
 
 import std / [sequtils, paths, dirs, files, strutils, tables, sets, os, json, jsonutils]
 import basic/[lockfiletypes, context, pkgurls, osutils, gitops, nimblechecksums, compilerversions,
-  configutils, depgraphtypes, reporters, nimbleparser, nimblecontext]
+  configutils, depgraphtypes, reporters, nimblecontext]
 import depgraphs, dependencies
 
 const

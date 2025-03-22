@@ -157,6 +157,8 @@ proc createGraphFromWorkspace*(): DepGraph =
     return
   try:
     let j = parseJson(f, $configFile)
+    echo "j: ", $(j)
+
     # let g = j["graph"]
     # result.nodes = jsonTo(g["nodes"], typeof(result.nodes))
     # result.reqs = jsonTo(g["reqs"], typeof(result.reqs))

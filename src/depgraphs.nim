@@ -1,4 +1,4 @@
-import std / [sets, tables, sequtils, paths, dirs, files, os, strutils, streams, json, jsonutils, algorithm]
+import std / [sets, tables, sequtils, paths, files, os, strutils, json, jsonutils, algorithm]
 
 import basic/[deptypes, versions, depgraphtypes, osutils, context, gitops, reporters, nimblecontext, pkgurls]
 import dependencies, runners 
@@ -372,7 +372,6 @@ proc solve*(graph: var DepGraph; form: Form) =
       if solution.isTrue(VarId(varIdx)) and form.mapping.hasKey(VarId varIdx):
         let mapInfo = form.mapping[VarId varIdx]
         let pkg = mapInfo.pkg
-        let ver = mapInfo.version
         pkg.active = true
         assert not pkg.isNil, "too bad: " & $pkg.url
         assert not mapInfo.release.isNil, "too bad: " & $pkg.url
@@ -442,7 +441,7 @@ proc activateGraph*(graph: DepGraph): seq[CfgPath] =
         error pkg.url.projectName, "Missing ondisk location for:", $(pkg.url)
       else:
         info pkg.url.projectName, "checkout git commit:", $pkg.activeVersion.commit(), "at:", pkg.ondisk.relativeToWorkspace()
-        let res = checkoutGitCommit(pkg.ondisk, pkg.activeVersion.commit())
+        discard checkoutGitCommit(pkg.ondisk, pkg.activeVersion.commit())
 
   if NoExec notin context().flags:
     runBuildSteps(graph)
