@@ -84,7 +84,7 @@ proc linkPath*(path: Path): Path =
   result = Path(path.string & ".nimble-link")
 
 proc toDirectoryPath(pkgUrl: PkgUrl, isLinkFile: bool): Path =
-  trace pkgUrl, "toDirectoryPath: ", $pkgUrl.url
+  trace pkgUrl, "directory path from:", $pkgUrl.url
 
   if pkgUrl.url.scheme == "atlas":
     result = project()
@@ -108,7 +108,7 @@ proc toDirectoryPath(pkgUrl: PkgUrl, isLinkFile: bool): Path =
       result = nimble.splitFile().dir
       if not result.isAbsolute():
         result = linkPath.parentDir() / result
-      info pkgUrl.projectName(), "link file to:", $result
+      debug pkgUrl.projectName(), "link file to:", $result
 
   result = result.absolutePath
   trace pkgUrl, "found directory path:", $result
