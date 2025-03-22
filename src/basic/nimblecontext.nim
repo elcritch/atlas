@@ -121,8 +121,9 @@ proc createUrl*(nc: var NimbleContext, nameOrig: string): PkgUrl =
 
   if not result.isEmpty():
     if nc.put(result.projectName, result):
-      debug "atlas:createUrl", "created url with name:", name, "orig:", nameOrig, "projectName:", $result.projectName, "hasShortName:", $result.hasShortName, "url:", $result.url
-
+      debug "atlas:createUrl", "created url with name:", name, "orig:",
+            nameOrig, "projectName:", $result.projectName,
+            "hasShortName:", $result.hasShortName, "url:", $result.url
 
 proc createUrlFromPath*(nc: var NimbleContext, orig: Path, isLinkPath = false): PkgUrl =
   let absPath = absolutePath(orig)

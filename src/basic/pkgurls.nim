@@ -71,7 +71,7 @@ proc extractProjectName*(url: Uri): tuple[name: string, user: string, host: stri
     result = (n & e, p, u.hostname)
 
 proc toOriginalPath*(pkgUrl: PkgUrl, isWindowsTest: bool = false): Path =
-  if pkgUrl.url.scheme in ["file", "link"]:
+  if pkgUrl.url.scheme in ["file", "link", "atlas"]:
     result = Path(pkgUrl.url.hostname & pkgUrl.url.path)
     if defined(windows) or isWindowsTest:
       var p = result.string.replace('/', '\\')
@@ -143,7 +143,9 @@ proc createNimbleLink*(pkgUrl: PkgUrl, nimblePath: Path, cfgPath: CfgPath) =
   writeFile($nimbleLink, "$1\n$2" % [$nimblePath, $cfgPath])
 
 proc isWindowsAbsoluteFile*(raw: string): bool =
-  raw.match(peg"^ {'file://'?} {[A-Z] ':' ['/'\\]} .*") or raw.match(peg"^ {'link://'?} {[A-Z] ':' ['/'\\]} .*")
+  raw.match(peg"^ {'file://'?} {[A-Z] ':' ['/'\\]} .*") or
+  raw.match(peg"^ {'link://'?} {[A-Z] ':' ['/'\\]} .*") or
+  raw.match(peg"^ {'atlas://'?} {[A-Z] ':' ['/'\\]} .*")
 
 proc toWindowsFileUrl*(raw: string): string =
   let rawPath = raw.replace('\\', '/')
@@ -151,6 +153,7 @@ proc toWindowsFileUrl*(raw: string): string =
     result = rawPath
     result = result.replace("file://", "file:///")
     result = result.replace("link://", "link:///")
+    result = result.replace("atlas://", "atlas:///")
   else:
     result = rawPath
 
@@ -160,7 +163,7 @@ proc fixFileRelativeUrl*(u: Uri, isWindowsTest: bool = false): Uri =
   else:
     result = u
 
-  if result.scheme in ["file", "link"] and result.hostname.len() > 0:
+  if result.scheme in ["file", "link", "atlas"] and result.hostname.len() > 0:
     # fix relative paths
     var url = (project().string / (result.hostname & result.path)).absolutePath
     url = result.scheme & "://" & url
@@ -206,9 +209,11 @@ proc createUrlSkipPatterns*(raw: string, skipDirTest = false, forceWindows: bool
 
       u.scheme = "ssh"
 
-    if u.scheme in ["file", "link"]:
+    if u.scheme in ["file", "link", "atlas"]:
       if u.scheme == "link":
         echo "LINK URL: ", $u
+      if u.scheme == "atlas":
+        echo "ATLAS URL: ", $u
       # fix missing absolute paths
       u = fixFileRelativeUrl(u, isWindowsTest = forceWindows)
       hasShortName = true
