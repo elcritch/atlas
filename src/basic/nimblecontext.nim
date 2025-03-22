@@ -72,9 +72,9 @@ proc putImpl(nc: var NimbleContext, name: string, url: PkgUrl, isFromPath = fals
           existingUrl.path == url.path and existingUrl.hostname == url.hostname:
         info "atlas:nimblecontext", "different url schemes for the same package:", $name, "existing:", $existingUrl, "new:", $url
       else:
-        # TODO: need to handle this better, the user needs to choose which url to use
-        #       if the solver can't resolve the conflict
-        error "atlas:nimblecontext", "name already exists in packageExtras:", $name, "isFromPath:", $isFromPath, "with different url:", $nc.packageExtras[name], "and url:", $url
+        # this is handled in the solver which checks for conflicts
+        # but users should be aware that this is happening as they can override stuff
+        warn "atlas:nimblecontext", "name already exists in packageExtras:", $name, "isFromPath:", $isFromPath, "with different url:", $nc.packageExtras[name], "and url:", $url
         result = false
 
 proc put*(nc: var NimbleContext, name: string, url: PkgUrl): bool {.discardable.} =
