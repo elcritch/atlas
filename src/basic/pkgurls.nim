@@ -89,7 +89,7 @@ proc toDirectoryPath(pkgUrl: PkgUrl, isLinkFile: bool): Path =
   if pkgUrl.url.scheme == "atlas":
     result = project()
   elif pkgUrl.url.scheme == "link":
-    result = pkgUrl.toOriginalPath()
+    result = pkgUrl.toOriginalPath().parentDir()
   elif pkgUrl.url.scheme == "file":
     # file:// urls are used for local source paths, not dependency paths
     result = depsDir() / Path(pkgUrl.projectName())

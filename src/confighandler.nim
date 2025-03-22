@@ -110,8 +110,10 @@ proc writeConfig*() =
   debug "atlas", "writing config file: ", $configFile
   writeFile($configFile, pretty(jcfg))
 
-proc writeDepGraph*(g: DepGraph) =
-  let configFile = depGraphCacheFile(context())
+proc writeDepGraph*(g: DepGraph, debug: bool = false) =
+  var configFile = depGraphCacheFile(context())
+  if debug:
+    configFile = configFile.changeFileExt("debug.json")
   debug "atlas", "writing dep graph to: ", $configFile
   dumpJson(g, $configFile, pretty = true)
 

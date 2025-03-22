@@ -157,8 +157,7 @@ proc afterGraphActions(g: DepGraph) =
   if atlasErrors() == 0:
     writeConfig()
 
-  if g.root.active and KeepWorkspace notin context().flags:
-    writeDepGraph(g)
+  writeDepGraph(g, debug = not g.root.active or KeepWorkspace notin context().flags)
 
   if ShowGraph in context().flags:
     generateDepGraph g
@@ -207,7 +206,7 @@ proc linkPackage(linkDir, linkedNimble: Path) =
   writeConfig()
   info "atlas:link", "current project dir:", $project()
 
-  echo "\n\n==============\n\n"
+  echo "\n\n============== Linking project\n\n"
   # Load linked project's config to get its deps dir
   info "atlas:link", "linked project dir:", $linkDir
   # var lnc = createNimbleContext()
@@ -221,7 +220,10 @@ proc linkPackage(linkDir, linkedNimble: Path) =
 
   let url = nc.createUrl("ws_link_semver")
   error "NimbleContext:ws_link_semver: ", $url, "projectName:", url.projectName, " repr: ", repr(url)
+
+  echo "\n\n============== Installing dependencies\n\n"
   installDependencies(nc, nimbleFile)
+
 
 proc detectProject(customProject = Path ""): bool =
   ## find project by checking `currentDir` and its parents.

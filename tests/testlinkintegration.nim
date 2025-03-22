@@ -110,13 +110,13 @@ suite "test link integration":
         """)
 
         expectedVersionWithGitTags()
-        var nc = createNimbleContext()
         let dir = paths.getCurrentDir().absolutePath
 
         check project() == paths.getCurrentDir()
         atlasRun(@["link", "../ws_link_semver"])
 
-        echo "\n\n==============\n\n"
+        echo "\n\n============== Expanding graph\n\n"
+        var nc = createNimbleContext()
         var graph = dir.expandGraph(nc, AllReleases, onClone=DoClone)
 
         echo "\tgraph:\n" & $graph.toJson(ToJsonOptions(enumMode: joptEnumString))

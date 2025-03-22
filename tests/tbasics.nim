@@ -141,7 +141,7 @@ suite "urls and naming":
     let upkg = nc.createUrl("link://" & $(ws / Path"ws_basic.nimble"))
     check upkg.url.scheme == "link"
     echo "LINK:UPKG: ", upkg.projectName, " url: ", $upkg.url
-    check upkg.toDirectoryPath() == ws / Path"ws_basic.nimble"
+    check upkg.toDirectoryPath() == ws
     check upkg.projectName == "ws_basic"
 
     # we want this so we can follow the nimble-link just like a normal package
