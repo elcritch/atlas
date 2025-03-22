@@ -41,9 +41,9 @@ proc cacheNimbleFilesFromGit*(pkg: Package, commit: CommitHash): seq[Path] =
         break
       nimbleFiles.add Path(file)
 
-  createDir(cachesDirectory())
+  createDir(nimbleCachesDirectory())
   for nimbleFile in nimbleFiles:
-    let cachePath = cachesDirectory() / Path(commit.h & "-" & $nimbleFile.splitPath().tail)
+    let cachePath = nimbleCachesDirectory() / Path(commit.h & "-" & $nimbleFile.splitPath().tail)
     if not fileExists(cachePath):
       let contents = showFile(pkg.ondisk, commit, $nimbleFile)
       writeFile($cachePath, contents)

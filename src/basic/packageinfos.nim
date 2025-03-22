@@ -42,14 +42,18 @@ type
       web*: string # Info url for humans.
 
 const
-  DefaultPackagesSubDir* = Path"packages"
+  DefaultPackagesSubDir* = Path"_packages"
   DefaultCachesSubDir* = Path"_caches"
+  DefaultNimbleCachesSubDir* = Path"_nimbles"
 
 proc packagesDirectory*(): Path =
   depsDir() / DefaultPackagesSubDir
 
 proc cachesDirectory*(): Path =
   depsDir() / DefaultCachesSubDir
+
+proc nimbleCachesDirectory*(): Path =
+  depsDir() / DefaultNimbleCachesSubDir
 
 proc optionalField(obj: JsonNode, name: string, default = ""): string =
   if hasKey(obj, name) and obj[name].kind == JString:
