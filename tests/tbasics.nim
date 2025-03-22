@@ -650,7 +650,7 @@ suite "sortVersions":
     check versions[3].v == v"2.0.0"
     check versions[4].v == v"#head"
 
-  test "json serde":
+  test "json serde version interval":
 
     proc p(s: string): VersionInterval =
       var err = false
