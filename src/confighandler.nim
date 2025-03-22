@@ -107,3 +107,6 @@ proc writeConfig*() =
   let configFile = getProjectConfig()
   debug "atlas", "writing config file: ", $configFile
   writeFile($configFile, pretty(jcfg))
+
+proc writeGraph*(g: DepGraph) =
+  dumpJson(g, "atlas.cache.json", pretty = true)

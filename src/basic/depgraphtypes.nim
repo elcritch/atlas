@@ -146,23 +146,3 @@ proc bestNimVersion*(g: DepGraph): Version =
     if pkg.active and pkg.activeNimbleRelease().nimVersion != Version"":
       let v = pkg.activeNimbleRelease().nimVersion
       if v > result: result = v
-
-proc createGraphFromWorkspace*(): DepGraph =
-  # TODO: fixme?
-  result = DepGraph()
-  let configFile = getProjectConfig()
-  var f = newFileStream($configFile, fmRead)
-  if f == nil:
-    error configFile, "could not open project config:", $configFile
-    return
-  try:
-    let j = parseJson(f, $configFile)
-    echo "j: ", $(j)
-
-    # let g = j["graph"]
-    # result.nodes = jsonTo(g["nodes"], typeof(result.nodes))
-    # result.reqs = jsonTo(g["reqs"], typeof(result.reqs))
-    # for i, n in mpairs(result.nodes):
-    #   result.packageToDependency[n.dep.url] = i
-  except:
-    warn configFile, "couldn't load graph from: " & $configFile
