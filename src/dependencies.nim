@@ -288,6 +288,7 @@ proc expandGraph*(path: Path, nc: var NimbleContext; mode: TraversalMode, onClon
     processing = false
     let pkgUrls = nc.packageToDependency.keys().toSeq()
 
+    # just for more concise logging
     var initializingPkgs: seq[string]
     var processingPkgs: seq[string]
     for pkgUrl in pkgUrls:
@@ -304,6 +305,7 @@ proc expandGraph*(path: Path, nc: var NimbleContext; mode: TraversalMode, onClon
     if processingPkgs.len() > 0:
       notice root.projectName, "Processing packages:", processingPkgs.join(", ")
 
+    # process packages
     for pkgUrl in pkgUrls:
       var pkg = nc.packageToDependency[pkgUrl]
       case pkg.state:
@@ -318,8 +320,6 @@ proc expandGraph*(path: Path, nc: var NimbleContext; mode: TraversalMode, onClon
         let mode = if pkg.isRoot or pkg.isLinkedProject: CurrentCommit else: mode
         nc.traverseDependency(pkg, mode, @[])
         trace pkg.projectName, "processed pkg:", $pkg
-        # for vtag, reqs in pkg.versions:
-        #   trace pkg.projectName, "pkg version:", $vtag, "reqs:", $(toJsonHook(reqs))
         processing = true
         result.pkgs[pkgUrl] = pkg
       else:
