@@ -64,6 +64,8 @@ suite "test link integration":
         let dir = paths.getCurrentDir().absolutePath
 
         var graph = dir.loadWorkspace(nc, AllReleases, onClone=DoClone, doSolve=true)
+        writeDepGraph(graph)
+
 
         echo "\tgraph:\n" & $graph.toJson(ToJsonOptions(enumMode: joptEnumString))
 

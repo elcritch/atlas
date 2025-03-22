@@ -1,7 +1,7 @@
 import std / [sets, tables, sequtils, paths, files, os, strutils, json, jsonutils, algorithm]
 
 import basic/[deptypes, versions, depgraphtypes, osutils, context, gitops, reporters, nimblecontext, pkgurls, deptypesjson]
-import dependencies, confighandler, runners 
+import dependencies, runners 
 
 export depgraphtypes, deptypesjson
 
@@ -409,9 +409,6 @@ proc loadWorkspace*(path: Path, nc: var NimbleContext, mode: TraversalMode, onCl
   if doSolve:
     let form = result.toFormular(context().defaultAlgo)
     solve(result, form)
-
-  if result.root.active and KeepWorkspace notin context().flags:
-    writeDepGraph(result)
 
 
 proc runBuildSteps*(graph: DepGraph) =
