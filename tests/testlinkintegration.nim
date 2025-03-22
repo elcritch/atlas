@@ -123,7 +123,7 @@ suite "test link integration":
 
         echo "\n\n============== Expanding graph\n\n"
         var nc = createNimbleContext()
-        var graph = dir.expandGraph(nc, AllReleases, onClone=DoClone)
+        var graph = dir.loadWorkspace(nc, AllReleases, onClone=DoClone, doSolve=true)
 
         echo "\tgraph:\n" & $graph.toJson(ToJsonOptions(enumMode: joptEnumString))
 
