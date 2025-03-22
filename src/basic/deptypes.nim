@@ -26,6 +26,7 @@ type
     isLinkedProject*: bool
     isRoot*: bool
     errors*: seq[string]
+    originHead*: CommitHash
 
   NimbleRelease* = ref object
     version*: Version
@@ -42,8 +43,14 @@ type
     vid*: VarId = NoVar
 
   DepGraph* = object
+    mode*: TraversalMode
     root*: Package
     pkgs*: OrderedTable[PkgUrl, Package]
+
+  TraversalMode* = enum
+    AllReleases,
+    ExplicitVersions,
+    CurrentCommit
 
 const
   EmptyReqs* = 0

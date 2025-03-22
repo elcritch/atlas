@@ -11,12 +11,6 @@ import basic/[context, deptypes, versions, osutils, nimbleparser, packageinfos, 
 
 export deptypes, versions
 
-type
-  TraversalMode* = enum
-    AllReleases,
-    ExplicitVersions,
-    CurrentCommit
-
 when defined(nimAtlasBootstrap):
   import ../dist/sat/src/sat/satvars
 else:
@@ -128,6 +122,8 @@ proc traverseDependency*(
   var versions: seq[(PackageVersion, NimbleRelease)]
 
   let currentCommit = currentGitCommit(pkg.ondisk, Warning)
+  pkg.originHead = gitops.gitFindOriginTip(pkg.ondisk, Warning).commit()
+
   if mode == CurrentCommit and currentCommit.isEmpty():
     # let vtag = VersionTag(v: Version"#head", c: initCommitHash("", FromHead))
     # versions.add((vtag, NimbleRelease(version: vtag.version, status: Normal)))
@@ -289,7 +285,7 @@ proc expandGraph*(path: Path, nc: var NimbleContext; mode: TraversalMode, onClon
   # nc.loadDependency(pkg)
 
   var processed = initHashSet[PkgUrl]()
-  result = DepGraph(root: root)
+  result = DepGraph(root: root, mode: mode)
   nc.packageToDependency[root.url] = root
 
   notice "atlas:expand", "Expanding packages for:", $root.projectName

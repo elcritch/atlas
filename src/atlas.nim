@@ -505,9 +505,7 @@ proc atlasRun*(params: seq[string]) =
 
     echo "\n\n==============\n\n"
     # Load linked project's config to get its deps dir
-    let linkedCtx = readAtlasContext(linkDir.getProjectConfig(), linkDir)
     info "atlas:link", "linked project dir:", $linkDir
-
     var linkNc = createNimbleContext()
 
 

@@ -51,42 +51,42 @@ proc readConfigFile*(configFile: Path): JsonConfig =
   finally:
     close f
 
-proc readAtlasContext*(configFile: Path, projectDir: Path): AtlasContext =
+proc readAtlasContext*(ctx: var AtlasContext, configFile: Path, projectDir: Path) =
   let m = readConfigFile(configFile)
 
-  result = AtlasContext()
-  result.projectDir = projectDir
+  ctx.projectDir = projectDir
 
   if m.deps.len > 0:
-    result.depsDir = m.deps.Path
+    ctx.depsDir = m.deps.Path
   
   # Handle package name overrides
   for key, val in m.nameOverrides:
-    let err = result.nameOverrides.addPattern(key, val)
+    let err = ctx.nameOverrides.addPattern(key, val)
     if err.len > 0:
       error configFile, "invalid name override pattern: " & err
 
   # Handle URL overrides  
   for key, val in m.urlOverrides:
-    let err = result.urlOverrides.addPattern(key, val)
+    let err = ctx.urlOverrides.addPattern(key, val)
     if err.len > 0:
       error configFile, "invalid URL override pattern: " & err
 
   # Handle package overrides
   for key, val in m.pkgOverrides:
-    result.pkgOverrides[key] = parseUri(val)
+    ctx.pkgOverrides[key] = parseUri(val)
   if m.resolver.len > 0:
     try:
-      result.defaultAlgo = parseEnum[ResolutionAlgorithm](m.resolver)
+      ctx.defaultAlgo = parseEnum[ResolutionAlgorithm](m.resolver)
     except ValueError:
       warn configFile, "ignored unknown resolver: " & m.resolver
   if m.plugins.len > 0:
-    result.pluginsFile = m.plugins.Path
+    ctx.pluginsFile = m.plugins.Path
     readPluginsDir(m.plugins.Path)
   
 
 proc readConfig*() =
-  setContext(readAtlasContext(getProjectConfig(), project()))
+  var ctx = context()
+  readAtlasContext(ctx, getProjectConfig(), project())
   # trace "atlas:config", "read config file: ", repr context()
 
 proc writeConfig*() =
