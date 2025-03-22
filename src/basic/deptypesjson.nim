@@ -22,11 +22,12 @@ proc toJsonHook*(v: PkgUrl): JsonNode = %($(v))
 proc fromJsonHook*(a: var PkgUrl; b: JsonNode; opt = Joptions()) =
   a = toPkgUriRaw(parseUri(b.getStr()))
 
-proc toJsonHook*(vid: VarId): JsonNode = toJson($(int(vid)))
-proc toJsonHook*(p: Path): JsonNode = toJson($(p))
+proc toJsonHook*(vid: VarId): JsonNode = toJson(int(vid))
 
 proc fromJsonHook*(a: var VarId; b: JsonNode; opt = Joptions()) =
   a = VarId(int(b.getInt()))
+
+proc toJsonHook*(p: Path): JsonNode = toJson($(p))
 
 proc fromJsonHook*(a: var Path; b: JsonNode; opt = Joptions()) =
   a = Path(b.getStr())

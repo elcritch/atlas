@@ -1,6 +1,6 @@
 import std/[unittest, json, jsonutils]
-import basic/[context, pkgurls, deptypes, nimblecontext, depgraphtypes]
-import basic/[sattypes, versions]
+import basic/[context, sattypes, pkgurls, deptypes, nimblecontext, depgraphtypes]
+import basic/[deptypesjson, versions]
 
 proc p(s: string): VersionInterval =
   var err = false
@@ -93,7 +93,7 @@ suite "json serde":
     let jn = toJson(var1)
     var var2 = VarId(0)
     var2.fromJson(jn)
-    check var1 == var2
+    check var1.int == var2.int
 
   test "path":
     let path1 = Path("test.nim")
