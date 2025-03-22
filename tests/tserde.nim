@@ -61,10 +61,10 @@ suite "json serde":
 
     echo "root2.url: ", $(graph2.root.url), " project name: ", graph2.root.url.projectName()
 
-    check graph.root.url == graph2.root.url
+    check graph.root.hash() == graph2.root.hash()
 
-    check graph.pkgs[url] == graph2.pkgs[url]
-    check graph.pkgs[url2] == graph2.pkgs[url2]
+    check graph.pkgs[url].hash() == graph2.pkgs[url].hash()
+    check graph.pkgs[url2].hash() == graph2.pkgs[url2].hash()
 
   test "json serde nimble release":
     let release = NimbleRelease(version: Version"1.0.0", requirements: @[(nc.createUrl("foobar"), p"1.0.0")])
