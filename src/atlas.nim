@@ -214,6 +214,10 @@ proc linkPackage(linkDir, linkedNimble: Path) =
   let lgraph = loadDepGraph(lnc, linkedNimble)
 
   # Create links for all nimble files and links in the linked project
+  for pkg in allNodes(lgraph):
+    echo "pkg: ", $pkg.url.projectName, " at: ", $pkg.ondisk
+    let srcDir = if pkg.activeNimbleRelease().isNil: Path"" else: pkg.activeNimbleRelease().srcDir
+    createNimbleLink(pkg.url, pkg.ondisk, CfgPath(srcDir))
 
 
 proc detectProject(customProject = Path ""): bool =
