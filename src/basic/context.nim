@@ -68,25 +68,20 @@ proc setContext*(ctx: AtlasContext) =
 proc context*(): var AtlasContext =
   atlasContext
 
-proc project*(ctx: AtlasContext): Path =
-  ctx.projectDir
-
 proc project*(): Path =
-  context().project()
+  atlasContext.projectDir
 
 proc project*(ws: Path) =
   atlasContext.projectDir = ws
 
-proc depsDir*(ctx: AtlasContext, relative = false): Path =
-  if ctx.depsDir == Path"":
-    result = Path""
-  elif relative or ctx.depsDir.isAbsolute:
-    result = ctx.depsDir
-  else:
-    result = ctx.projectDir / ctx.depsDir
-
 proc depsDir*(relative = false): Path =
-  depsDir(context(), relative)
+  if atlasContext.depsDir == Path"":
+    result = Path""
+  elif relative or atlasContext.depsDir.isAbsolute:
+    result = atlasContext.depsDir
+  else:
+    result = atlasContext.projectDir / atlasContext.depsDir
+
 
 proc relativeToWorkspace*(path: Path): string =
   result = "$project/" & $path.relativePath(project())

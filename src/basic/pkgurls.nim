@@ -82,16 +82,16 @@ proc toOriginalPath*(pkgUrl: PkgUrl, isWindowsTest: bool = false): Path =
 proc linkPath*(path: Path): Path =
   result = Path(path.string & ".nimble-link")
 
-proc toDirectoryPath(pkgUrl: PkgUrl, ctx: AtlasContext, isLinkFile: bool): Path =
-  trace pkgUrl, "toDirectoryPath: ", $pkgUrl.url, "ctx:", $ctx.project()
+proc toDirectoryPath(pkgUrl: PkgUrl, isLinkFile: bool): Path =
+  trace pkgUrl, "toDirectoryPath: ", $pkgUrl.url
 
   if pkgUrl.url.scheme in ["atlas", "link"]:
-    result = ctx.project()
+    result = project()
   elif pkgUrl.url.scheme == "file":
     # file:// urls are used for local source paths, not dependency paths
-    result = ctx.depsDir() / Path(pkgUrl.projectName())
+    result = depsDir() / Path(pkgUrl.projectName())
   else:
-    result = ctx.depsDir() / Path(pkgUrl.projectName())
+    result = depsDir() / Path(pkgUrl.projectName())
   
   if not isLinkFile and not dirExists(result) and fileExists(result.linkPath()):
     # prefer the directory path if it exists (?)
@@ -111,23 +111,23 @@ proc toDirectoryPath(pkgUrl: PkgUrl, ctx: AtlasContext, isLinkFile: bool): Path 
   trace pkgUrl, "found directory path:", $result
   doAssert result.len() > 0
 
-proc toDirectoryPath*(pkgUrl: PkgUrl, ctx: AtlasContext): Path =
-  toDirectoryPath(pkgUrl, ctx, false)
+proc toDirectoryPath*(pkgUrl: PkgUrl): Path =
+  toDirectoryPath(pkgUrl, false)
 
-proc toLinkPath*(pkgUrl: PkgUrl, ctx: AtlasContext): Path =
+proc toLinkPath*(pkgUrl: PkgUrl): Path =
   if pkgUrl.url.scheme == "atlas":
     result = Path("")
   else:
-    result = Path(toDirectoryPath(pkgUrl, ctx, true).string & ".nimble-link")
+    result = Path(toDirectoryPath(pkgUrl, true).string & ".nimble-link")
 
-proc isLinkPath*(pkgUrl: PkgUrl, ctx: AtlasContext): bool =
-  result = fileExists(toLinkPath(pkgUrl, ctx))
+proc isLinkPath*(pkgUrl: PkgUrl): bool =
+  result = fileExists(toLinkPath(pkgUrl))
 
-proc isLinkedProject*(pkgUrl: PkgUrl, ctx: AtlasContext): bool =
+proc isLinkedProject*(pkgUrl: PkgUrl): bool =
   result = pkgUrl.url.scheme == "link"
 
 proc createNimbleLink*(pkgUrl: PkgUrl, nimblePath: Path, cfgPath: CfgPath) =
-  let nimbleLink = toLinkPath(pkgUrl, context())
+  let nimbleLink = toLinkPath(pkgUrl)
   if nimbleLink.fileExists():
     return
 
