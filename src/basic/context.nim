@@ -68,8 +68,11 @@ proc setContext*(ctx: AtlasContext) =
 proc context*(): var AtlasContext =
   atlasContext
 
+proc project*(ctx: AtlasContext): Path =
+  ctx.projectDir
+
 proc project*(): Path =
-  atlasContext.projectDir
+  context().project()
 
 proc project*(ws: Path) =
   atlasContext.projectDir = ws

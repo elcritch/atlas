@@ -505,12 +505,13 @@ proc atlasRun*(params: seq[string]) =
 
     echo "\n\n==============\n\n"
     # Load linked project's config to get its deps dir
-    let linkedCtx = readAtlasContext(linkDir / Path"atlas.config")
-    info "atlas:link", "current project dir:", $project()
-    info "atlas:link", "linking packages from:", $linkedCtx.depsDir
+    let linkedCtx = readAtlasContext(linkDir.getProjectConfig(), linkDir)
+    info "atlas:link", "linked project dir:", $linkDir
+    info "atlas:link", "current project dir:", $linkedCtx.project()
+    info "atlas:link", "linking packages from:", $linkedCtx.depsDir()
 
     var linkNc = createNimbleContext(linkedCtx)
-    let linkGraph = expand(linkDir, linkNc, CurrentCommit, DoNothing)
+    let linkGraph = expand(linkDir, linkNc, CurrentCommit, DoNothing, isLinkPath = true)
     echo "linkGraph: ", $linkGraph.toJson(ToJsonOptions(enumMode: joptEnumString))
 
 

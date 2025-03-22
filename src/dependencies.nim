@@ -279,11 +279,11 @@ proc loadDependency*(
       pkg.state = Error
       pkg.errors.add "ondisk location missing"
 
-proc expand*(path: Path, nc: var NimbleContext; mode: TraversalMode, onClone: PackageAction): DepGraph =
+proc expand*(path: Path, nc: var NimbleContext; mode: TraversalMode, onClone: PackageAction, isLinkPath = false): DepGraph =
   ## Expand the graph by adding all dependencies.
   
   doAssert path.string != "."
-  let url = nc.createUrlFromPath(path)
+  let url = nc.createUrlFromPath(path, isLinkPath)
   notice url.projectName, "expanding root package at:", $path, "url:", $url
   var root = Package(url: url, isRoot: true)
   # nc.loadDependency(pkg)

@@ -82,16 +82,18 @@ proc toOriginalPath*(pkgUrl: PkgUrl, isWindowsTest: bool = false): Path =
 proc linkPath*(path: Path): Path =
   result = Path(path.string & ".nimble-link")
 
-proc toDirectoryPath(pkgUrl: PkgUrl, ctx: AtlasContext, isLinkPath: bool): Path =
-  if pkgUrl.url.scheme == "atlas":
-    result = project()
+proc toDirectoryPath(pkgUrl: PkgUrl, ctx: AtlasContext, isLinkFile: bool): Path =
+  trace pkgUrl, "toDirectoryPath: ", $pkgUrl.url, "ctx:", $ctx.project()
+
+  if pkgUrl.url.scheme in ["atlas", "link"]:
+    result = ctx.project()
   elif pkgUrl.url.scheme == "file":
     # file:// urls are used for local source paths, not dependency paths
     result = ctx.depsDir() / Path(pkgUrl.projectName())
   else:
     result = ctx.depsDir() / Path(pkgUrl.projectName())
   
-  if not isLinkPath and not dirExists(result) and fileExists(result.linkPath()):
+  if not isLinkFile and not dirExists(result) and fileExists(result.linkPath()):
     # prefer the directory path if it exists (?)
     let linkPath = result.linkPath()
     let link = readFile($linkPath)

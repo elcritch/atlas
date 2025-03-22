@@ -51,10 +51,11 @@ proc readConfigFile*(configFile: Path): JsonConfig =
   finally:
     close f
 
-proc readAtlasContext*(configFile: Path): AtlasContext =
+proc readAtlasContext*(configFile: Path, projectDir: Path): AtlasContext =
   let m = readConfigFile(configFile)
 
   result = AtlasContext()
+  result.projectDir = projectDir
 
   if m.deps.len > 0:
     result.depsDir = m.deps.Path
@@ -85,10 +86,8 @@ proc readAtlasContext*(configFile: Path): AtlasContext =
   
 
 proc readConfig*() =
-  let projectDir = project()
-  setContext(readAtlasContext(getProjectConfig()))
-  project(projectDir)
-  trace "atlas:config", "read config file: ", repr context()
+  setContext(readAtlasContext(getProjectConfig(), project()))
+  # trace "atlas:config", "read config file: ", repr context()
 
 proc writeConfig*() =
   # TODO: serialize graph in a smarter way
