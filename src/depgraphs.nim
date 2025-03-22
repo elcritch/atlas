@@ -3,7 +3,6 @@ import std / [sets, tables, sequtils, paths, dirs, files, os, strutils, streams,
 import basic/[deptypes, versions, depgraphtypes, osutils, context, gitops, reporters, nimblecontext, pkgurls]
 import dependencies, runners 
 
-import std/[json, jsonutils]
 
 export depgraphtypes
 
