@@ -6,8 +6,6 @@ type
     packageToDependency*: Table[PkgUrl, Package]
     packageExtras*: Table[string, PkgUrl]
     nameToUrl: Table[string, PkgUrl]
-    # urlToNames: Table[Uri, string]
-    ctx*: AtlasContext
     explicitVersions*: Table[PkgUrl, HashSet[VersionTag]]
     nameOverrides*: Patterns
     urlOverrides*: Patterns
@@ -192,7 +190,6 @@ proc createUnfilledNimbleContext*(): NimbleContext =
   #   result.packageExtras[key] = url
   #   result.urlToNames[url.url()] = key
 
-proc createNimbleContext*(ctx: AtlasContext = context()): NimbleContext =
+proc createNimbleContext*(): NimbleContext =
   result = createUnfilledNimbleContext()
-  result.ctx = ctx
   fillPackageLookupTable(result)
