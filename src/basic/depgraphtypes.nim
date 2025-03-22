@@ -87,43 +87,6 @@ proc validateDependencyGraph*(graph: DepGraph): bool =
   
   return true
 
-proc toJsonHook*(vid: VarId): JsonNode = toJson($(int(vid)))
-proc toJsonHook*(p: Path): JsonNode = toJson($(p))
-
-proc fromJsonHook*(a: var VarId; b: JsonNode; opt = Joptions()) =
-  a = VarId(int(b.getInt()))
-
-proc fromJsonHook*(a: var Path; b: JsonNode; opt = Joptions()) =
-  a = Path(b.getStr())
-
-proc toJsonGraph*(d: DepGraph): JsonNode =
-  result = toJson(d, ToJsonOptions(enumMode: joptEnumString))
-
-proc dumpJson*(d: DepGraph, filename: string, pretty = true) =
-  let jn = toJsonGraph(d)
-  if pretty:
-    writeFile(filename, pretty(jn))
-  else:
-    writeFile(filename, $(jn))
-
-proc loadJson*(nc: var NimbleContext, json: JsonNode): DepGraph =
-  result.fromJson(json, Joptions(allowMissingKeys: true, allowExtraKeys: true))
-  var pkgs = result.pkgs
-  result.pkgs.clear()
-
-  for url, pkg in pkgs:
-    let url2 = nc.createUrl($pkg.url)
-    echo "restoring url: ", $pkg.url, " to ", $url2.projectName()
-    pkg.url = url2
-    result.pkgs[url2] = pkg
-  
-  let rootUrl = nc.createUrl($result.root.url)
-  result.root = result.pkgs[rootUrl]
-
-proc loadJson*(nc: var NimbleContext, filename: string): DepGraph =
-  let jn = parseJson(filename)
-  result = loadJson(nc, jn)
-
 proc toDestDir*(g: DepGraph; d: Package): Path =
   result = d.ondisk
 
