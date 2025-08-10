@@ -43,6 +43,10 @@ task buildRelease, "Build release":
     else:
       exec "nim c -d:release -o:./atlas src/atlas.nim"
 
+task buildCosmo, "Build atlas with Cosmopolitan C compiler":
+  let cc = "/Users/elcritch/projs/nims/cosmocc/bin/cosmocc"
+  exec fmt"nim c -d:release --verbosity:3 -d:cosmopolitan -o:bin/atlas-cosmo src/atlas.nim"
+
 task cleanTests, "Clean tests":
   echo "Stashing any changes to tests"
   exec "git stash -- tests"
