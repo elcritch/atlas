@@ -6,7 +6,7 @@
 #    distribution, for details about the copyright.
 #
 
-import std / [os, uri, paths, files, tables, sets]
+import std / [uri, paths, files, tables, sets]
 import versions, parse_requires, compiledpatterns, reporters
 
 export reporters
@@ -115,13 +115,3 @@ proc isProject*(dir: Path): bool =
   fileExists(getProjectConfig(dir))
 
 proc `==`*(a, b: CfgPath): bool {.borrow.}
-
-proc displayName(c: AtlasContext; p: string): string =
-  if p == c.projectDir.string:
-    p.absolutePath
-  elif $c.depsDir != "" and p.isRelativeTo($c.depsDir):
-    p.relativePath($c.depsDir)
-  elif p.isRelativeTo($c.projectDir):
-    p.relativePath($c.projectDir)
-  else:
-    p
