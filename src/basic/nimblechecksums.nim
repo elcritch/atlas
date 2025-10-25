@@ -6,7 +6,8 @@
 #    distribution, for details about the copyright.
 #
 
-import std / [strutils, os, sha1, algorithm]
+import std / [strutils, os, algorithm]
+import checksums / sha1
 import context, osutils
 import gitops
 
