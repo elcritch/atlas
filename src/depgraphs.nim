@@ -48,16 +48,16 @@ template withOpenBr(b, op, blk) =
 proc addVersionConstraints(b: var Builder; graph: var DepGraph, pkg: Package) =
   var anyReleaseSatisfied = false
 
-  proc checkDeps(graph: var DepGraph, ver: PackageVersion, reqs: seq[(PkgUrl, VersionInterval)]): bool =
+  proc checkDeps(graph: var DepGraph, pkg: Package, ver: PackageVersion, reqs: seq[(PkgUrl, VersionInterval)]): bool =
     var allDepsCompatible = true
 
     # First check if all dependencies can be satisfied
     for dep, query in items(reqs):
       if dep notin graph.pkgs:
-        debug pkg.url.projectName, "checking version:", $ver, "depdendency not found:", $dep
+        debug pkg.url.projectName, "checking package at", $ver, "depdendency not found:", $dep
         allDepsCompatible = false
         continue
-      debug pkg.url.projectName, "checking version:", $ver, "for dependency:", $dep.projectName, "with query:", $query
+      debug pkg.url.projectName, "checking package at", $ver, "for requirement:", $dep.projectName, "with query:", $query
       let depNode = graph.pkgs[dep]
 
       if depNode.state == LazyDeferred:
@@ -65,25 +65,26 @@ proc addVersionConstraints(b: var Builder; graph: var DepGraph, pkg: Package) =
         warn pkg.url.projectName, "dependency:", $dep.projectName, "is lazily deferred and not loaded"
         continue
 
-      var hasCompatible = false
+      var compatibles: seq[PackageVersion]
       for depVer, relVer in depNode.validVersions():
-        trace pkg.url.projectName, "checking dependency version:", $depVer, "query:", $query, "matches:", $query.matches(depVer)
-        if query.matches(depVer):
-          hasCompatible = true
+        trace pkg.url.projectName, "checking dependency:", $depVer, "query:", $query, "matches:", $query.matches(depVer)
+        if query.matches(depVer, anyHead = not pkg.isRoot):
+          compatibles.add(depVer)
           trace pkg.url.projectName, "version matched requirements for the dependency version:", $depVer
-          break
+          # break
 
-      if not hasCompatible:
+      if compatibles.len() == 0:
         allDepsCompatible = false
-        warn pkg.url.projectName, "no versions matched requirements for the dependency:", $dep.projectName
+        warn pkg.url.projectName, "no versions matched requirements for the requirement:", $dep.projectName, "query:", $query
         break
       else:
-        debug pkg.url.projectName, "a compatible version matched requirements for the dependency version:", $depNode.url.projectName
+        let compatStr = $compatibles[0] & " .. " & $compatibles[^1]
+        debug pkg.url.projectName, "package at", $ver, "has compatible dependency:", $depNode.url.projectName, "versions:", $compatStr
 
     return allDepsCompatible
 
   for ver, rel in validVersions(pkg):
-    let allDepsCompatible = checkDeps(graph, ver, rel.requirements)
+    let allDepsCompatible = checkDeps(graph, pkg, ver, rel.requirements)
 
     # If any dependency can't be satisfied, make this version unsatisfiable
     if not allDepsCompatible:
@@ -104,7 +105,11 @@ proc addVersionConstraints(b: var Builder; graph: var DepGraph, pkg: Package) =
       if dep in rel.reqsByFeatures:
         flags = rel.reqsByFeatures[dep].toSeq()
       
-      debug pkg.url.projectName, "version constraints for requirement depdendency", "dep:", $dep, "flags:", flags.mapIt($it).join(", "), "reqsByFeatures:", rel.reqsByFeatures.values().toSeq().mapIt($it).join(", ")
+      let flagStr = $(flags.mapIt($it))
+      let featuresStr = $(rel.reqsByFeatures.values().toSeq().mapIt($it))
+      debug pkg.url.projectName, "version constraints for requirement depdendency", "dep:", $dep,
+                                 "flags:", flagStr[1..^1],
+                                 "reqsByFeatures:", featuresStr[1..^1]
 
       var compatibleVersions: seq[VarId]
       var featureVersions: Table[VarId, seq[VarId]]
@@ -134,7 +139,7 @@ proc addVersionConstraints(b: var Builder; graph: var DepGraph, pkg: Package) =
     # Add implications for each feature requirement
     for feature, reqs in rel.features:
       let featureVarId = rel.featureVars[feature]
-      let allFeatDepsCompatible = checkDeps(graph, ver, reqs)
+      let allFeatDepsCompatible = checkDeps(graph, pkg, ver, reqs)
 
       debug pkg.url.projectName, "checking feature dep:", $feature, "query:", $reqs, "compat versions:", $allFeatDepsCompatible
       if not allFeatDepsCompatible:

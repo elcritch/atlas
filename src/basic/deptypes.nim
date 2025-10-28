@@ -140,5 +140,5 @@ proc findRelease*(pkg: Package, v: VersionInterval): NimbleRelease =
       return release
   result = nil
 
-proc matches*(v: VersionInterval, pkgVer: PackageVersion): bool =
-  v.matches(pkgVer.vtag)
+proc matches*(v: VersionInterval, pkgVer: PackageVersion, anyHead = false): bool =
+  v.matches(pkgVer.vtag, anyHead)
