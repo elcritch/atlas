@@ -67,8 +67,8 @@ proc addVersionConstraints(b: var Builder; graph: var DepGraph, pkg: Package) =
 
       var compatibles: seq[PackageVersion]
       for depVer, relVer in depNode.validVersions():
-        trace pkg.url.projectName, "checking dependency:", $depVer, "query:", $query, "matches:", $query.matches(depVer)
-        if query.matches(depVer, anyHead = not pkg.isRoot):
+        trace pkg.url.projectName, "checking dependency:", $depVer, "query:", $query, "matches:", $query.matches(depVer, pkg)
+        if query.matches(depVer, pkg):
           compatibles.add(depVer)
           trace pkg.url.projectName, "version matched requirements for the dependency version:", $depVer
           # break
@@ -107,15 +107,15 @@ proc addVersionConstraints(b: var Builder; graph: var DepGraph, pkg: Package) =
       
       let flagStr = $(flags.mapIt($it))
       let featuresStr = $(rel.reqsByFeatures.values().toSeq().mapIt($it))
-      debug pkg.url.projectName, "version constraints for requirement depdendency", "dep:", $dep,
+      trace pkg.url.projectName, "version constraints for requirement depdendency", "dep:", $dep,
                                  "flags:", flagStr[1..^1],
                                  "reqsByFeatures:", featuresStr[1..^1]
 
       var compatibleVersions: seq[VarId]
       var featureVersions: Table[VarId, seq[VarId]]
       for depVer, nimbleRelease in depNode.validVersions():
-        trace pkg.url.projectName, "checking dependency:", depNode.url.projectName, "version:", $depVer, "query:", $query, "matches:", $query.matches(depVer)
-        if query.matches(depVer):
+        trace pkg.url.projectName, "adding constraint option:", depNode.url.projectName, "version:", $depVer, "query:", $query, "matches:", $query.matches(depVer, pkg)
+        if query.matches(depVer, pkg):
           compatibleVersions.add(depVer.vid)
         for feature in flags:
           if feature in nimbleRelease.features:
@@ -155,7 +155,7 @@ proc addVersionConstraints(b: var Builder; graph: var DepGraph, pkg: Package) =
 
         var compatibleVersions: seq[VarId] = @[]
         for depVer, relVer in depNode.validVersions():
-          if query.matches(depVer):
+          if query.matches(depVer, pkg):
             compatibleVersions.add(depVer.vid)
           elif depVer == toVersionTag("*@head").toPkgVer:
             compatibleVersions.add(depVer.vid)
@@ -386,7 +386,7 @@ proc solve*(graph: var DepGraph; form: Form, rerun: var bool) =
       let vid = VarId varIdx
       if vid in form.mapping:
         let mapInfo = form.mapping[vid]
-        debug mapInfo.pkg.projectName, "v" & $varIdx & " sat var: " & $solution.getVar(vid).toPretty()
+        debug mapInfo.pkg.projectName, "at", $mapInfo.version, "v" & $varIdx & " sat var: " & $solution.getVar(vid).toPretty()
 
       if solution.isTrue(VarId(varIdx)) and form.mapping.hasKey(VarId varIdx):
         let mapInfo = form.mapping[VarId varIdx]
