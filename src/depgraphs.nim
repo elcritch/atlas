@@ -54,10 +54,10 @@ proc addVersionConstraints(b: var Builder; graph: var DepGraph, pkg: Package) =
     # First check if all dependencies can be satisfied
     for dep, query in items(reqs):
       if dep notin graph.pkgs:
-        debug pkg.url.projectName, "checking dependency for ", $ver, "not found:", $dep
+        debug pkg.url.projectName, "checking version:", $ver, "depdendency not found:", $dep
         allDepsCompatible = false
         continue
-      debug pkg.url.projectName, "checking dependency for ", $ver, ":", $dep.projectName, "query:", $query
+      debug pkg.url.projectName, "checking version:", $ver, "for dependency:", $dep.projectName, "with query:", $query
       let depNode = graph.pkgs[dep]
 
       if depNode.state == LazyDeferred:
