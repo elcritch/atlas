@@ -1,14 +1,15 @@
 import std/[os, paths, tables, strutils]
-import ../src/basic/context
-import ../src/basic/packageinfos
-import ../src/basic/nimblecontext
-import ../src/basic/pkgurls
-import ../src/basic/reporters
-import ../src/basic/versions
-import ../src/basic/gitops
-import ../src/basic/osutils
-import ../src/dependencies
-import ../src/basic/repocache
+
+import basic/context
+import basic/packageinfos
+import basic/nimblecontext
+import basic/pkgurls
+import basic/reporters
+import basic/versions
+import basic/gitops
+import basic/osutils
+import dependencies
+import basic/repocache
 
 const
   PackageArchivesDir = Path"pkg_archives"
@@ -60,19 +61,9 @@ proc archiveRelease(pkg: Package; pv: PackageVersion; rel: NimbleRelease; output
   if commit.isEmpty():
     warn pkg.url.projectName, "Skipping release without commit:", repr(pv.vtag)
     return
-  var srcDir = $rel.srcDir
-  if srcDir.len == 0 or srcDir == ".":
-    srcDir = "."
-  else:
-    srcDir = srcDir.replace('\\', '/')
-    if srcDir.startsWith("./"):
-      srcDir = srcDir[2..^1]
-    while srcDir.len > 0 and srcDir[0] == '/':
-      srcDir = srcDir[1..^1]
-    if srcDir.len == 0:
-      srcDir = "."
-  let pkgDir = outputRoot / Path(sanitizeName(pkg.url.fullName()))
-  ensureDir(pkgDir)
+  let pkgDirRel = outputRoot / Path(sanitizeName(pkg.url.fullName()))
+  ensureDir(pkgDirRel)
+  let pkgDir = pkgDirRel.absolutePath
   let baseName = sanitizeName(pkg.url.shortName() & "-" & versionSlug(pv.vtag))
   let xzPath = findExe("xz")
   let useXz = xzPath.len > 0
@@ -84,11 +75,7 @@ proc archiveRelease(pkg: Package; pv: PackageVersion; rel: NimbleRelease; output
 
   let tempTar = pkgDir / Path(baseName & ".tar")
   var args: seq[string]
-  let treeSpec =
-    if srcDir == ".":
-      commit.h
-    else:
-      commit.h & ":" & srcDir
+  let treeSpec = gitops.buildArchiveTreeSpec(commit, $rel.srcDir)
   if useXz:
     args = @["--format=tar", "--output=" & $tempTar, treeSpec]
   else:

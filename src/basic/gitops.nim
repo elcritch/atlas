@@ -42,6 +42,23 @@ type
     GitListFiles = "git -C $DIR ls-tree --name-only -r"
     GitForEachRef = "git -C $DIR for-each-ref"
 
+proc buildArchiveTreeSpec*(commit: CommitHash; srcDir: string): string =
+  ## Build the tree specification for ``git archive`` supporting package srcDir entries.
+  ## When ``srcDir`` points to the repository root (empty or "."), the git object is returned.
+  ## Otherwise, construct the ``commit:path`` format while normalizing separators and prefixes.
+  var dir = srcDir.replace('\\', '/')
+  if dir.len == 0 or dir == ".":
+    return commit.h
+  if dir.startsWith("./"):
+    dir = dir[2..^1]
+  while dir.len > 0 and dir[0] == '/':
+    dir = dir[1..^1]
+  if dir.len == 0:
+    return commit.h
+  if dir[^1] == '/':
+    dir.setLen(dir.len - 1)
+  result = commit.h & ":" & dir
+
 proc fetchRemoteTags*(path: Path; origin = "origin"; errorReportLevel: MsgKind = Warning): bool
 proc resolveRemoteName*(path: Path; origin = "origin"; errorReportLevel: MsgKind = Warning): string
 proc maybeUrlProxy*(url: Uri): Uri

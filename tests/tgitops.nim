@@ -158,6 +158,14 @@ suite "Git Operations Tests":
       # let dirUrl = getRemoteUrl(c, testDir)
       # check(dirUrl == testUrl)
 
+  test "buildArchiveTreeSpec handles srcDir permutations":
+    let commit = initCommitHash("0123456789abcdef0123456789abcdef01234567", FromGitTag)
+    check buildArchiveTreeSpec(commit, "") == commit.h
+    check buildArchiveTreeSpec(commit, ".") == commit.h
+    check buildArchiveTreeSpec(commit, "./src") == commit.h & ":src"
+    check buildArchiveTreeSpec(commit, "/src/pkg") == commit.h & ":src/pkg"
+    check buildArchiveTreeSpec(commit, "src/pkg/") == commit.h & ":src/pkg"
+
   test "remote command enum coverage":
     withDir testDir:
       discard execCmd("git init")
