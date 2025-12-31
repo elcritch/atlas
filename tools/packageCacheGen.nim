@@ -11,9 +11,6 @@ import basic/osutils
 import dependencies
 import basic/repocache
 
-const
-  PackageArchivesDir = Path"pkg_archives"
-
 proc sanitizeName(s: string): string =
   const Allowed = Digits + Letters + {'-', '_', '.'}
   for ch in s:
@@ -134,12 +131,13 @@ proc ensureWorkspaceDirs() =
     ensureDir(cachePath.absolutePath)
 
 proc main() =
+  putEnv("GIT_TERMINAL_PROMPT", "0")
   ensureWorkspaceDirs()
   context().flags.incl IncludeTagsAndNimbleCommits
   context().flags.incl NimbleCommitsMax
   var nc = createNimbleContext()
   let pkgs = getPackageInfos()
-  let archiveRoot = cachesDirectory() / PackageArchivesDir
+  let archiveRoot = packageArchiveDirectory()
   ensureDir(archiveRoot)
   for pkgInfo in pkgs:
     if pkgInfo.kind == pkPackage:

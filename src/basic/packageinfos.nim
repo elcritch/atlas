@@ -11,6 +11,7 @@ import context, reporters, gitops, pkgurls
 
 const
   UnitTests = defined(atlasUnitTests)
+  PackageArchiveDir = Path"pkg_archive"
 
 when UnitTests:
   proc findAtlasDir*(): string =
@@ -87,6 +88,20 @@ proc toTags*(j: JsonNode): seq[string] =
     for elem in items j:
       result.add elem.getStr("")
 
+proc packageArchiveDirectory*(): Path =
+  project() / PackageArchiveDir
+
+proc logPackageVersionsAndArchive(pkgs: seq[PackageInfo]) =
+  var versions: seq[string]
+  for pkg in pkgs:
+    if pkg.kind == pkPackage and pkg.version.len > 0:
+      versions.add(pkg.name & ":" & pkg.version)
+  if versions.len > 0:
+    info "atlas:packageinfos", "versions:", versions.join(", ")
+  else:
+    info "atlas:packageinfos", "versions: <none>"
+  info "atlas:packageinfos", "archive path:", $packageArchiveDirectory()
+
 proc getPackageInfos*(pkgsDir = packagesDirectory()): seq[PackageInfo] =
   result = @[]
   var uniqueNames = initHashSet[string]()
@@ -99,6 +114,7 @@ proc getPackageInfos*(pkgsDir = packagesDirectory()): seq[PackageInfo] =
         let pkg = p.fromJson()
         if pkg != nil and not uniqueNames.containsOrIncl(pkg.name):
           result.add(pkg)
+  logPackageVersionsAndArchive(result)
 
 proc updatePackages*(pkgsDir = packagesDirectory()) =
   let pkgsDir = depsDir() / DefaultPackagesSubDir
