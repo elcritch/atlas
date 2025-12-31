@@ -1,4 +1,4 @@
-import std / [sets, tables, sequtils, paths, files, os, strutils, json, jsonutils, algorithm]
+import std / [sets, tables, sequtils, paths, files, os, strutils, json, jsonutils, algorithm, monotimes, times]
 
 import basic/[deptypes, versions, depgraphtypes, osutils, context, gitops, reporters, nimblecontext, pkgurls, deptypesjson, sattypes]
 import dependencies, runners 
@@ -444,6 +444,7 @@ proc loadWorkspace*(path: Path, nc: var NimbleContext, mode: TraversalMode, onCl
   result = path.expandGraph(nc, mode, onClone)
 
   if doSolve:
+    let solveStart = getMonoTime()
     let form = result.toFormular(context().defaultAlgo)
     var rerun = false
     solve(result, form, rerun)
@@ -454,6 +455,10 @@ proc loadWorkspace*(path: Path, nc: var NimbleContext, mode: TraversalMode, onCl
           ver.vid = NoVar
           rel.featureVars.clear()
 
+    let solveElapsed = getMonoTime() - solveStart
+    notice "atlas:solve", "loadWorkspace solve took:", $solveElapsed
+
+    if rerun:
       result = loadWorkspace(path, nc, mode, onClone, doSolve)
 
 

@@ -6,7 +6,7 @@
 #    distribution, for details about the copyright.
 #
 
-import std / [os, strutils, uri, tables, sequtils, sets, hashes, algorithm, paths, dirs]
+import std / [os, strutils, uri, tables, sequtils, sets, hashes, algorithm, paths, dirs, monotimes, times]
 import basic/[context, deptypes, versions, osutils, nimbleparser, reporters, gitops, pkgurls, nimblecontext, deptypesjson, repocache]
 
 export deptypes, versions, deptypesjson
@@ -338,6 +338,7 @@ proc expandGraph*(path: Path, nc: var NimbleContext; mode: TraversalMode, onClon
   ## Expand the graph by adding all dependencies.
   
   doAssert path.string != "."
+  let expandStart = getMonoTime()
   let url = nc.createUrlFromPath(path, isLinkPath)
   notice url.projectName, "expanding root package at:", $path, "url:", $url
   var root = Package(
@@ -418,6 +419,8 @@ proc expandGraph*(path: Path, nc: var NimbleContext; mode: TraversalMode, onClon
       nc.traverseDependency(pkg, ExplicitVersions, versions.toSeq())
 
   info "atlas:expand", "Finished expanding packages for:", $root.projectName
+  let expandElapsed = getMonoTime() - expandStart
+  notice "atlas:expand", "expandGraph took:", $expandElapsed
 
 proc findProjects*(path: Path): seq[Path] =
   result = @[]
