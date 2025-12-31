@@ -71,18 +71,29 @@ proc fromJsonHook*(t: var OrderedTable[PackageVersion, NimbleRelease]; b: JsonNo
     release.fromJson(item[1])
     t[pv] = release
 
-proc toJsonHook*(t: OrderedTable[PkgUrl, Package], opt: ToJsonOptions): JsonNode =
+proc toJsonHook*(t: SharedOrderedTable[PkgUrl, Package], opt: ToJsonOptions): JsonNode =
   result = newJObject()
-  for k, v in t:
+  if t.isNil:
+    return
+  for (k, v) in t.pairsSnapshot():
     result[$(k)] = toJson(v, opt)
 
-proc fromJsonHook*(t: var OrderedTable[PkgUrl, Package]; b: JsonNode; opt = Joptions()) =
-  for k, v in b:
-    var url: PkgUrl
-    url.fromJson(toJson(k))
-    var pkg: Package
-    pkg.fromJson(v)
-    t[url] = pkg
+proc fromJsonHook*(t: var SharedOrderedTable[PkgUrl, Package]; b: JsonNode; opt = Joptions()) =
+  initSharedOrderedTable(t)
+  if b.kind == JArray:
+    for item in b:
+      var url: PkgUrl
+      url.fromJson(item[0])
+      var pkg: Package
+      pkg.fromJson(item[1])
+      t[url] = pkg
+  else:
+    for k, v in b:
+      var url: PkgUrl
+      url.fromJson(toJson(k))
+      var pkg: Package
+      pkg.fromJson(v)
+      t[url] = pkg
 
 proc toJsonHook*(r: NimbleRelease, opt: ToJsonOptions = ToJsonOptions()): JsonNode =
   if r == nil:
@@ -123,10 +134,10 @@ proc dumpJson*(d: DepGraph, filename: string, pretty = true) =
 
 proc loadJson*(nc: var NimbleContext, json: JsonNode): DepGraph =
   result.fromJson(json, Joptions(allowMissingKeys: true, allowExtraKeys: true))
-  var pkgs = result.pkgs
+  let pkgs = result.pkgs.pairsSnapshot()
   result.pkgs.clear()
 
-  for url, pkg in pkgs:
+  for (url, pkg) in pkgs:
     let url2 = nc.createUrl($pkg.url)
     pkg.url = url2
     result.pkgs[url2] = pkg

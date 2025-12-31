@@ -1,0 +1,4 @@
+--path:"../src"
+--mm:atomicArc
+--threads:on
+--d:useMalloc

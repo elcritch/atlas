@@ -1,6 +1,6 @@
-import std / [sets, tables, sequtils, paths, files, os, strutils, json, jsonutils, algorithm]
+import std / [sets, tables, sequtils, paths, files, os, strutils, json, jsonutils, algorithm, monotimes, times]
 
-import basic/[deptypes, versions, depgraphtypes, osutils, context, gitops, reporters, nimblecontext, pkgurls, deptypesjson, sattypes]
+import basic/[deptypes, versions, depgraphtypes, osutils, context, gitops, reporters, nimblecontext, pkgurls, deptypesjson, sattypes, pkgarchive]
 import dependencies, runners 
 
 export depgraphtypes, deptypesjson
@@ -17,7 +17,7 @@ when not compiles(newSeq[int]().addUnique(1)):
     if item notin s:
       s.add(item)
 
-iterator directDependencies*(graph: DepGraph; pkg: Package): lent Package =
+iterator directDependencies*(graph: DepGraph; pkg: Package): Package =
   if pkg.activeNimbleRelease != nil:
     for (durl, _) in pkg.activeNimbleRelease.requirements:
       # let idx = findDependencyForDep(graph, dep[0])
@@ -206,9 +206,16 @@ proc toFormular*(graph: var DepGraph; algo: ResolutionAlgorithm): Form =
 
       # # Sort versions in descending order (newer versions first)
 
-      case algo
-      of MinVer: p.versions.sort(sortVersionsDesc)
-      of SemVer, MaxVer: p.versions.sort(sortVersionsAsc)
+      if ForceUseHead notin context().flags:
+        warn "atlas:toFormular", "ForceUseHead sorting.." 
+        case algo
+        of MinVer: p.versions.sort(sortVersionsDescHeadFirst)
+        of SemVer, MaxVer: p.versions.sort(sortVersionsAscHeadFirst)
+      else:
+        warn "atlas:toFormular", "regular sorting.." 
+        case algo
+        of MinVer: p.versions.sort(sortVersionsDesc)
+        of SemVer, MaxVer: p.versions.sort(sortVersionsAsc)
 
       # Assign a unique SAT variable to each version of the package
       for ver, rel in p.validVersions():
@@ -444,6 +451,7 @@ proc loadWorkspace*(path: Path, nc: var NimbleContext, mode: TraversalMode, onCl
   result = path.expandGraph(nc, mode, onClone)
 
   if doSolve:
+    let solveStart = getMonoTime()
     let form = result.toFormular(context().defaultAlgo)
     var rerun = false
     solve(result, form, rerun)
@@ -454,6 +462,10 @@ proc loadWorkspace*(path: Path, nc: var NimbleContext, mode: TraversalMode, onCl
           ver.vid = NoVar
           rel.featureVars.clear()
 
+    let solveElapsed = getMonoTime() - solveStart
+    notice "atlas:solve", "loadWorkspace solve took:", $solveElapsed
+
+    if rerun:
       result = loadWorkspace(path, nc, mode, onClone, doSolve)
 
 
@@ -483,7 +495,11 @@ proc activateGraph*(graph: DepGraph): seq[CfgPath] =
   notice "atlas:graph", "Activating project deps for resolved dependency graph"
   for pkg in allActiveNodes(graph):
     if pkg.isRoot: continue
-    if not pkg.activeVersion.commit().isEmpty():
+    var usingArchive = false
+    if UseBinaryPkgs in context().flags:
+      notice pkg.url.projectName, "Getting package archive cache"
+      usingArchive = loadArchiveRelease(pkg)
+    if not usingArchive and not pkg.activeVersion.commit().isEmpty():
       if pkg.ondisk.string.len == 0:
         error pkg.url.projectName, "Missing ondisk location for:", $(pkg.url)
       else:

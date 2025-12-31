@@ -3,7 +3,7 @@
 import std / [strutils, os, uri, jsonutils, json, sets, tables, sequtils, strformat, unittest]
 import std/terminal
 import basic/[sattypes, context, reporters, pkgurls, compiledpatterns, versions]
-import basic/[deptypes, nimblecontext]
+import basic/[deptypes, nimblecontext, repocache]
 import dependencies
 import depgraphs
 import testerutils
@@ -291,6 +291,96 @@ suite "test expand with no git tags":
 
 
         check $graph.root.activeVersion == "#head@-"
+
+
+suite "sat solver head selection":
+  setup:
+    context().flags = {}
+    context().features = initHashSet[string]()
+    context().nameOverrides = Patterns()
+    context().urlOverrides = Patterns()
+    context().defaultAlgo = SemVer
+
+  test "prefers tagged releases over #head from cached versions":
+    var nc = createUnfilledNimbleContext()
+    nc.put("root", toPkgUriRaw(parseUri "https://example.com/root"))
+    nc.put("dep", toPkgUriRaw(parseUri "https://example.com/dep"))
+
+    let rootUrl = nc.createUrl("root")
+    let depUrl = nc.createUrl("dep")
+
+    var root = Package(url: rootUrl, isRoot: true, state: Processed)
+    var dep = Package(url: depUrl, state: Processed)
+
+    root.versions = initOrderedTable[PackageVersion, NimbleRelease]()
+    dep.versions = initOrderedTable[PackageVersion, NimbleRelease]()
+
+    var err = false
+    let depReq = parseVersionInterval(">= 1.0.0", 0, err)
+    doAssert not err
+
+    let rootTag = VersionTag(v: Version"0.1.0", c: initCommitHash("root", FromNone))
+    let rootRelease = NimbleRelease(
+      version: Version"0.1.0",
+      status: Normal,
+      requirements: @[(depUrl, depReq)],
+      reqsByFeatures: initTable[PkgUrl, HashSet[string]](),
+      features: initTable[string, seq[(PkgUrl, VersionInterval)]](),
+      featureVars: initTable[string, VarId]()
+    )
+    root.versions[rootTag.toPkgVer] = rootRelease
+
+    let cachePath = Path(getTempDir()) / Path("atlas-cache-head-" & $getCurrentProcessId() & ".json")
+    let cacheJson = %*{
+      "cacheVersion": RepoCacheFormatVersion,
+      "repo": %*{},
+      "nimbleFiles": %*[],
+      "git": %*{},
+      "versions": %*[
+        %*{
+          "version": "1.0.0",
+          "versionTag": "1.0.0@rel",
+          "isTip": false,
+          "commit": "rel",
+          "status": "Normal",
+          "hasInstallHooks": false,
+          "requirements": %*[],
+          "features": %*{},
+          "featureFlags": %*{}
+        },
+        %*{
+          "version": "#head",
+          "versionTag": "#head@head",
+          "isTip": true,
+          "commit": "head",
+          "status": "Normal",
+          "hasInstallHooks": false,
+          "releaseVersion": "1.0.0",
+          "requirements": %*[],
+          "features": %*{},
+          "featureFlags": %*{}
+        }
+      ],
+      "packageErrors": %*[]
+    }
+    writeFile($cachePath, $cacheJson)
+    check loadVersionsFromArchiveCache(nc, dep, cachePath)
+    dep.state = Processed
+    var hasHead = false
+    for ver, rel in dep.versions:
+      if ver.vtag.v.isHead:
+        hasHead = true
+
+    var graph = DepGraph(root: root)
+    initSharedOrderedTable(graph.pkgs)
+    graph.pkgs[rootUrl] = root
+    graph.pkgs[depUrl] = dep
+
+    let form = graph.toFormular(SemVer)
+    solve(graph, form)
+
+    check not graph.pkgs[depUrl].activeVersion.vtag.v.isHead
+    check graph.pkgs[depUrl].activeVersion.version == Version"1.0.0"
 
 
 infoNow "tester", "All tests run successfully"
