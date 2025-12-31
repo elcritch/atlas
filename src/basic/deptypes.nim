@@ -27,6 +27,7 @@ type
     active*: bool
     isAtlasProject*: bool # true if the package is an atlas project
     isFork*: bool
+    isOfficial*: bool
     isRoot*, isLocalOnly*: bool
     errors*: seq[string]
     originHead*: CommitHash
