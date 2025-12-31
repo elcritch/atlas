@@ -158,13 +158,37 @@ suite "Git Operations Tests":
       # let dirUrl = getRemoteUrl(c, testDir)
       # check(dirUrl == testUrl)
 
-  test "buildArchiveTreeSpec handles srcDir permutations":
-    let commit = initCommitHash("0123456789abcdef0123456789abcdef01234567", FromGitTag)
-    check buildArchiveTreeSpec(commit, "") == commit.h
-    check buildArchiveTreeSpec(commit, ".") == commit.h
-    check buildArchiveTreeSpec(commit, "./src") == commit.h & ":src"
-    check buildArchiveTreeSpec(commit, "/src/pkg") == commit.h & ":src/pkg"
-    check buildArchiveTreeSpec(commit, "src/pkg/") == commit.h & ":src/pkg"
+  test "buildArchiveTreeSpec handles srcDir permutations and git archive succeeds":
+    withDir testDir:
+      discard execCmd("git init")
+      createDir(Path "src/pkg")
+      writeFile("src/pkg/a.txt", "A")
+      writeFile("root.txt", "Root")
+      discard execCmd("git add src/pkg/a.txt root.txt")
+      discard execCmd("git commit -m \"initial\"")
+      let commit = currentGitCommit(Path ".")
+      check buildArchiveTreeSpec(commit, "") == commit.h
+      check buildArchiveTreeSpec(commit, ".") == commit.h
+      check buildArchiveTreeSpec(commit, "./src") == commit.h & ":src"
+      check buildArchiveTreeSpec(commit, "/src/pkg") == commit.h & ":src/pkg"
+      check buildArchiveTreeSpec(commit, "src/pkg/") == commit.h & ":src/pkg"
+
+      let outDir = testDir / Path"harness_out"
+      createDir(outDir)
+
+      proc runArchive(dir: string) =
+        let spec = buildArchiveTreeSpec(commit, dir)
+        let tempTar = outDir / Path("test.tar")
+        if fileExists(tempTar):
+          removeFile(tempTar)
+        let (_, status) = exec(GitArchive, Path ".", ["--format=tar", "--output=" & $tempTar, spec], Warning)
+        check status == RES_OK
+        check fileExists(tempTar)
+        removeFile(tempTar)
+
+      runArchive("")
+      runArchive("src")
+      runArchive("src/pkg")
 
   test "remote command enum coverage":
     withDir testDir:
