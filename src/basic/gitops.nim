@@ -27,6 +27,7 @@ type
     GitDescribe = "git -C $DIR describe",
     GitRevParse = "git -C $DIR rev-parse",
     GitCheckout = "git -C $DIR checkout",
+    GitArchive = "git -C $DIR archive",
     GitSubModUpdate = "git -C $DIR submodule update --init",
     GitPush = "git -C $DIR push $REMOTE",
     GitPull = "git -C $DIR pull",
