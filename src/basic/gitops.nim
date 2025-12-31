@@ -191,9 +191,15 @@ proc remoteNameFromGitUrl*(rawUrl: string): string =
   let user = parts[^2]
   let repo = parts[^1]
   if user.len == 0:
-    repo
+    result = repo
   else:
-    repo & "." & user & "." & u.hostname
+    result = repo & "." & user & "." & u.hostname
+
+  for i in 0..<result.len:
+    if result[i] notin {'a'..'z', 'A'..'Z', '0'..'9', '.', '_', '-'}:
+      result[i] = '-'
+  if result.len > 0 and result[0] == '-':
+    result = "r" & result
 
 proc getRemoteUrlFor(path: Path; remote: string): string =
   let (outp, status) = exec(
