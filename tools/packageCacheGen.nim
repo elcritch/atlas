@@ -1,4 +1,4 @@
-import std/[os, paths, tables, strutils]
+import std/[algorithm, os, paths, tables, strutils]
 
 import basic/context
 import basic/packageinfos
@@ -132,11 +132,13 @@ proc ensureWorkspaceDirs() =
 
 proc main() =
   putEnv("GIT_TERMINAL_PROMPT", "0")
+  setAtlasVerbosity(Info)
   ensureWorkspaceDirs()
   context().flags.incl IncludeTagsAndNimbleCommits
   context().flags.incl NimbleCommitsMax
   var nc = createNimbleContext()
-  let pkgs = getPackageInfos()
+  var pkgs = getPackageInfos()
+  pkgs.sort(proc(a, b: PackageInfo): int = cmpIgnoreCase(a.name, b.name))
   let archiveRoot = packageArchiveDirectory()
   ensureDir(archiveRoot)
   for pkgInfo in pkgs:
