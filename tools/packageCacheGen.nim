@@ -1,4 +1,4 @@
-import std/[algorithm, os, paths, tables, strutils, json, osproc]
+import std/[algorithm, os, paths, tables, strutils, json, osproc, threadpool]
 
 import basic/context
 import basic/packageinfos
@@ -65,6 +65,7 @@ proc sha256File(path: Path): string =
   result = digest[0]
 
 proc collectArchiveDigests(pkgDir: Path): seq[(string, string)] =
+  info "packageCacheGen", "collecting archive digests:", $pkgDir
   if not dirExists(pkgDir.string):
     return
   for kind, path in walkDir(pkgDir.string):
@@ -99,6 +100,7 @@ proc loadRepoCacheCopy(nc: var NimbleContext; pkg: Package): JsonNode =
     result = newJNull()
 
 proc writePackageDigest(pkg: Package; outputRoot: Path) =
+  info pkg, "writing package diget"
   let pkgDirRel = outputRoot / Path pkg.url.shortName()
   ensureDir(pkgDirRel)
   let pkgDir = pkgDirRel.absolutePath
@@ -119,6 +121,7 @@ proc writePackageDigest(pkg: Package; outputRoot: Path) =
     warn pkg.url.projectName, "Unable to write digest:", $digestPath, "error:", err.msg
 
 proc writePackageCacheCopy(nc: var NimbleContext; pkg: Package; outputRoot: Path) =
+  info pkg, "writing repo cache copy"
   let pkgDirRel = outputRoot / Path pkg.url.shortName()
   ensureDir(pkgDirRel)
   let pkgDir = pkgDirRel.absolutePath
@@ -219,6 +222,14 @@ proc processPackage(nc: var NimbleContext; pkgInfo: PackageInfo; outputRoot: Pat
   writePackageDigest(pkg, outputRoot)
   writePackageCacheCopy(nc, pkg, outputRoot)
 
+var
+  nc = createNimbleContext()
+  pkgs = getPackageInfos()
+
+proc processPackageTask(pkgInfo: PackageInfo; outputRoot: Path) {.thread.} =
+  {.gcsafe.}:
+    processPackage(nc, pkgInfo, outputRoot)
+
 proc ensureWorkspaceDirs() =
   let depsPath = depsDir()
   if depsPath.string.len > 0:
@@ -229,18 +240,18 @@ proc ensureWorkspaceDirs() =
 
 proc main() =
   putEnv("GIT_TERMINAL_PROMPT", "0")
-  setAtlasVerbosity(Info)
+  setAtlasVerbosity(Debug)
   ensureWorkspaceDirs()
   context().flags.incl IncludeTagsAndNimbleCommits
   context().flags.incl NimbleCommitsMax
-  var nc = createNimbleContext()
-  var pkgs = getPackageInfos()
   pkgs.sort(proc(a, b: PackageInfo): int = cmpIgnoreCase(a.name, b.name))
   let archiveRoot = packageArchiveDirectory()
   ensureDir(archiveRoot)
+  setMaxPoolSize(1)
   for pkgInfo in pkgs:
     if pkgInfo.kind == pkPackage:
-      processPackage(nc, pkgInfo, archiveRoot)
+      spawnX processPackageTask(pkgInfo, archiveRoot)
+  sync()
 
 when isMainModule:
   main()
