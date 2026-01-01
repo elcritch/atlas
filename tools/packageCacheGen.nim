@@ -239,7 +239,7 @@ proc main() =
   pkgs.sort(proc(a, b: PackageInfo): int = cmpIgnoreCase(a.name, b.name))
   let archiveRoot = packageArchiveDirectory()
   ensureDir(archiveRoot)
-  setMaxPoolSize(1)
+  #setMaxPoolSize(4)
   for pkgInfo in pkgs:
     if pkgInfo.kind == pkPackage:
       spawnX processPackageTask(pkgInfo, archiveRoot)

@@ -62,7 +62,6 @@ proc execProcessStream*(cmd: string;
                         options: set[ProcessOption] = {}): ResultCode =
   var cmdLine = quoteShellCommand(@[cmd] & args)
   var p = startProcess(cmdLine, options = options + {poParentStreams, poEvalCommand})
-  close inputStream(p)
   let exitCode = p.waitForExit()
   close(p)
   result = ResultCode(exitCode)
