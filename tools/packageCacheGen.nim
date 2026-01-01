@@ -64,11 +64,16 @@ proc archiveRelease(pkg: Package; pv: PackageVersion; rel: NimbleRelease; output
   let baseName = sanitizeName(pkg.url.shortName() & "-" & versionSlug(pv.vtag))
   let xzPath = findExe("xz")
   let useXz = xzPath.len > 0
-  let finalExt = if useXz: ".tar.xz" else: ".tar.gz"
-  let finalPath = pkgDir / Path(baseName & finalExt)
-  if fileExists($finalPath):
-    trace pkg.url.projectName, "Archive already exists:", $finalPath
+  let tarXzPath = pkgDir / Path(baseName & ".tar.xz")
+  let tarGzPath = pkgDir / Path(baseName & ".tar.gz")
+  let existingPath =
+    if fileExists($tarXzPath): $tarXzPath
+    elif fileExists($tarGzPath): $tarGzPath
+    else: ""
+  if existingPath.len > 0:
+    trace pkg.url.projectName, "Archive already exists:", existingPath
     return
+  let finalPath = if useXz: tarXzPath else: tarGzPath
 
   let tempTar = pkgDir / Path(baseName & ".tar")
   var args: seq[string]
@@ -115,10 +120,9 @@ proc processPackage(nc: var NimbleContext; pkgInfo: PackageInfo; outputRoot: Pat
   if pkg.state != Found:
     warn pkg.url.projectName, "Unable to load package:", pkg.errors.join("; ")
     return
+  if not pkg.isLocalOnly and isGitDir(pkg.ondisk):
+    gitops.gitPull(pkg.ondisk)
   nc.traverseDependency(pkg, AllReleases, @[])
-  let currentCommit = gitops.currentGitCommit(pkg.ondisk, Warning)
-  if not currentCommit.isEmpty():
-    writePackageCache(pkg, currentCommit, AllReleases)
   for ver, rel in pkg.versions:
     archiveRelease(pkg, ver, rel, outputRoot)
 
