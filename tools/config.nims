@@ -1,1 +1,3 @@
 --path:"../src"
+--mm:atomicArc
+--threads:on

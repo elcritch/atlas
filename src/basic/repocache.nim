@@ -1,5 +1,5 @@
 import std/[os, strutils, json, jsonutils, tables, sequtils, sets, paths, algorithm]
-import context, deptypes, versions, nimblecontext, reporters, pkgurls
+import context, deptypes, versions, nimblecontext, nimbleparser, reporters, pkgurls
 
 proc isForkUrl*(nc: NimbleContext; url: PkgUrl): bool =
   let officialUrl = nc.lookup(url.shortName())
@@ -207,31 +207,52 @@ proc repoInfo(pkg: Package; nimbleFiles: seq[Path]): RepoCacheRepoInfo =
   if nimbleFiles.len > 0:
     result.primaryNimble = $nimbleFiles[0].splitPath().tail
 
+proc buildVersionEntry(vtag: VersionTag; release: NimbleRelease): RepoCacheVersion =
+  var entry = RepoCacheVersion(
+    version: $vtag.v,
+    versionTag: repr(vtag),
+    isTip: vtag.isTip,
+    commit: commitInfo(vtag.commit()),
+    status: $release.status,
+    hasInstallHooks: release.hasInstallHooks,
+    requirements: encodeRequirements(release.requirements),
+    features: encodeFeatures(release.features),
+    featureFlags: encodeFeatureFlags(release.reqsByFeatures)
+  )
+  if release.version.string.len > 0:
+    entry.releaseVersion = $release.version
+  if release.nimVersion.string.len > 0:
+    entry.nimVersion = $release.nimVersion
+  if release.srcDir != Path"":
+    entry.srcDir = $release.srcDir
+  if release.err.len > 0:
+    entry.error = release.err
+  result = entry
+
 proc versionEntries(pkg: Package): seq[RepoCacheVersion] =
   for pkgVer, release in pkg.versions:
     if pkgVer.isNil or release.isNil:
       continue
-    let versionTag = pkgVer.vtag
-    var entry = RepoCacheVersion(
-      version: $versionTag.v,
-      versionTag: repr(versionTag),
-      isTip: versionTag.isTip,
-      commit: commitInfo(versionTag.commit()),
-      status: $release.status,
-      hasInstallHooks: release.hasInstallHooks,
-      requirements: encodeRequirements(release.requirements),
-      features: encodeFeatures(release.features),
-      featureFlags: encodeFeatureFlags(release.reqsByFeatures)
-    )
-    if release.version.string.len > 0:
-      entry.releaseVersion = $release.version
-    if release.nimVersion.string.len > 0:
-      entry.nimVersion = $release.nimVersion
-    if release.srcDir != Path"":
-      entry.srcDir = $release.srcDir
-    if release.err.len > 0:
-      entry.error = release.err
-    result.add entry
+    result.add buildVersionEntry(pkgVer.vtag, release)
+
+proc hasHeadVersion(pkg: Package): bool =
+  for pkgVer in pkg.versions.keys():
+    if pkgVer.vtag.v.isHead:
+      return true
+  result = false
+
+proc headRelease(nc: var NimbleContext; nimbleFiles: seq[Path]): NimbleRelease =
+  if nimbleFiles.len == 1:
+    try:
+      result = nc.parseNimbleFile(nimbleFiles[0])
+    except CatchableError as err:
+      result = NimbleRelease(status: HasBrokenNimbleFile, err: err.msg)
+  elif nimbleFiles.len == 0:
+    result = NimbleRelease(status: HasUnknownNimbleFile, err: "missing nimble file")
+  else:
+    result = NimbleRelease(status: HasUnknownNimbleFile, err: "ambiguous nimble file")
+  if result.version.string.len == 0:
+    result.version = Version"#head"
 
 proc gitInfo(pkg: Package; currentCommit: CommitHash; mode: TraversalMode): RepoCacheGitInfo =
   RepoCacheGitInfo(
@@ -242,13 +263,22 @@ proc gitInfo(pkg: Package; currentCommit: CommitHash; mode: TraversalMode): Repo
     isLocalOnly: pkg.isLocalOnly
   )
 
-proc buildRepoCache(pkg: Package; nimbleFiles: seq[Path]; currentCommit: CommitHash; mode: TraversalMode): RepoCacheFile =
+proc buildRepoCache(nc: var NimbleContext; pkg: Package; nimbleFiles: seq[Path];
+                    currentCommit: CommitHash; mode: TraversalMode): RepoCacheFile =
+  var versions = versionEntries(pkg)
+  if not hasHeadVersion(pkg):
+    let headTag = VersionTag(
+      v: Version"#head",
+      c: initCommitHash(currentCommit, FromHead),
+      isTip: true
+    )
+    versions.add buildVersionEntry(headTag, headRelease(nc, nimbleFiles))
   var cache = RepoCacheFile(
     cacheVersion: RepoCacheFormatVersion,
     repo: repoInfo(pkg, nimbleFiles),
     nimbleFiles: nimbleFileEntries(nimbleFiles, pkg.ondisk),
     git: gitInfo(pkg, currentCommit, mode),
-    versions: versionEntries(pkg),
+    versions: versions,
     packageErrors: pkg.errors
   )
   result = cache
@@ -292,7 +322,8 @@ proc pruneRepoCacheJson(node: JsonNode) =
   else:
     discard
 
-proc writePackageCache*(pkg: Package; currentCommit: CommitHash; mode: TraversalMode) =
+proc writePackageCache*(nc: var NimbleContext; pkg: Package;
+                        currentCommit: CommitHash; mode: TraversalMode) =
   if pkg.isNil:
     return
   let cachePath = repoCacheFile(pkg)
@@ -303,7 +334,7 @@ proc writePackageCache*(pkg: Package; currentCommit: CommitHash; mode: Traversal
     nimbleFiles = findNimbleFile(pkg)
   except CatchableError as err:
     warn pkg.projectName, "Unable to locate nimble files for cache:", err.msg
-  let cache = buildRepoCache(pkg, nimbleFiles, currentCommit, mode)
+  let cache = buildRepoCache(nc, pkg, nimbleFiles, currentCommit, mode)
   try:
     let jsonCache = toJson(cache, ToJsonOptions(enumMode: joptEnumString))
     pruneRepoCacheJson(jsonCache)

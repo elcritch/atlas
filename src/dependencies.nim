@@ -253,7 +253,7 @@ proc traverseDependency*(
     addFeatureDependencies(pkg)
 
   if shouldWriteCache:
-    writePackageCache(pkg, currentCommit, mode)
+    writePackageCache(nc, pkg, currentCommit, mode)
 
 
 proc loadDependency*(

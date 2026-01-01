@@ -1,4 +1,4 @@
-import std/[algorithm, os, paths, tables, strutils]
+import std/[algorithm, os, paths, tables, strutils, json, osproc]
 
 import basic/context
 import basic/packageinfos
@@ -40,6 +40,85 @@ proc versionSlug(tag: VersionTag): string =
 proc ensureDir(path: Path) =
   if path.string.len > 0 and not dirExists(path.string):
     createDir(path.string)
+
+proc sha256File(path: Path): string =
+  if not fileExists($path):
+    return ""
+  let sha256sumPath = findExe("sha256sum")
+  let shasumPath = if sha256sumPath.len == 0: findExe("shasum") else: ""
+  if sha256sumPath.len == 0 and shasumPath.len == 0:
+    warn "packageCacheGen", "Unable to hash archive: no sha256sum or shasum in PATH:", $path
+    return ""
+  let cmd =
+    if sha256sumPath.len > 0:
+      quoteShell(sha256sumPath) & " " & quoteShell($path)
+    else:
+      quoteShell(shasumPath) & " -a 256 " & quoteShell($path)
+  let (output, code) = execCmdEx(cmd)
+  if code != 0:
+    warn "packageCacheGen", "Unable to hash archive:", $path, "error:", output.strip()
+    return ""
+  let digest = output.splitWhitespace()
+  if digest.len == 0:
+    warn "packageCacheGen", "Unable to parse sha256 output for:", $path
+    return ""
+  result = digest[0]
+
+proc collectArchiveDigests(pkgDir: Path): seq[(string, string)] =
+  if not dirExists(pkgDir.string):
+    return
+  for kind, path in walkDir(pkgDir.string):
+    if kind != pcFile:
+      continue
+    let pathObj = Path(path)
+    let filename = $pathObj.splitPath().tail
+    if not (filename.endsWith(".tar.gz") or filename.endsWith(".tar.xz")):
+      continue
+    let digest = sha256File(pathObj)
+    if digest.len == 0:
+      warn "packageCacheGen", "Skipping digest for unreadable archive:", $pathObj
+      continue
+    result.add((filename, digest))
+  result.sort(proc(a, b: (string, string)): int = cmpIgnoreCase(a[0], b[0]))
+
+proc loadRepoCacheCopy(nc: var NimbleContext; pkg: Package): JsonNode =
+  if pkg.isNil:
+    return newJNull()
+  let cachePath = repoCacheFile(pkg)
+  if cachePath.string.len == 0:
+    return newJNull()
+  let currentCommit = currentGitCommit(pkg.ondisk, Warning)
+  writePackageCache(nc, pkg, currentCommit, AllReleases)
+  if not fileExists($cachePath):
+    warn pkg.url.projectName, "Repo cache file missing:", $cachePath
+    return newJNull()
+  try:
+    result = parseFile($cachePath)
+  except CatchableError as err:
+    warn pkg.url.projectName, "Unable to read repo cache:", $cachePath, "error:", err.msg
+    result = newJNull()
+
+proc writePackageDigest(nc: var NimbleContext; pkg: Package; outputRoot: Path) =
+  let pkgDirRel = outputRoot / Path pkg.url.shortName()
+  ensureDir(pkgDirRel)
+  let pkgDir = pkgDirRel.absolutePath
+  let archives = collectArchiveDigests(pkgDir)
+  let repoCache = loadRepoCacheCopy(nc, pkg)
+  var digestJson = newJObject()
+  var archiveEntries = newJArray()
+  for (filename, hash) in archives:
+    var entry = newJObject()
+    entry["file"] = %filename
+    entry["sha256"] = %hash
+    archiveEntries.add(entry)
+  digestJson["archives"] = archiveEntries
+  digestJson["repoCache"] = repoCache
+  let digestPath = pkgDir / Path"digest.json"
+  try:
+    writeFile($digestPath, pretty(digestJson))
+    info pkg.url.projectName, "Wrote digest:", $digestPath
+  except CatchableError as err:
+    warn pkg.url.projectName, "Unable to write digest:", $digestPath, "error:", err.msg
 
 proc resolvePackageUrl(nc: var NimbleContext; pkgInfo: PackageInfo): PkgUrl =
   let lookup = nc.lookup(pkgInfo.name)
@@ -125,6 +204,7 @@ proc processPackage(nc: var NimbleContext; pkgInfo: PackageInfo; outputRoot: Pat
   nc.traverseDependency(pkg, AllReleases, @[])
   for ver, rel in pkg.versions:
     archiveRelease(pkg, ver, rel, outputRoot)
+  writePackageDigest(nc, pkg, outputRoot)
 
 proc ensureWorkspaceDirs() =
   let depsPath = depsDir()
