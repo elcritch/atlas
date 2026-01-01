@@ -409,7 +409,7 @@ proc decodeCommit(info: RepoCacheCommit): CommitHash =
 proc commitsMatch(expected, cached: CommitHash): bool =
   result = not expected.isEmpty() and not cached.isEmpty() and expected == cached
 
-proc decodeCachedVersionTag(entry: RepoCacheVersion): VersionTag =
+proc decodeCachedVersionTag(entry: RepoCacheVersion; cachePath: Path): VersionTag =
   var tagStr = entry.versionTag
   if tagStr.len == 0 and entry.version.len > 0 and entry.commit.hash.len > 0:
     tagStr = entry.version & "@" & entry.commit.hash
@@ -419,7 +419,11 @@ proc decodeCachedVersionTag(entry: RepoCacheVersion): VersionTag =
     isTip = true
   var tag: VersionTag
   if tagStr.len > 0:
-    tag.fromJson(%tagStr)
+    try:
+      tag.fromJson(%tagStr)
+    except Exception as err:
+      err.msg = "Invalid repo cache version tag in " & $cachePath & ": " & err.msg
+      raise
   else:
     tag = VersionTag(v: Version"", c: initCommitHash("", FromNone))
   let commit = decodeCommit(entry.commit)
@@ -505,7 +509,7 @@ proc loadVersionsFromCache*(
     return false
   pkg.versions.clear()
   for entry in cache.versions:
-    let pkgVer = decodeCachedVersionTag(entry).toPkgVer()
+    let pkgVer = decodeCachedVersionTag(entry, cachePath).toPkgVer()
     let release = decodeRelease(nc, entry)
     pkg.versions[pkgVer] = release
     registerReleaseDependencies(nc, pkg, release)
