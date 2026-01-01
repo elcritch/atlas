@@ -52,18 +52,21 @@ proc buildGitArgs(gitCmd: Command; path: Path; subs: openArray[string]): seq[str
   let cmd = $gitCmd % repl
   result = parseCmdLine(cmd)
 
+var execCaptureOutput {.threadvar.}: string
+
 proc execProcessCapture(cmd: string; args: seq[string]): (string, ResultCode) =
-  var p = startProcess(cmd, args = args, options = {poStdErrToStdOut})
-  close inputStream(p)
-  let output = outputStream(p).readAll()
-  let exitCode = p.waitForExit()
-  close(p)
-  result = (output, ResultCode(exitCode))
+  var cmdLine = quoteShellCommand(@[cmd] & args)
+  proc captureAfterRun(idx: int, p: Process) =
+    execCaptureOutput = p.outputStream.readAll()
+  let exitCode = execProcesses([cmdLine],
+    options = {poStdErrToStdOut}, n = 1, afterRunEvent = captureAfterRun)
+  result[0] = move execCaptureOutput
+  result[1] = ResultCode(exitCode)
 
 proc execProcessStream(cmd: string; args: seq[string]): ResultCode =
-  var p = startProcess(cmd, args = args, options = {poParentStreams})
-  let exitCode = p.waitForExit()
-  close(p)
+  let cmdLine = quoteShellCommand(@[cmd] & args)
+  let exitCode = execProcesses([cmdLine],
+    options = {poParentStreams, poStdErrToStdOut}, n = 1)
   result = ResultCode(exitCode)
 
 proc buildArchiveTreeSpec*(commit: CommitHash; srcDir: string): string =
