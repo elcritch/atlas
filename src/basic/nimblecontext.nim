@@ -99,6 +99,51 @@ proc lookup*(nc: NimbleContext, name: string): PkgUrl =
   elif lname in nc.nameToUrl:
     result = nc.nameToUrl[lname]
 
+proc canonicalRepoKey(u: Uri): string =
+  if u.scheme in ["file", "link", "atlas"]:
+    return ""
+  var host = u.hostname.toLowerAscii()
+  var path = u.path
+  if path.endsWith(".git"):
+    path.removeSuffix(".git")
+  path = path.strip(chars = {'/'})
+  if host.len == 0 or path.len == 0:
+    return ""
+  result = host & "/" & path
+
+proc lookupByUrl(nc: NimbleContext, url: Uri): PkgUrl =
+  let target = canonicalRepoKey(url)
+  if target.len == 0:
+    return
+  for _, candidate in nc.nameToUrl:
+    if canonicalRepoKey(candidate.url) == target:
+      return candidate
+
+proc normalizePkgUrl*(nc: NimbleContext, url: PkgUrl): PkgUrl =
+  result = url
+  if result.isEmpty():
+    return
+  let scheme = result.url.scheme
+  if scheme in ["file", "link", "atlas"]:
+    return
+  var officialPkg = nc.lookup(result.shortName())
+  if officialPkg.isEmpty() and result.shortName().endsWith(".nim"):
+    let baseName = result.shortName()[0..^5]
+    officialPkg = nc.lookup(baseName)
+  if officialPkg.isEmpty():
+    officialPkg = nc.lookupByUrl(result.url)
+  if officialPkg.isEmpty():
+    return
+  let officialUrl = officialPkg.url
+  let resultUrl = result.url
+  if officialUrl != resultUrl:
+    let officialKey = canonicalRepoKey(officialUrl)
+    let resultKey = canonicalRepoKey(resultUrl)
+    if officialKey.len == 0 or resultKey.len == 0 or officialKey != resultKey:
+      return
+  result.hasShortName = true
+  result.qualifiedName = officialPkg.qualifiedName
+
 proc putImpl(nc: var NimbleContext, name: string, url: PkgUrl, isFromPath = false): bool =
   let name = unicode.toLower(name)
   if name in nc.nameToUrl:
@@ -158,9 +203,7 @@ proc createUrl*(nc: var NimbleContext, nameOrig: string): PkgUrl =
         nc.notFoundNames.incl lname
       raise newException(ValueError, "project name not found in packages database: " & $lname & " original: " & $nameOrig)
   
-  let officialPkg = nc.lookup(result.shortName())
-  if not officialPkg.isEmpty() and officialPkg.url == result.url:
-    result.hasShortName = true
+  result = nc.normalizePkgUrl(result)
 
   if not result.isEmpty():
     if nc.put(result.projectName, result):

@@ -324,10 +324,9 @@ proc registerReleaseDependencies*(
     let (reqUrl, reqInterval) = req
     if reqInterval.isSpecial:
       let commit = reqInterval.extractSpecificCommit()
-      if not commit.isEmpty():
-        nc.explicitVersions.mgetOrPut(reqUrl, initHashSet[VersionTag]()).incl(
-          VersionTag(v: Version($(reqInterval)), c: commit)
-        )
+      nc.explicitVersions.mgetOrPut(reqUrl, initHashSet[VersionTag]()).incl(
+        VersionTag(v: Version($(reqInterval)), c: commit)
+      )
 
     if reqUrl notin nc.packageToDependency:
       let pkgDep = Package(
@@ -346,10 +345,9 @@ proc registerReleaseDependencies*(
       let (featureUrl, featureInterval) = dep
       if featureInterval.isSpecial:
         let commit = featureInterval.extractSpecificCommit()
-        if not commit.isEmpty():
-          nc.explicitVersions.mgetOrPut(featureUrl, initHashSet[VersionTag]()).incl(
-            VersionTag(v: Version($(featureInterval)), c: commit)
-          )
+        nc.explicitVersions.mgetOrPut(featureUrl, initHashSet[VersionTag]()).incl(
+          VersionTag(v: Version($(featureInterval)), c: commit)
+        )
       if featureUrl notin nc.packageToDependency:
         let state = if feature notin context().features: LazyDeferred else: NotInitialized
         let pkgDep = Package(
@@ -399,35 +397,37 @@ proc decodeCachedVersionTag(entry: RepoCacheVersion): VersionTag =
   tag.isTip = isTip
   result = tag
 
-proc decodeRequirement(req: RepoCacheRequirement): (PkgUrl, VersionInterval) =
+proc decodeRequirement(nc: NimbleContext; req: RepoCacheRequirement): (PkgUrl, VersionInterval) =
   var pkgUrl: PkgUrl
   pkgUrl.fromJson(%req.url)
+  pkgUrl = nc.normalizePkgUrl(pkgUrl)
   var interval: VersionInterval
   interval.fromJson(%req.version)
   result = (pkgUrl, interval)
 
-proc decodeRequirements(reqs: seq[RepoCacheRequirement]): seq[(PkgUrl, VersionInterval)] =
+proc decodeRequirements(nc: NimbleContext; reqs: seq[RepoCacheRequirement]): seq[(PkgUrl, VersionInterval)] =
   for req in reqs:
-    result.add decodeRequirement(req)
+    result.add decodeRequirement(nc, req)
 
-proc decodeFeatures(reqs: Table[string, seq[RepoCacheRequirement]]): Table[string, seq[(PkgUrl, VersionInterval)]] =
+proc decodeFeatures(nc: NimbleContext; reqs: Table[string, seq[RepoCacheRequirement]]): Table[string, seq[(PkgUrl, VersionInterval)]] =
   for feature, deps in reqs:
-    result[feature] = decodeRequirements(deps)
+    result[feature] = decodeRequirements(nc, deps)
 
-proc decodeFeatureFlags(flags: Table[string, seq[string]]): Table[PkgUrl, HashSet[string]] =
+proc decodeFeatureFlags(nc: NimbleContext; flags: Table[string, seq[string]]): Table[PkgUrl, HashSet[string]] =
   for depUrl, featureList in flags:
     var pkgUrl: PkgUrl
     pkgUrl.fromJson(%depUrl)
+    pkgUrl = nc.normalizePkgUrl(pkgUrl)
     var featureSet = initHashSet[string]()
     for flag in featureList:
       featureSet.incl(flag)
     result[pkgUrl] = featureSet
 
-proc decodeRelease(entry: RepoCacheVersion): NimbleRelease =
+proc decodeRelease(nc: NimbleContext; entry: RepoCacheVersion): NimbleRelease =
   new(result)
-  result.requirements = decodeRequirements(entry.requirements)
-  result.features = decodeFeatures(entry.features)
-  result.reqsByFeatures = decodeFeatureFlags(entry.featureFlags)
+  result.requirements = decodeRequirements(nc, entry.requirements)
+  result.features = decodeFeatures(nc, entry.features)
+  result.reqsByFeatures = decodeFeatureFlags(nc, entry.featureFlags)
   result.hasInstallHooks = entry.hasInstallHooks
   if entry.status.len > 0:
     result.status.fromJson(%entry.status)
@@ -475,7 +475,7 @@ proc loadVersionsFromCache*(
   pkg.versions.clear()
   for entry in cache.versions:
     let pkgVer = decodeCachedVersionTag(entry).toPkgVer()
-    let release = decodeRelease(entry)
+    let release = decodeRelease(nc, entry)
     pkg.versions[pkgVer] = release
     registerReleaseDependencies(nc, pkg, release)
   if pkg.versions.len == 0:

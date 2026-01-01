@@ -355,6 +355,7 @@ proc expandGraph*(path: Path, nc: var NimbleContext; mode: TraversalMode, onClon
   notice "atlas:expand", "Expanding packages for:", $root.projectName
 
   var processing = true
+  var processedExplicit: Table[PkgUrl, int]
   while processing:
     processing = false
     let pkgUrls = nc.packageToDependency.keys().toSeq()
@@ -410,13 +411,17 @@ proc expandGraph*(path: Path, nc: var NimbleContext; mode: TraversalMode, onClon
         discard
         info pkg.projectName, "Skipping package:", $pkg.url, "state:", $pkg.state
 
-  debug "atlas:expandGraph", "Processing explicit versions count: ", $nc.explicitVersions.len()
-  for pkgUrl in nc.explicitVersions.keys().toSeq():
-    let versions = nc.explicitVersions[pkgUrl]
-    info pkgUrl.projectName, "explicit versions: ", versions.toSeq().mapIt($it).join(", ")
-    var pkg = nc.packageToDependency[pkgUrl]
-    if pkg.state == Processed:
-      nc.traverseDependency(pkg, ExplicitVersions, versions.toSeq())
+    debug "atlas:expandGraph", "Processing explicit versions count: ", $nc.explicitVersions.len()
+    for pkgUrl in nc.explicitVersions.keys().toSeq():
+      let versions = nc.explicitVersions[pkgUrl]
+      info pkgUrl.projectName, "explicit versions: ", versions.toSeq().mapIt($it).join(", ")
+      var pkg = nc.packageToDependency[pkgUrl]
+      if pkg.state == Processed:
+        let prevCount = processedExplicit.getOrDefault(pkgUrl, 0)
+        if versions.len > prevCount:
+          nc.traverseDependency(pkg, ExplicitVersions, versions.toSeq())
+          processedExplicit[pkgUrl] = versions.len
+          processing = true
 
   info "atlas:expand", "Finished expanding packages for:", $root.projectName
   let expandElapsed = getMonoTime() - expandStart
