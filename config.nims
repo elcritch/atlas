@@ -10,6 +10,9 @@ when defined(nimPreviewSlimSystem):
 task build, "Build local atlas":
   exec "nim c -d:debug -o:bin/atlas src/atlas.nim"
 
+task tools, "Build local atlas tools":
+  exec "nim c -d:debug -o:bin/pkg-cache-gen tools/pkg_cache_gen.nim"
+
 task unitTests, "Runs unit tests":
   exec "nim c -d:debug -r tests/tbasics.nim"
   exec "nim c -d:debug -r tests/tserde.nim"
