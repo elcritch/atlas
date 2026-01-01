@@ -98,12 +98,11 @@ proc loadRepoCacheCopy(nc: var NimbleContext; pkg: Package): JsonNode =
     warn pkg.url.projectName, "Unable to read repo cache:", $cachePath, "error:", err.msg
     result = newJNull()
 
-proc writePackageDigest(nc: var NimbleContext; pkg: Package; outputRoot: Path) =
+proc writePackageDigest(pkg: Package; outputRoot: Path) =
   let pkgDirRel = outputRoot / Path pkg.url.shortName()
   ensureDir(pkgDirRel)
   let pkgDir = pkgDirRel.absolutePath
   let archives = collectArchiveDigests(pkgDir)
-  let repoCache = loadRepoCacheCopy(nc, pkg)
   var digestJson = newJObject()
   var archiveEntries = newJArray()
   for (filename, hash) in archives:
@@ -112,13 +111,26 @@ proc writePackageDigest(nc: var NimbleContext; pkg: Package; outputRoot: Path) =
     entry["sha256"] = %hash
     archiveEntries.add(entry)
   digestJson["archives"] = archiveEntries
-  digestJson["repoCache"] = repoCache
   let digestPath = pkgDir / Path"digest.json"
   try:
     writeFile($digestPath, pretty(digestJson))
     info pkg.url.projectName, "Wrote digest:", $digestPath
   except CatchableError as err:
     warn pkg.url.projectName, "Unable to write digest:", $digestPath, "error:", err.msg
+
+proc writePackageCacheCopy(nc: var NimbleContext; pkg: Package; outputRoot: Path) =
+  let pkgDirRel = outputRoot / Path pkg.url.shortName()
+  ensureDir(pkgDirRel)
+  let pkgDir = pkgDirRel.absolutePath
+  let repoCache = loadRepoCacheCopy(nc, pkg)
+  if repoCache.kind == JNull:
+    warn pkg.url.projectName, "Repo cache copy is empty"
+  let cachePath = pkgDir / Path"package-cache.json"
+  try:
+    writeFile($cachePath, pretty(repoCache))
+    info pkg.url.projectName, "Wrote package cache copy:", $cachePath
+  except CatchableError as err:
+    warn pkg.url.projectName, "Unable to write package cache copy:", $cachePath, "error:", err.msg
 
 proc resolvePackageUrl(nc: var NimbleContext; pkgInfo: PackageInfo): PkgUrl =
   let lookup = nc.lookup(pkgInfo.name)
@@ -204,7 +216,8 @@ proc processPackage(nc: var NimbleContext; pkgInfo: PackageInfo; outputRoot: Pat
   nc.traverseDependency(pkg, AllReleases, @[])
   for ver, rel in pkg.versions:
     archiveRelease(pkg, ver, rel, outputRoot)
-  writePackageDigest(nc, pkg, outputRoot)
+  writePackageDigest(pkg, outputRoot)
+  writePackageCacheCopy(nc, pkg, outputRoot)
 
 proc ensureWorkspaceDirs() =
   let depsPath = depsDir()
