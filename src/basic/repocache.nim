@@ -410,38 +410,21 @@ proc commitsMatch(expected, cached: CommitHash): bool =
   result = not expected.isEmpty() and not cached.isEmpty() and expected == cached
 
 proc decodeCachedVersionTag(entry: RepoCacheVersion; cachePath: Path): VersionTag =
-  var tagStr = entry.versionTag
-  if tagStr.len == 0 and entry.version.len > 0 and entry.commit.hash.len > 0:
-    tagStr = entry.version & "@" & entry.commit.hash
-  var tag: VersionTag
-  if tagStr.len > 0:
-    try:
-      tag = parseVersionTag(tagStr)
-    except Exception as err:
-      err.msg = "Invalid repo cache version tag in " & $cachePath & ": " & err.msg
-      raise
-  else:
-    tag = VersionTag(v: Version"", c: initCommitHash("", FromNone))
-  let commit = decodeCommit(entry.commit)
-  if not commit.isEmpty():
-    tag.c = commit
-  if entry.isTip:
-    tag.isTip = true
-  result = tag
+  result = parseVersionTag(entry.versionTag)
 
-proc decodeRequirement(nc: NimbleContext; req: RepoCacheRequirement): (PkgUrl, VersionInterval) =
-  var pkgUrl: PkgUrl
-  pkgUrl.fromJson(%req.url)
-  pkgUrl = nc.normalizePkgUrl(pkgUrl)
+proc decodeRequirement(nc: var NimbleContext; req: RepoCacheRequirement): (PkgUrl, VersionInterval) =
+  var url: PkgUrl = nc.createUrl(req.url)  # This will handle both name and URL overrides internally
+
+  var error: bool
   var interval: VersionInterval
-  interval.fromJson(%req.version)
-  result = (pkgUrl, interval)
+  interval = parseVersionInterval(req.version, 0, error)
+  result = (url, interval)
 
-proc decodeRequirements(nc: NimbleContext; reqs: seq[RepoCacheRequirement]): seq[(PkgUrl, VersionInterval)] =
+proc decodeRequirements(nc: var NimbleContext; reqs: seq[RepoCacheRequirement]): seq[(PkgUrl, VersionInterval)] =
   for req in reqs:
     result.add decodeRequirement(nc, req)
 
-proc decodeFeatures(nc: NimbleContext; reqs: Table[string, seq[RepoCacheRequirement]]): Table[string, seq[(PkgUrl, VersionInterval)]] =
+proc decodeFeatures(nc: var NimbleContext; reqs: Table[string, seq[RepoCacheRequirement]]): Table[string, seq[(PkgUrl, VersionInterval)]] =
   for feature, deps in reqs:
     result[feature] = decodeRequirements(nc, deps)
 
@@ -455,7 +438,7 @@ proc decodeFeatureFlags(nc: NimbleContext; flags: Table[string, seq[string]]): T
       featureSet.incl(flag)
     result[pkgUrl] = featureSet
 
-proc decodeRelease(nc: NimbleContext; entry: RepoCacheVersion): NimbleRelease =
+proc decodeRelease(nc: var NimbleContext; entry: RepoCacheVersion): NimbleRelease =
   new(result)
   result.requirements = decodeRequirements(nc, entry.requirements)
   result.features = decodeFeatures(nc, entry.features)
