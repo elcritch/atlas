@@ -8,8 +8,8 @@ import basic/reporters
 import basic/versions
 import basic/gitops
 import basic/osutils
-import dependencies
 import basic/repocache
+import dependencies
 
 proc sanitizeName(s: string): string =
   const Allowed = Digits + Letters + {'-', '_', '.'}
@@ -44,18 +44,10 @@ proc ensureDir(path: Path) =
 proc sha256File(path: Path): string =
   if not fileExists($path):
     return ""
-  let sha256sumPath = findExe("sha256sum")
-  let shasumPath = if sha256sumPath.len == 0: findExe("shasum") else: ""
-  if sha256sumPath.len == 0 and shasumPath.len == 0:
-    warn "packageCacheGen", "Unable to hash archive: no sha256sum or shasum in PATH:", $path
-    return ""
-  let cmd =
-    if sha256sumPath.len > 0:
-      quoteShell(sha256sumPath) & " " & quoteShell($path)
-    else:
-      quoteShell(shasumPath) & " -a 256 " & quoteShell($path)
-  let (output, code) = execCmdEx(cmd)
-  if code != 0:
+  let sha256sum = findExe("sha256sum")
+  doAssert sha256sum.len() > 0
+  let (output, code) = execProcessCapture(sha256sum, @[$path], {poUsePath, poEvalCommand})
+  if code.int != 0:
     warn "packageCacheGen", "Unable to hash archive:", $path, "error:", output.strip()
     return ""
   let digest = output.splitWhitespace()
