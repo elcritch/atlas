@@ -413,14 +413,10 @@ proc decodeCachedVersionTag(entry: RepoCacheVersion; cachePath: Path): VersionTa
   var tagStr = entry.versionTag
   if tagStr.len == 0 and entry.version.len > 0 and entry.commit.hash.len > 0:
     tagStr = entry.version & "@" & entry.commit.hash
-  var isTip = entry.isTip
-  if tagStr.len > 0 and tagStr[^1] == '^':
-    tagStr.setLen(tagStr.len - 1)
-    isTip = true
   var tag: VersionTag
   if tagStr.len > 0:
     try:
-      tag.fromJson(%tagStr)
+      tag = parseVersionTag(tagStr)
     except Exception as err:
       err.msg = "Invalid repo cache version tag in " & $cachePath & ": " & err.msg
       raise
@@ -429,7 +425,8 @@ proc decodeCachedVersionTag(entry: RepoCacheVersion; cachePath: Path): VersionTa
   let commit = decodeCommit(entry.commit)
   if not commit.isEmpty():
     tag.c = commit
-  tag.isTip = isTip
+  if entry.isTip:
+    tag.isTip = true
   result = tag
 
 proc decodeRequirement(nc: NimbleContext; req: RepoCacheRequirement): (PkgUrl, VersionInterval) =

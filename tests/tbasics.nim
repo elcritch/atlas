@@ -442,6 +442,28 @@ suite "versions":
     let v4 = VersionTag(v: Version"#head", c: initCommitHash("", FromGitTag))
     check v4 == v3
 
+  test "parse version tag":
+    let hash = "24870f48c40da2146ce12ff1e675e6e7b9748355"
+    let tag1 = parseVersionTag("#head@" & hash)
+    check tag1.v.string == "#head"
+    check tag1.c.h == hash
+    check not tag1.isTip
+
+    let tag2 = parseVersionTag("#head@" & hash & "^")
+    check tag2.v.string == "#head"
+    check tag2.c.h == hash
+    check tag2.isTip
+
+    let tag3 = parseVersionTag("1.2.3", hash)
+    check tag3.v == v"1.2.3"
+    check tag3.c.h == hash
+    check not tag3.isTip
+
+    let tag4 = parseVersionTag("1.2.3", hash & "^")
+    check tag4.v == v"1.2.3"
+    check tag4.c.h == hash
+    check tag4.isTip
+
 
 import basic/[versions]
 

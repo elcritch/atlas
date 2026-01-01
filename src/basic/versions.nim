@@ -523,6 +523,26 @@ proc toCommitHash*(str: string, origin = FromNone): CommitHash =
   if str == "-": result = initCommitHash("", origin)
   else: result = initCommitHash(str, origin)
 
+proc parseVersionTag*(version, commit: string, origin = FromNone): VersionTag =
+  var ver = version
+  var com = commit
+  if ver.len > 0 and ver[^1] == '^':
+    ver.setLen(ver.len - 1)
+    result.isTip = true
+  if com.len > 0 and com[^1] == '^':
+    com.setLen(com.len - 1)
+    result.isTip = true
+
+  result.v = toVersion(ver)
+  result.c = toCommitHash(com, origin)
+
+proc parseVersionTag*(str: string, origin = FromNone): VersionTag =
+  let res = str.split("@")
+  if res.len() != 2:
+    raise newException(ValueError, "version tag string format is `version@commit` but got: " & $str)
+  result = parseVersionTag(res[0], res[1], origin)
+
+
 proc toVersionTag*(str: string, origin = FromNone): VersionTag =
   let res = str.split("@")
   doAssert res.len() == 2, "version tag string format is `version@commit` but got: " & $str
