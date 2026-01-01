@@ -58,7 +58,7 @@ proc archiveRelease(pkg: Package; pv: PackageVersion; rel: NimbleRelease; output
   if commit.isEmpty():
     warn pkg.url.projectName, "Skipping release without commit:", repr(pv.vtag)
     return
-  let pkgDirRel = outputRoot / Path(sanitizeName(pkg.url.fullName()))
+  let pkgDirRel = outputRoot / Path pkg.url.shortName()
   ensureDir(pkgDirRel)
   let pkgDir = pkgDirRel.absolutePath
   let baseName = sanitizeName(pkg.url.shortName() & "-" & versionSlug(pv.vtag))
