@@ -6,7 +6,7 @@
 #    distribution, for details about the copyright.
 #
 
-import std/[os, files, dirs, paths, osproc, options, sequtils, strutils, uri, sets]
+import std/[os, files, dirs, paths, osproc, options, sequtils, strutils, uri, sets, cmdline, streams]
 import reporters, osutils, versions, context
 
 type
@@ -41,6 +41,30 @@ type
     GitShowFiles = "git -C $DIR show"
     GitListFiles = "git -C $DIR ls-tree --name-only -r"
     GitForEachRef = "git -C $DIR for-each-ref"
+
+var gitExe = findExe("git")
+doAssert gitExe.len() > 0
+
+proc buildGitArgs(gitCmd: Command; path: Path; subs: openArray[string]): seq[string] =
+  var repl: seq[string] = @["DIR", quoteShell($path)]
+  for s in subs:
+    repl.add s
+  let cmd = $gitCmd % repl
+  result = parseCmdLine(cmd)
+
+proc execProcessCapture(cmd: string; args: seq[string]): (string, ResultCode) =
+  var p = startProcess(cmd, args = args, options = {poStdErrToStdOut})
+  close inputStream(p)
+  let output = outputStream(p).readAll()
+  let exitCode = p.waitForExit()
+  close(p)
+  result = (output, ResultCode(exitCode))
+
+proc execProcessStream(cmd: string; args: seq[string]): ResultCode =
+  var p = startProcess(cmd, args = args, options = {poParentStreams})
+  let exitCode = p.waitForExit()
+  close(p)
+  result = ResultCode(exitCode)
 
 proc buildArchiveTreeSpec*(commit: CommitHash; srcDir: string): string =
   ## Build the tree specification for ``git archive`` supporting package srcDir entries.
@@ -130,23 +154,25 @@ proc exec*(gitCmd: Command;
            requireRepo: bool = true,
            streamOutput: bool = false,
            ): (string, ResultCode) =
-  var repl: seq[string] = @["DIR", $path]
-  for s in subs:
-    repl.add s
-  let cmd = $gitCmd % repl
+  let cmdParts = buildGitArgs(gitCmd, path, subs)
+  let cmdDisplay = if cmdParts.len > 0: cmdParts.join(" ") else: $gitCmd
   if requireRepo and not isGitDir(path):
     result = ("Not a git repo", ResultCode(1))
-  elif streamOutput:
-    var cmdLine = cmd
-    for i in 0..<args.len:
-      cmdLine.add ' '
-      if args[i].len > 0:
-        cmdLine.add quoteShell(args[i])
-    result = ("", ResultCode(execShellCmd(cmdLine)))
+  elif cmdParts.len == 0:
+    result = ("", ResultCode(1))
   else:
-    result = silentExec(cmd, args)
+    var procArgs: seq[string] = @[]
+    if cmdParts.len > 1:
+      for i in 1..cmdParts.high:
+        procArgs.add cmdParts[i]
+    for arg in args:
+      procArgs.add arg
+    if streamOutput:
+      result = ("", execProcessStream(gitExe, procArgs))
+    else:
+      result = execProcessCapture(gitExe, procArgs)
   if result[1] != RES_OK:
-    message errorReportLevel, "gitops", "Running Git failed:", $(int(result[1])), "command:", "`$1 $2`" % [cmd, join(args, " ")]
+    message errorReportLevel, "gitops", "Running Git failed:", $(int(result[1])), "command:", "`$1 $2`" % [cmdDisplay, join(args, " ")]
 
 proc checkGitDiffStatus*(path: Path): string =
   let (outp, status) = exec(GitDiff, path, [])

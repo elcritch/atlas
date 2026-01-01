@@ -46,7 +46,6 @@ proc readableFile*(s: Path, path: Path): Path =
   else:
     s
 
-
 proc absoluteDepsDir*(project, value: Path): Path =
   if value == Path ".":
     result = project
