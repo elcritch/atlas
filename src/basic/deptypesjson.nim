@@ -75,17 +75,25 @@ proc toJsonHook*(t: SharedOrderedTable[PkgUrl, Package], opt: ToJsonOptions): Js
   result = newJObject()
   if t.isNil:
     return
-  for k, v in t.pairsSnapshot():
+  for (k, v) in t.pairsSnapshot():
     result[$(k)] = toJson(v, opt)
 
 proc fromJsonHook*(t: var SharedOrderedTable[PkgUrl, Package]; b: JsonNode; opt = Joptions()) =
   initSharedOrderedTable(t)
-  for k, v in b:
-    var url: PkgUrl
-    url.fromJson(toJson(k))
-    var pkg: Package
-    pkg.fromJson(v)
-    t[url] = pkg
+  if b.kind == JArray:
+    for item in b:
+      var url: PkgUrl
+      url.fromJson(item[0])
+      var pkg: Package
+      pkg.fromJson(item[1])
+      t[url] = pkg
+  else:
+    for k, v in b:
+      var url: PkgUrl
+      url.fromJson(toJson(k))
+      var pkg: Package
+      pkg.fromJson(v)
+      t[url] = pkg
 
 proc toJsonHook*(r: NimbleRelease, opt: ToJsonOptions = ToJsonOptions()): JsonNode =
   if r == nil:

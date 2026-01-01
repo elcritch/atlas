@@ -19,6 +19,10 @@ proc initSharedOrderedTable*[K, V](): SharedOrderedTable[K, V] =
   initLock(result.lock)
   result.data = initOrderedTable[K, V]()
 
+proc ensureInit[K, V](table: var SharedOrderedTable[K, V]) =
+  if table.isNil:
+    table = initSharedOrderedTable[K, V]()
+
 proc initSharedOrderedTable*[K, V](table: var SharedOrderedTable[K, V]) =
   table = initSharedOrderedTable[K, V]()
 
@@ -65,23 +69,22 @@ proc `[]`*[K, V](table: SharedOrderedTable[K, V]; key: K): V =
   if not found:
     raise newException(KeyError, "key not found")
 
-proc `[]=`*[K, V](table: SharedOrderedTable[K, V]; key: K; value: V) =
+proc `[]=`*[K, V](table: var SharedOrderedTable[K, V]; key: K; value: V) =
   table.put(key, value)
 
-proc put*[K, V](table: SharedOrderedTable[K, V]; key: K; value: V) =
-  if table.isNil:
-    return
+proc put*[K, V](table: var SharedOrderedTable[K, V]; key: K; value: V) =
+  table.ensureInit()
   withLock table.lock:
     table.data[key] = value
 
-proc del*[K, V](table: SharedOrderedTable[K, V]; key: K) =
+proc del*[K, V](table: var SharedOrderedTable[K, V]; key: K) =
   if table.isNil:
     return
   withLock table.lock:
     if key in table.data:
       table.data.del(key)
 
-proc clear*[K, V](table: SharedOrderedTable[K, V]) =
+proc clear*[K, V](table: var SharedOrderedTable[K, V]) =
   if table.isNil:
     return
   withLock table.lock:
