@@ -17,7 +17,7 @@ when not compiles(newSeq[int]().addUnique(1)):
     if item notin s:
       s.add(item)
 
-iterator directDependencies*(graph: DepGraph; pkg: Package): lent Package =
+iterator directDependencies*(graph: DepGraph; pkg: Package): Package =
   if pkg.activeNimbleRelease != nil:
     for (durl, _) in pkg.activeNimbleRelease.requirements:
       # let idx = findDependencyForDep(graph, dep[0])

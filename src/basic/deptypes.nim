@@ -1,7 +1,8 @@
 import std/[paths, tables, json, jsonutils, hashes, sets]
-import sattypes, pkgurls, versions, context
+import sattypes, pkgurls, versions, context, sharedmap
 
 export tables
+export sharedmap
 
 type
 
@@ -51,7 +52,7 @@ type
   DepGraph* = object
     mode*: TraversalMode
     root*: Package
-    pkgs*: OrderedTable[PkgUrl, Package]
+    pkgs*: SharedOrderedTable[PkgUrl, Package]
 
   TraversalMode* = enum
     AllReleases,

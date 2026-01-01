@@ -350,6 +350,7 @@ proc expandGraph*(path: Path, nc: var NimbleContext; mode: TraversalMode, onClon
   # nc.loadDependency(pkg)
 
   result = DepGraph(root: root, mode: mode)
+  initSharedOrderedTable(result.pkgs)
   nc.packageToDependency[root.url] = root
 
   notice "atlas:expand", "Expanding packages for:", $root.projectName
