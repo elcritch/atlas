@@ -235,6 +235,19 @@ suite "Git Operations Tests":
       check(renamedStatus == RES_OK)
       check(renamedUrl.strip() == updatedUrl)
 
+  test "remoteNameFromGitUrl sanitizes special characters":
+    let urls = [
+      "https://git.sr.ht/~xigoi/aspartame",
+      "git@git.sr.ht:~xigoi/aspartame",
+      "https://example.com/us~er/repo~name.git"
+    ]
+    for rawUrl in urls:
+      let remoteName = remoteNameFromGitUrl(rawUrl)
+      check(remoteName.len > 0)
+      for ch in remoteName:
+        check(ch in {'a'..'z', 'A'..'Z', '0'..'9', '.', '_', '-'})
+      check(remoteName[0] != '-')
+
   test "expandSpecial fetches remote heads when missing":
     let testUrl = parseUri "http://localhost:4242/buildGraph/proj_a.git"
     let res = clone(testUrl, testDir)
