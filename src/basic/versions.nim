@@ -523,6 +523,9 @@ proc toCommitHash*(str: string, origin = FromNone): CommitHash =
   if str == "-": result = initCommitHash("", origin)
   else: result = initCommitHash(str, origin)
 
+proc parseCommit*(str: string, origin = FromNone): CommitHash =
+  result = toCommitHash(str, origin)
+
 proc parseVersionTag*(version, commit: string, origin = FromNone): VersionTag =
   var ver = version
   var com = commit
@@ -534,7 +537,7 @@ proc parseVersionTag*(version, commit: string, origin = FromNone): VersionTag =
     result.isTip = true
 
   result.v = toVersion(ver)
-  result.c = toCommitHash(com, origin)
+  result.c = parseCommit(com, origin)
 
 proc parseVersionTag*(str: string, origin = FromNone): VersionTag =
   let res = str.split("@")

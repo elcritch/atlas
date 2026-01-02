@@ -73,7 +73,7 @@ type
     version*: string
     versionTag*: string
     isTip*: bool
-    commit*: RepoCacheCommit
+    commit*: string
     status*: string
     hasInstallHooks*: bool
     releaseVersion*: string
@@ -212,7 +212,7 @@ proc buildVersionEntry(vtag: VersionTag; release: NimbleRelease): RepoCacheVersi
     version: $vtag.v,
     versionTag: repr(vtag),
     isTip: vtag.isTip,
-    commit: commitInfo(vtag.commit()),
+    commit: vtag.commit().h,
     status: $release.status,
     hasInstallHooks: release.hasInstallHooks,
     requirements: encodeRequirements(release.requirements),
@@ -410,7 +410,9 @@ proc commitsMatch(expected, cached: CommitHash): bool =
   result = not expected.isEmpty() and not cached.isEmpty() and expected == cached
 
 proc decodeCachedVersionTag(entry: RepoCacheVersion; cachePath: Path): VersionTag =
-  result = parseVersionTag(entry.versionTag)
+  result = parseVersionTag(entry.version, entry.commit)
+  if entry.isTip:
+    result.isTip = true
 
 proc decodeRequirement(nc: var NimbleContext; req: RepoCacheRequirement): (PkgUrl, VersionInterval) =
   var url: PkgUrl = nc.createUrl(req.url)  # This will handle both name and URL overrides internally
