@@ -11,6 +11,19 @@ import basic/osutils
 import basic/repocache
 import dependencies
 
+const ArchiveExcludeDirs = [
+  ".git",
+  ".github",
+  ".gitlab",
+  ".circleci",
+  ".vscode",
+  ".idea",
+  ".hg",
+  ".svn",
+  ".bzr",
+  ".darcs"
+]
+
 proc sanitizeName(s: string): string =
   const Allowed = Digits + Letters + {'-', '_', '.'}
   for ch in s:
@@ -137,6 +150,10 @@ proc resolvePackageUrl(nc: var NimbleContext; pkgInfo: PackageInfo): PkgUrl =
     error "packageCacheGen", "Unable to resolve package URL for:", pkgInfo.name, "error:", err.msg
     result = PkgUrl()
 
+proc archiveExcludePathspecs(): seq[string] =
+  for dir in ArchiveExcludeDirs:
+    result.add(":(exclude)" & dir)
+
 proc archiveRelease(pkg: Package; pv: PackageVersion; rel: NimbleRelease; outputRoot: Path) =
   if rel.isNil or rel.status != Normal:
     return
@@ -168,6 +185,9 @@ proc archiveRelease(pkg: Package; pv: PackageVersion; rel: NimbleRelease; output
     args = @["--format=tar", "--output=" & $tempTar, treeSpec]
   else:
     args = @["--format=tar.gz", "--output=" & $finalPath, treeSpec]
+  args.add("--")
+  args.add(".")
+  args.add(archiveExcludePathspecs())
 
   let (_, status) = gitops.exec(GitArchive, pkg.ondisk, args, Warning)
   if status != RES_OK:
