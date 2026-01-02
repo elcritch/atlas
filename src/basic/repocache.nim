@@ -285,7 +285,7 @@ proc buildRepoCache(nc: var NimbleContext; pkg: Package; nimbleFiles: seq[Path];
 
 proc loadRepoCache*(jsonNode: JsonNode): RepoCacheFile =
   result = jsonTo(jsonNode, RepoCacheFile,
-    Joptions(allowExtraKeys: true, allowMissingKeys: true))
+                  Joptions(allowExtraKeys: true, allowMissingKeys: true))
 
 proc loadRepoCache*(filename: Path): RepoCacheFile =
   let jsonNode = parseFile($filename)
