@@ -355,9 +355,9 @@ proc registerReleaseDependencies*(
     let (reqUrl, reqInterval) = req
     if reqInterval.isSpecial:
       let commit = reqInterval.extractSpecificCommit()
-      nc.explicitVersions.mgetOrPut(reqUrl, initHashSet[VersionTag]()).incl(
-        VersionTag(v: Version($(reqInterval)), c: commit)
-      )
+      var versions = nc.explicitVersions.getOrDefault(reqUrl, initHashSet[VersionTag]())
+      versions.incl(VersionTag(v: Version($(reqInterval)), c: commit))
+      nc.explicitVersions[reqUrl] = versions
 
     if reqUrl notin nc.packageToDependency:
       let pkgDep = Package(
@@ -376,9 +376,9 @@ proc registerReleaseDependencies*(
       let (featureUrl, featureInterval) = dep
       if featureInterval.isSpecial:
         let commit = featureInterval.extractSpecificCommit()
-        nc.explicitVersions.mgetOrPut(featureUrl, initHashSet[VersionTag]()).incl(
-          VersionTag(v: Version($(featureInterval)), c: commit)
-        )
+        var versions = nc.explicitVersions.getOrDefault(featureUrl, initHashSet[VersionTag]())
+        versions.incl(VersionTag(v: Version($(featureInterval)), c: commit))
+        nc.explicitVersions[featureUrl] = versions
       if featureUrl notin nc.packageToDependency:
         let state = if feature notin context().features: LazyDeferred else: NotInitialized
         let pkgDep = Package(

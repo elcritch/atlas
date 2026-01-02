@@ -1,12 +1,12 @@
-import std/[paths, tables, files, os, uri, dirs, sets, strutils, unicode]
-import context, packageinfos, reporters, pkgurls, gitops, compiledpatterns, deptypes, versions
+import std/[paths, files, os, uri, dirs, sets, strutils, unicode]
+import context, packageinfos, reporters, pkgurls, gitops, compiledpatterns, deptypes, versions, sharedmap
 
 type
   NimbleContext* = object
-    packageToDependency*: OrderedTable[PkgUrl, Package]
-    packageExtras*: OrderedTable[string, PkgUrl]
-    nameToUrl: OrderedTable[string, PkgUrl]
-    explicitVersions*: OrderedTable[PkgUrl, HashSet[VersionTag]]
+    packageToDependency*: SharedOrderedTable[PkgUrl, Package]
+    packageExtras*: SharedOrderedTable[string, PkgUrl]
+    nameToUrl: SharedOrderedTable[string, PkgUrl]
+    explicitVersions*: SharedOrderedTable[PkgUrl, HashSet[VersionTag]]
     nameOverrides*: Patterns
     urlOverrides*: Patterns
     hasPackageList*: bool
@@ -272,6 +272,10 @@ proc fillPackageLookupTable(c: var NimbleContext) =
 
 proc createUnfilledNimbleContext*(): NimbleContext =
   result = NimbleContext()
+  initSharedOrderedTable(result.packageToDependency)
+  initSharedOrderedTable(result.packageExtras)
+  initSharedOrderedTable(result.nameToUrl)
+  initSharedOrderedTable(result.explicitVersions)
   result.nameOverrides = context().nameOverrides
   result.urlOverrides = context().urlOverrides
   # for key, val in context().packageNameOverrides: 
