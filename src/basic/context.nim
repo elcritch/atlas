@@ -40,6 +40,7 @@ type
     AutoEnv
     NoExec
     UpdateRepos
+    PackagesGit
     ListVersions
     ListVersionsOff
     GlobalWorkspace

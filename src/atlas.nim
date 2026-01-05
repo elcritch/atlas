@@ -81,6 +81,7 @@ Options:
                         which resolution algorithm to use, default is semver
   --proxy=url           use the given proxy URL for all git operations
   --dumbProxy           use a dumb proxy without smart git protocol
+  --packagesRepo        use the nim-lang/packages git repo (legacy behavior)
   --showGraph           show the dependency graph
   --list                list all available and installed versions
   --version             show the version
@@ -470,6 +471,8 @@ proc parseAtlasOptions(params: seq[string], action: var string, args: var seq[st
         context().proxy = val.parseUri()
       of "dumbproxy":
         context().flags.incl DumbProxy
+      of "packagesrepo":
+        context().flags.incl PackagesGit
       of "dumpgraphs":
         context().flags.incl DumpGraphs
       of "forcegittophps":

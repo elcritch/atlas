@@ -60,6 +60,8 @@ Atlas uses URLs internally; Nimble package names are translated to URLs
 via Nimble's  `packages.json` file. Atlas uses "shortnames" for known URLs from
 packages. Unofficial URLs, including forks, using a name triplet of the form
 `projectName.author.host`. For example Atlas would be `atlas.nim-lang.github.com`. Packages can be added using `nameOverrides` in `atlas.config` which adds a new name to URL mapping.
+Atlas downloads `packages.json` into `deps/_packages` by default; pass
+`--packagesGit` to keep the git-clone behavior for the full packages repo.
 
 Atlas does not call the Nim compiler for a build, instead it creates/patches
 a `nim.cfg` file for the compiler. For example:

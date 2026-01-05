@@ -11,6 +11,7 @@ import context, reporters, gitops, pkgurls
 
 const
   UnitTests = defined(atlasUnitTests)
+  PackagesJsonUrl = "https://raw.githubusercontent.com/nim-lang/packages/refs/heads/master/packages.json"
 
 when UnitTests:
   proc findAtlasDir*(): string =
@@ -101,11 +102,27 @@ proc getPackageInfos*(pkgsDir = packagesDirectory()): seq[PackageInfo] =
           result.add(pkg)
 
 proc updatePackages*(pkgsDir = packagesDirectory()) =
-  let pkgsDir = depsDir() / DefaultPackagesSubDir
-  if dirExists(pkgsDir):
-    gitPull(pkgsDir)
+  let pkgsPath = pkgsDir
+  let pkgsParent = pkgsPath.parentDir()
+  if pkgsParent.len > 0 and not dirExists(pkgsParent):
+    createDir(pkgsParent)
+  if PackagesGit in context().flags:
+    ## TODO: remove later?
+    if dirExists(pkgsPath):
+      gitPull(pkgsPath)
+    else:
+      let pkgsUrl = parseUri "https://github.com/nim-lang/packages"
+      let res = clone(pkgsUrl, pkgsPath)
+      if res[0] != Ok:
+        error DefaultPackagesSubDir, "cannot clone packages repo: " & res[1]
   else:
-    let pkgsUrl = parseUri "https://github.com/nim-lang/packages"
-    let res = clone(pkgsUrl, pkgsDir)
-    if res[0] != Ok:
-      error DefaultPackagesSubDir, "cannot clone packages repo: " & res[1]
+    if not dirExists(pkgsPath):
+      createDir(pkgsPath)
+    let client = newHttpClient()
+    try:
+      let contents = client.getContent(PackagesJsonUrl)
+      writeFile($(pkgsPath / Path"packages.json"), contents)
+    except CatchableError as e:
+      error DefaultPackagesSubDir, "cannot download packages.json: " & e.msg
+    finally:
+      client.close()
