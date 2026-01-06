@@ -198,9 +198,27 @@ proc sortVersionsAsc*(a, b: VersionTag): int =
   else: 1)
 
 proc sortVersionsDesc*(a, b: VersionTag): int =
+  let aHead = a.v.isHead
+  let bHead = b.v.isHead
+  if aHead != bHead:
+    return (if aHead: 1 else: -1)
   (if a.v < b.v: 1
   elif a.v == b.v: 0
   else: -1)
+
+proc sortVersionsAscHeadFirst*(a, b: VersionTag): int =
+  let aHead = a.v.isHead
+  let bHead = b.v.isHead
+  if aHead != bHead:
+    return (if aHead: -1 else: 1)
+  sortVersionsAsc(a, b)
+
+proc sortVersionsDescHeadFirst*(a, b: VersionTag): int =
+  let aHead = a.v.isHead
+  let bHead = b.v.isHead
+  if aHead != bHead:
+    return (if aHead: -1 else: 1)
+  sortVersionsDesc(a, b)
 
 proc hash*(a: Version): Hash {.borrow.}
 
@@ -522,6 +540,29 @@ proc toVersion*(str: string): Version =
 proc toCommitHash*(str: string, origin = FromNone): CommitHash =
   if str == "-": result = initCommitHash("", origin)
   else: result = initCommitHash(str, origin)
+
+proc parseCommit*(str: string, origin = FromNone): CommitHash =
+  result = toCommitHash(str, origin)
+
+proc parseVersionTag*(version, commit: string, origin = FromNone): VersionTag =
+  var ver = version
+  var com = commit
+  if ver.len > 0 and ver[^1] == '^':
+    ver.setLen(ver.len - 1)
+    result.isTip = true
+  if com.len > 0 and com[^1] == '^':
+    com.setLen(com.len - 1)
+    result.isTip = true
+
+  result.v = toVersion(ver)
+  result.c = parseCommit(com, origin)
+
+proc parseVersionTag*(str: string, origin = FromNone): VersionTag =
+  let res = str.split("@")
+  if res.len() != 2:
+    raise newException(ValueError, "version tag string format is `version@commit` but got: " & $str)
+  result = parseVersionTag(res[0], res[1], origin)
+
 
 proc toVersionTag*(str: string, origin = FromNone): VersionTag =
   let res = str.split("@")

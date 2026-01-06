@@ -1,7 +1,8 @@
 import std/[paths, tables, json, jsonutils, hashes, sets]
-import sattypes, pkgurls, versions, context
+import sattypes, pkgurls, versions, context, sharedmap
 
 export tables
+export sharedmap
 
 type
 
@@ -10,6 +11,7 @@ type
     LazyDeferred
     DoLoad
     Found
+    PkgArchive
     Processed
     Error
 
@@ -27,6 +29,7 @@ type
     active*: bool
     isAtlasProject*: bool # true if the package is an atlas project
     isFork*: bool
+    isOfficial*: bool
     isRoot*, isLocalOnly*: bool
     errors*: seq[string]
     originHead*: CommitHash
@@ -50,7 +53,7 @@ type
   DepGraph* = object
     mode*: TraversalMode
     root*: Package
-    pkgs*: OrderedTable[PkgUrl, Package]
+    pkgs*: SharedOrderedTable[PkgUrl, Package]
 
   TraversalMode* = enum
     AllReleases,
@@ -82,6 +85,12 @@ proc sortVersionsAsc*(a, b: (VersionTag, NimbleRelease)): int =
 
 proc sortVersionsAsc*(a, b: (PackageVersion, NimbleRelease)): int =
   sortVersionsAsc(a[0].vtag, b[0].vtag)
+
+proc sortVersionsAscHeadFirst*(a, b: (PackageVersion, NimbleRelease)): int =
+  sortVersionsAscHeadFirst(a[0].vtag, b[0].vtag)
+
+proc sortVersionsDescHeadFirst*(a, b: (PackageVersion, NimbleRelease)): int =
+  sortVersionsDescHeadFirst(a[0].vtag, b[0].vtag)
 
 proc `$`*(d: Package): string =
   d.url.projectName()
@@ -145,4 +154,6 @@ proc findRelease*(pkg: Package, v: VersionInterval): NimbleRelease =
   result = nil
 
 proc matches*(v: VersionInterval, pkgVer: PackageVersion): bool =
+  if pkgVer.vtag.v.isHead and ForceUseHead notin context().flags:
+    return false
   v.matches(pkgVer.vtag)

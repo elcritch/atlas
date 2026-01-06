@@ -6,7 +6,7 @@
 #    distribution, for details about the copyright.
 #
 
-import std/[os, files, dirs, paths, osproc, options, sequtils, strutils, uri, sets]
+import std/[os, files, dirs, paths, osproc, options, sequtils, strutils, uri, sets, cmdline, streams]
 import reporters, osutils, versions, context
 
 type
@@ -27,6 +27,7 @@ type
     GitDescribe = "git -C $DIR describe",
     GitRevParse = "git -C $DIR rev-parse",
     GitCheckout = "git -C $DIR checkout",
+    GitArchive = "git -C $DIR archive",
     GitSubModUpdate = "git -C $DIR submodule update --init",
     GitPush = "git -C $DIR push $REMOTE",
     GitPull = "git -C $DIR pull",
@@ -40,6 +41,33 @@ type
     GitShowFiles = "git -C $DIR show"
     GitListFiles = "git -C $DIR ls-tree --name-only -r"
     GitForEachRef = "git -C $DIR for-each-ref"
+
+var gitExe = findExe("git")
+doAssert gitExe.len() > 0
+
+proc buildGitArgs(gitCmd: Command; path: Path; subs: openArray[string]): seq[string] =
+  var repl: seq[string] = @["DIR", quoteShell($path)]
+  for s in subs:
+    repl.add s
+  let cmd = $gitCmd % repl
+  result = parseCmdLine(cmd)
+
+proc buildArchiveTreeSpec*(commit: CommitHash; srcDir: string): string =
+  ## Build the tree specification for ``git archive`` supporting package srcDir entries.
+  ## When ``srcDir`` points to the repository root (empty or "."), the git object is returned.
+  ## Otherwise, construct the ``commit:path`` format while normalizing separators and prefixes.
+  var dir = srcDir.replace('\\', '/')
+  if dir.len == 0 or dir == ".":
+    return commit.h
+  if dir.startsWith("./"):
+    dir = dir[2..^1]
+  while dir.len > 0 and dir[0] == '/':
+    dir = dir[1..^1]
+  if dir.len == 0:
+    return commit.h
+  if dir[^1] == '/':
+    dir.setLen(dir.len - 1)
+  result = commit.h & ":" & dir
 
 proc fetchRemoteTags*(path: Path; origin = "origin"; errorReportLevel: MsgKind = Warning): bool
 proc resolveRemoteName*(path: Path; origin = "origin"; errorReportLevel: MsgKind = Warning): string
@@ -112,23 +140,25 @@ proc exec*(gitCmd: Command;
            requireRepo: bool = true,
            streamOutput: bool = false,
            ): (string, ResultCode) =
-  var repl: seq[string] = @["DIR", $path]
-  for s in subs:
-    repl.add s
-  let cmd = $gitCmd % repl
+  let cmdParts = buildGitArgs(gitCmd, path, subs)
+  let cmdDisplay = if cmdParts.len > 0: cmdParts.join(" ") else: $gitCmd
   if requireRepo and not isGitDir(path):
     result = ("Not a git repo", ResultCode(1))
-  elif streamOutput:
-    var cmdLine = cmd
-    for i in 0..<args.len:
-      cmdLine.add ' '
-      if args[i].len > 0:
-        cmdLine.add quoteShell(args[i])
-    result = ("", ResultCode(execShellCmd(cmdLine)))
+  elif cmdParts.len == 0:
+    result = ("", ResultCode(1))
   else:
-    result = silentExec(cmd, args)
+    var procArgs: seq[string] = @[]
+    if cmdParts.len > 1:
+      for i in 1..cmdParts.high:
+        procArgs.add cmdParts[i]
+    for arg in args:
+      procArgs.add arg
+    if streamOutput:
+      result = ("", execProcessStream(gitExe, procArgs))
+    else:
+      result = execProcessCapture(gitExe, procArgs)
   if result[1] != RES_OK:
-    message errorReportLevel, "gitops", "Running Git failed:", $(int(result[1])), "command:", "`$1 $2`" % [cmd, join(args, " ")]
+    message errorReportLevel, "gitops", "Running Git failed:", $(int(result[1])), "command:", "`$1 $2`" % [cmdDisplay, join(args, " ")]
 
 proc checkGitDiffStatus*(path: Path): string =
   let (outp, status) = exec(GitDiff, path, [])
@@ -173,9 +203,15 @@ proc remoteNameFromGitUrl*(rawUrl: string): string =
   let user = parts[^2]
   let repo = parts[^1]
   if user.len == 0:
-    repo
+    result = repo
   else:
-    repo & "." & user & "." & u.hostname
+    result = repo & "." & user & "." & u.hostname
+
+  for i in 0..<result.len:
+    if result[i] notin {'a'..'z', 'A'..'Z', '0'..'9', '.', '_', '-'}:
+      result[i] = '-'
+  if result.len > 0 and result[0] == '-':
+    result = "r" & result
 
 proc getRemoteUrlFor(path: Path; remote: string): string =
   let (outp, status) = exec(

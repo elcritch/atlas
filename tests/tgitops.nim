@@ -158,6 +158,38 @@ suite "Git Operations Tests":
       # let dirUrl = getRemoteUrl(c, testDir)
       # check(dirUrl == testUrl)
 
+  test "buildArchiveTreeSpec handles srcDir permutations and git archive succeeds":
+    withDir testDir:
+      discard execCmd("git init")
+      createDir(Path "src/pkg")
+      writeFile("src/pkg/a.txt", "A")
+      writeFile("root.txt", "Root")
+      discard execCmd("git add src/pkg/a.txt root.txt")
+      discard execCmd("git commit -m \"initial\"")
+      let commit = currentGitCommit(Path ".")
+      check buildArchiveTreeSpec(commit, "") == commit.h
+      check buildArchiveTreeSpec(commit, ".") == commit.h
+      check buildArchiveTreeSpec(commit, "./src") == commit.h & ":src"
+      check buildArchiveTreeSpec(commit, "/src/pkg") == commit.h & ":src/pkg"
+      check buildArchiveTreeSpec(commit, "src/pkg/") == commit.h & ":src/pkg"
+
+      let outDir = testDir / Path"harness_out"
+      createDir(outDir)
+
+      proc runArchive(dir: string) =
+        let spec = buildArchiveTreeSpec(commit, dir)
+        let tempTar = outDir / Path("test.tar")
+        if fileExists(tempTar):
+          removeFile(tempTar)
+        let (_, status) = exec(GitArchive, Path ".", ["--format=tar", "--output=" & $tempTar, spec], Warning)
+        check status == RES_OK
+        check fileExists(tempTar)
+        removeFile(tempTar)
+
+      runArchive("")
+      runArchive("src")
+      runArchive("src/pkg")
+
   test "remote command enum coverage":
     withDir testDir:
       discard execCmd("git init")
@@ -202,6 +234,19 @@ suite "Git Operations Tests":
       let (renamedUrl, renamedStatus) = exec(GitRemoteUrl, Path ".", [], subs = ["REMOTE", "renamed"])
       check(renamedStatus == RES_OK)
       check(renamedUrl.strip() == updatedUrl)
+
+  test "remoteNameFromGitUrl sanitizes special characters":
+    let urls = [
+      "https://git.sr.ht/~xigoi/aspartame",
+      "git@git.sr.ht:~xigoi/aspartame",
+      "https://example.com/us~er/repo~name.git"
+    ]
+    for rawUrl in urls:
+      let remoteName = remoteNameFromGitUrl(rawUrl)
+      check(remoteName.len > 0)
+      for ch in remoteName:
+        check(ch in {'a'..'z', 'A'..'Z', '0'..'9', '.', '_', '-'})
+      check(remoteName[0] != '-')
 
   test "expandSpecial fetches remote heads when missing":
     let testUrl = parseUri "http://localhost:4242/buildGraph/proj_a.git"

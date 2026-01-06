@@ -1,10 +1,41 @@
-import std / [os, strutils, sequtils]
+import std / [algorithm, os, strutils, sequtils]
 from std/private/gitutils import diffFiles
 import basic/versions
 export diffFiles
 import githttpserver
 
 let atlasExe* = absolutePath("bin" / "atlas".addFileExt(ExeExt))
+
+const
+  atlasCfgBegin = "############# begin Atlas config section ##########"
+  atlasCfgEnd = "############# end Atlas config section   ##########"
+
+proc normalizeNimCfg*(contents: string): string =
+  let lines = contents.splitLines()
+  var outLines: seq[string] = @[]
+  var entries: seq[string] = @[]
+  var inSection = false
+  for line in lines:
+    if line == atlasCfgBegin:
+      inSection = true
+      outLines.add(line)
+      continue
+    if line == atlasCfgEnd:
+      if inSection:
+        entries.sort()
+        outLines.add(entries)
+        entries.setLen(0)
+        inSection = false
+      outLines.add(line)
+      continue
+    if inSection:
+      entries.add(line)
+    else:
+      outLines.add(line)
+  if inSection:
+    entries.sort()
+    outLines.add(entries)
+  result = outLines.join("\n")
 
 proc exec*(cmd: string) =
   if execShellCmd(cmd) != 0:
@@ -24,8 +55,12 @@ template sameDirContents*(expected, given: string) =
   for _, e in walkDir(expected):
     let g = given / splitPath(e).tail
     if fileExists(g):
-      let edata  = readFile(e)
-      let gdata = readFile(g)
+      let isNimCfg = splitPath(e).tail == "nim.cfg"
+      var edata = readFile(e)
+      var gdata = readFile(g)
+      if isNimCfg:
+        edata = normalizeNimCfg(edata)
+        gdata = normalizeNimCfg(gdata)
       check gdata == edata
       if gdata != edata:
         echo "FAILURE: files differ: ", e.absolutePath, " to: ", g.absolutePath

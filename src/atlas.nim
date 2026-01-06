@@ -11,7 +11,7 @@
 
 import std / [parseopt, files, dirs, strutils, os, options, osproc, tables, sets, json, uri, paths]
 import basic / [versions, context, osutils, configutils, reporters,
-                nimbleparser, gitops, pkgurls, nimblecontext, compiledpatterns, packageinfos]
+                nimbleparser, gitops, pkgurls, nimblecontext, compiledpatterns, packageinfos, pkgarchive]
 import depgraphs, nimenv, lockfiles, confighandler, dependencies, pkgsearch
 
 
@@ -71,6 +71,9 @@ Options:
                         for project specific use: `feature.<project>.<feature>`
                         (note always be passed when you want to use features)
   --keepCommits         do not perform any `git checkouts`
+  --pkgs                use binary packages when available
+  --pkgs-url=url        override the package archive base URL
+  --curl                use libcurl for package archive downloads
   --project=path        use the project at the given path
   --confdir=path        use the atlas.config at the given path
   --noexec              do not perform any action that may run arbitrary code
@@ -83,6 +86,7 @@ Options:
   --dumbProxy           use a dumb proxy without smart git protocol
   --showGraph           show the dependency graph
   --list                list all available and installed versions
+  --head                force use of #head versions when available
   --version             show the version
   --ignoreUrls          don't error on mismatching urls
   --colors=on|off       turn on|off colored output
@@ -411,6 +415,7 @@ proc newProject(projectName: string) =
 
 proc parseAtlasOptions(params: seq[string], action: var string, args: var seq[string]) =
   var autoinit = true
+  setPkgArchiveBaseUrl(context().pkgArchivesUrl)
   if existsEnv("NO_COLOR") or not isatty(stdout) or (getEnv("TERM") == "dumb"):
     setAtlasNoColors(true)
   for kind, key, val in getopt(params):
@@ -425,6 +430,17 @@ proc parseAtlasOptions(params: seq[string], action: var string, args: var seq[st
       of "help", "h": writeHelp(0)
       of "version", "v": writeVersion()
       of "keepcommits": context().flags.incl KeepCommits
+      of "pkgs": context().flags.incl UseBinaryPkgs
+      of "curl":
+        context().flags.incl UseCurlDownloads
+      of "pkgs-url":
+        if val.len == 0:
+          writeHelp()
+        var url = val
+        if "://" notin url:
+          url = "https://" & url
+        context().pkgArchivesUrl = url.parseUri()
+        setPkgArchiveBaseUrl(context().pkgArchivesUrl)
       of "project", "p":
         context().flags.incl(ManualProjectArg)
         if val == ".":
@@ -472,6 +488,8 @@ proc parseAtlasOptions(params: seq[string], action: var string, args: var seq[st
         context().flags.incl DumbProxy
       of "dumpgraphs":
         context().flags.incl DumpGraphs
+      of "head":
+        context().flags.incl ForceUseHead
       of "forcegittophps":
         context().flags.incl ForceGitToHttps
       of "resolver":

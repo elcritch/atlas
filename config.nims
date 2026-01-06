@@ -5,16 +5,22 @@ when defined(nimPreviewSlimSystem):
 
 --path:"$nim"
 --path:"../sat/src/"
+--d:ssl
 --nimcache:".nimcache"
 
 task build, "Build local atlas":
   exec "nim c -d:debug -o:bin/atlas src/atlas.nim"
+
+task tools, "Build local atlas tools":
+  exec "nim c -d:debug -o:bin/pkg-cache-gen tools/pkg_cache_gen.nim"
+  exec "nim c -d:debug -o:bin/pkg-server-demo tools/pkg_server_demo.nim"
 
 task unitTests, "Runs unit tests":
   exec "nim c -d:debug -r tests/tbasics.nim"
   exec "nim c -d:debug -r tests/tserde.nim"
   exec "nim c -d:debug -r tests/tgitops.nim"
   exec "nim c -d:debug -r tests/tnimbleparser.nim"
+  exec "nim c -d:debug -r tests/tsharedmap.nim"
   exec "nim c -d:debug -r tests/testtraverse.nim"
   exec "nim c -d:debug -r tests/testsemverUnit.nim"
   exec "nim c -d:debug -r tests/testautoinit.nim"

@@ -6,11 +6,13 @@
 #    distribution, for details about the copyright.
 #
 
-import std / [json, os, sets, strutils, paths, dirs, httpclient, uri]
-import context, reporters, gitops, pkgurls
+import std / [httpclient, json, os, sets, strutils, paths, dirs, uri]
+import context, reporters, gitops, pkgurls, pkgarchive, osutils
 
 const
   UnitTests = defined(atlasUnitTests)
+  PackageArchiveDir = Path"pkg_archive"
+  PackagesIndexUrl = "https://raw.githubusercontent.com/nim-lang/packages/refs/heads/master/packages.json"
 
 when UnitTests:
   proc findAtlasDir*(): string =
@@ -87,6 +89,20 @@ proc toTags*(j: JsonNode): seq[string] =
     for elem in items j:
       result.add elem.getStr("")
 
+proc packageArchiveDirectory*(): Path =
+  project() / PackageArchiveDir
+
+proc logPackageVersionsAndArchive(pkgs: seq[PackageInfo]) =
+  var versions: seq[string]
+  for pkg in pkgs:
+    if pkg.kind == pkPackage and pkg.version.len > 0:
+      versions.add(pkg.name & ":" & pkg.version)
+  if versions.len > 0:
+    info "atlas:packageinfos", "versions:", versions.join(", ")
+  else:
+    info "atlas:packageinfos", "versions: <none>"
+  info "atlas:packageinfos", "archive path:", $packageArchiveDirectory()
+
 proc getPackageInfos*(pkgsDir = packagesDirectory()): seq[PackageInfo] =
   result = @[]
   var uniqueNames = initHashSet[string]()
@@ -99,11 +115,67 @@ proc getPackageInfos*(pkgsDir = packagesDirectory()): seq[PackageInfo] =
         let pkg = p.fromJson()
         if pkg != nil and not uniqueNames.containsOrIncl(pkg.name):
           result.add(pkg)
+  logPackageVersionsAndArchive(result)
+
+proc downloadPackagesIndexFromUrl(pkgsDir: Path): bool =
+  if pkgsDir.string.len == 0:
+    return false
+  if not dirExists(pkgsDir):
+    createDir(pkgsDir.string)
+  let dest = pkgsDir / Path"packages.json"
+  var client = newHttpClient()
+  try:
+    info "atlas:packageinfos", "downloading packages.json from:", PackagesIndexUrl
+    client.downloadFile(PackagesIndexUrl, $dest)
+    result = true
+  except CatchableError as err:
+    warn "atlas:packageinfos", "unable to download packages.json:", err.msg
+  finally:
+    client.close()
+
+proc unpackPackagesIndexXz(pkgsDir: Path): bool =
+  let xzPath = findExe("xz")
+  if xzPath.len == 0:
+    warn "atlas:packageinfos", "xz not found; unable to extract packages.json"
+    return false
+  let src = pkgsDir / Path"packages.json.xz"
+  if not fileExists(src.string):
+    warn "atlas:packageinfos", "packages.json.xz missing:", $src
+    return false
+  let dest = pkgsDir / Path"packages.json"
+  let (output, status) = execProcessCapture(xzPath, @["-d", "-c", $src])
+  if status != RES_OK:
+    warn "atlas:packageinfos", "unable to extract packages.json.xz"
+    return false
+  try:
+    writeFile($dest, output)
+    result = true
+  except CatchableError as err:
+    warn "atlas:packageinfos", "unable to write packages.json:", err.msg
 
 proc updatePackages*(pkgsDir = packagesDirectory()) =
   let pkgsDir = depsDir() / DefaultPackagesSubDir
+  if UseBinaryPkgs in context().flags:
+    let archiveUrl = pkgArchiveBaseUrl()
+    let archiveLabel = ($archiveUrl).toLowerAscii()
+    let isAtlasArchive = "atlas-packages" in archiveLabel
+    if isAtlasArchive and downloadPackagesIndexXz(pkgsDir):
+      if unpackPackagesIndexXz(pkgsDir):
+        info "atlas:packageinfos", "downloaded packages.json.xz to:", $pkgsDir
+        return
+    warn "atlas:packageinfos", "unable to download packages.json.xz, falling back to git clone"
+  else:
+    if downloadPackagesIndexFromUrl(pkgsDir):
+      info "atlas:packageinfos", "downloaded packages.json to:", $pkgsDir
+      return
+    else:
+      warn "atlas:packageinfos", "unable to download packages.json, falling back to git clone"
+
   if dirExists(pkgsDir):
-    gitPull(pkgsDir)
+    if isGitDir(pkgsDir.string):
+      gitPull(pkgsDir)
+    else:
+      warn "atlas:packageinfos", "packages directory exists but is not a git repo:", $pkgsDir
   else:
     let pkgsUrl = parseUri "https://github.com/nim-lang/packages"
     let res = clone(pkgsUrl, pkgsDir)

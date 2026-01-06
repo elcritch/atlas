@@ -1,7 +1,7 @@
 ## OS utilities like 'withDir'.
 ## (c) 2021 Andreas Rumpf
 
-import std / [os, paths, strutils, osproc, uri]
+import std / [os, paths, streams, strutils, osproc, uri]
 import reporters
 
 export paths
@@ -46,6 +46,25 @@ proc readableFile*(s: Path, path: Path): Path =
   else:
     s
 
+proc execProcessCapture*(cmd: string;
+                         args: seq[string],
+                         options: set[ProcessOption] = {}): (string, ResultCode) =
+  var cmdLine = quoteShellCommand(@[cmd] & args)
+  var p = startProcess(cmdLine, options = options + {poEvalCommand})
+  close inputStream(p)
+  let output = outputStream(p).readAll()
+  let exitCode = p.waitForExit()
+  close(p)
+  result = (output, ResultCode(exitCode))
+
+proc execProcessStream*(cmd: string;
+                        args: seq[string],
+                        options: set[ProcessOption] = {}): ResultCode =
+  var cmdLine = quoteShellCommand(@[cmd] & args)
+  var p = startProcess(cmdLine, options = options + {poParentStreams, poEvalCommand})
+  let exitCode = p.waitForExit()
+  close(p)
+  result = ResultCode(exitCode)
 
 proc absoluteDepsDir*(project, value: Path): Path =
   if value == Path ".":

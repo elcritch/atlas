@@ -11,6 +11,8 @@ bin = @["atlas"]
 
 requires "nim >= 2.0.0"
 requires "sat"
+requires "libcurl"
 
 task docs, "build Atlas's docs":
   exec "nim rst2html --putenv:atlasversion=$1 doc/atlas.md" % version
+

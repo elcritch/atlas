@@ -20,6 +20,7 @@ const
   DefaultPackagesSubDir* = Path"_packages"
   DefaultCachesSubDir* = Path"_caches"
   DefaultNimbleCachesSubDir* = Path"_nimbles"
+  DefaultPkgsArchive* = parseUri"https://www3.elcritch.net/atlas-packages/"
 
 
 type
@@ -51,6 +52,10 @@ type
     DumpGraphs
     DumbProxy
     ForceGitToHttps
+    UseBinaryPkgs
+    UseCurlDownloads
+    PerferUseHead
+    ForceUseHead
     IncludeTagsAndNimbleCommits # include nimble commits and tags in the solver
     NimbleCommitsMax # takes the newest commit for each version
 
@@ -67,6 +72,7 @@ type
     overridesFile*: Path
     pluginsFile*: Path
     proxy*: Uri
+    pkgArchivesUrl*: Uri = DefaultPkgsArchive
     features*: HashSet[string]
 
 var atlasContext = AtlasContext()

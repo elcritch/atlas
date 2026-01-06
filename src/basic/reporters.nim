@@ -7,6 +7,7 @@
 #
 
 import std / [terminal, paths]
+import locks
 export paths
 
 type
@@ -31,6 +32,9 @@ type
   AtlasFatalError* = object of CatchableError
 
 var atlasReporter* = Reporter(verbosity: Notice)
+var reporterLock: Lock
+
+initLock(reporterLock)
 
 proc setAtlasVerbosity*(verbosity: MsgKind) =
   atlasReporter.verbosity = verbosity
@@ -60,25 +64,25 @@ proc writeMessage(c: var Reporter; k: MsgKind; p: string, args: seq[string]) =
   if k > c.verbosity: return
   # if k == Trace and c.verbosity < 1: return
   # elif k == Debug and c.verbosity < 2: return
-
-  if c.noColors:
-    writeMessageRaw(c, $k, p, args)
-  else:
-    let (color, style) =
-      case k
-      of Ignore: (fgWhite, styleDim)
-      of Trace: (fgWhite, styleDim)
-      of Debug: (fgBlue, styleBright)
-      of Info: (fgGreen, styleBright)
-      of Notice: (fgMagenta, styleBright)
-      of Warning: (fgYellow, styleBright)
-      of Error: (c.errorsColor, styleBright)
-    
-    stdout.styledWrite(color, style, $k, resetStyle, fgCyan, "(", p, ")", resetStyle)
-    let colors = [fgWhite, fgMagenta]
-    for idx, arg in args:
-      stdout.styledWrite(colors[idx mod 2], " ", arg)
-    stdout.styledWriteLine(resetStyle, "")
+  withLock reporterLock:
+    if c.noColors:
+      writeMessageRaw(c, $k, p, args)
+    else:
+      let (color, style) =
+        case k
+        of Ignore: (fgWhite, styleDim)
+        of Trace: (fgWhite, styleDim)
+        of Debug: (fgBlue, styleBright)
+        of Info: (fgGreen, styleBright)
+        of Notice: (fgMagenta, styleBright)
+        of Warning: (fgYellow, styleBright)
+        of Error: (c.errorsColor, styleBright)
+      
+      stdout.styledWrite(color, style, $k, resetStyle, fgCyan, "(", p, ")", resetStyle)
+      let colors = [fgWhite, fgMagenta]
+      for idx, arg in args:
+        stdout.styledWrite(colors[idx mod 2], " ", arg)
+      stdout.styledWriteLine(resetStyle, "")
 
 proc message(c: var Reporter; k: MsgKind; p: string, args: openArray[string]) =
   ## collects messages or prints them out immediately
