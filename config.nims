@@ -6,6 +6,7 @@ when defined(nimPreviewSlimSystem):
 --path:"$nim"
 --path:"../sat/src/"
 --nimcache:".nimcache"
+--d:ssl
 
 task build, "Build local atlas":
   exec "nim c -d:debug -o:bin/atlas src/atlas.nim"
@@ -14,6 +15,7 @@ task unitTests, "Runs unit tests":
   exec "nim c -d:debug -r tests/tbasics.nim"
   exec "nim c -d:debug -r tests/tserde.nim"
   exec "nim c -d:debug -r tests/tgitops.nim"
+  exec "nim c -d:debug -r tests/tpackageinfos.nim"
   exec "nim c -d:debug -r tests/tnimbleparser.nim"
   exec "nim c -d:debug -r tests/testtraverse.nim"
   exec "nim c -d:debug -r tests/testsemverUnit.nim"
