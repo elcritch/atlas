@@ -118,7 +118,7 @@ proc writePackageDigest(pkg: Package; outputRoot: Path) =
     entry["sha256"] = %hash
     archiveEntries.add(entry)
   digestJson["archives"] = archiveEntries
-  let digestPath = pkgDir / Path"digest.json"
+  let digestPath = pkgDir / Path"package-digest.json"
   try:
     writeFile($digestPath, pretty(digestJson))
     info pkg.url.projectName, "Wrote digest:", $digestPath
