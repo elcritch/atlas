@@ -176,14 +176,11 @@ proc archiveRelease(pkg: Package; pv: PackageVersion; rel: NimbleRelease; output
   doAssert gitPath.len > 0
   let gitCmd = quoteShellCommand(@[gitPath, "-C", $pkg.ondisk, "archive", "--format=tar"] & pathspecArgs)
   let compressCmd = gitCmd & " | " & quoteShell(xzPath) & " -T0 -z -c > " & quoteShell($tarPath)
-  let res = execShellCmd(compressCmd)
-  if res != 0:
+  if execShellCmd(compressCmd) != 0:
     warn pkg.url.projectName, "Failed to create archive with xz pipe:", $tarPath
-    if fileExists($tarPath):
-      discard tryRemoveFile(tarPath)
-    return
-
-  info pkg.url.projectName, "Created archive:", $tarPath
+    discard tryRemoveFile($tarPath)
+  else:
+    info pkg.url.projectName, "Created archive:", $tarPath
 
 proc processPackage(nc: var NimbleContext; pkgInfo: PackageInfo; outputRoot: Path) =
   let pkgUrl = resolvePackageUrl(nc, pkgInfo)
