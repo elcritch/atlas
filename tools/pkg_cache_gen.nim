@@ -170,12 +170,14 @@ proc archiveRelease(pkg: Package; pv: PackageVersion; rel: NimbleRelease; output
     info pkg.url.projectName, "Archive already exists:", $tarPath
     return
 
-  let treeSpec = gitops.buildArchiveTreeSpec(pv.vtag.commit, $rel.srcDir)
-  var pathspecArgs = @[treeSpec, "--", "."] & archiveExcludePathspecs()
-  let gitPath = findExe("git")
+  let
+    treeSpec = gitops.buildArchiveTreeSpec(pv.vtag.commit, $rel.srcDir)
+    pathspecArgs = @[treeSpec, "--", "."] & archiveExcludePathspecs()
+    gitPath = findExe("git")
+    gitCmd = quoteShellCommand(@[gitPath, "-C", $pkg.ondisk, "archive", "--format=tar"] & pathspecArgs)
+    compressCmd = gitCmd & " | " & quoteShell(xzPath) & " -T0 -z -c > " & quoteShell($tarPath)
+
   doAssert gitPath.len > 0
-  let gitCmd = quoteShellCommand(@[gitPath, "-C", $pkg.ondisk, "archive", "--format=tar"] & pathspecArgs)
-  let compressCmd = gitCmd & " | " & quoteShell(xzPath) & " -T0 -z -c > " & quoteShell($tarPath)
   if execShellCmd(compressCmd) != 0:
     warn pkg.url.projectName, "Failed to create archive with xz pipe:", $tarPath
     discard tryRemoveFile($tarPath)
