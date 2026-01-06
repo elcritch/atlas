@@ -170,28 +170,18 @@ proc archiveRelease(pkg: Package; pv: PackageVersion; rel: NimbleRelease; output
     info pkg.url.projectName, "Archive already exists:", $tarPath
     return
 
-  let tempTar = pkgDir / Path(baseName & ".tar")
   let treeSpec = gitops.buildArchiveTreeSpec(pv.vtag.commit, $rel.srcDir)
-  var args = @["--format=tar",
-               "--output=" & $tempTar, treeSpec,
-               "--", "."] & archiveExcludePathspecs()
-
-  let (_, status) = gitops.exec(GitArchive, pkg.ondisk, args, Warning)
-  if status != RES_OK:
-    warn pkg.url.projectName, "Failed to create archive:", $tarPath
-    if fileExists($tempTar):
-      discard tryRemoveFile($tempTar)
-    return
-
-  let compressCmd = quoteShell(xzPath) & " -T0 -z -f " & quoteShell($tempTar)
+  var pathspecArgs = @[treeSpec, "--", "."] & archiveExcludePathspecs()
+  let gitPath = findExe("git")
+  doAssert gitPath.len > 0
+  let gitCmd = quoteShellCommand(@[gitPath, "-C", $pkg.ondisk, "archive", "--format=tar"] & pathspecArgs)
+  let compressCmd = gitCmd & " | " & quoteShell(xzPath) & " -T0 -z -c > " & quoteShell($tarPath)
   let res = execShellCmd(compressCmd)
   if res != 0:
-    warn pkg.url.projectName, "Failed to compress archive with xz:", $tempTar
-    if fileExists($tempTar & ".xz"):
-      discard tryRemoveFile($tempTar & ".xz")
+    warn pkg.url.projectName, "Failed to create archive with xz pipe:", $tarPath
+    if fileExists($tarPath):
+      discard tryRemoveFile(tarPath)
     return
-  let compressed = $tempTar & ".xz"
-  moveFile(compressed, $tarPath)
 
   info pkg.url.projectName, "Created archive:", $tarPath
 
