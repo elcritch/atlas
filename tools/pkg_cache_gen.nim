@@ -189,9 +189,8 @@ proc processPackage(nc: var NimbleContext; pkgInfo: PackageInfo; outputRoot: Pat
   if pkgUrl.isEmpty():
     warn "packageCacheGen", "Skipping package with unresolved URL:", pkgInfo.name
     return
-  let wasCloned = block:
-    let isFork = isForkUrl(nc, pkgUrl)
-    if isFork:
+  let wasCloned =
+    if isForkUrl(nc, pkgUrl):
       let officialUrl = nc.lookup(pkgUrl.shortName())
       let canonicalDir =
         if officialUrl.isEmpty(): pkgUrl.toDirectoryPath()
