@@ -157,15 +157,15 @@ proc archiveExcludePathspecs(): seq[string] =
 proc archiveRelease(pkg: Package; pv: PackageVersion; rel: NimbleRelease; outputRoot: Path) =
   if rel.isNil or rel.status != Normal:
     return
-  let pkgDirRel = outputRoot / Path pkg.url.shortName()
-  ensureDir(pkgDirRel)
 
   let
+    pkgDirRel = outputRoot / Path pkg.url.shortName()
     pkgDir = pkgDirRel.absolutePath
     baseName = sanitizeName(pkg.url.shortName() & "-" & versionSlug(pv.vtag))
     xzPath = findExe("xz")
     tarPath = pkgDir / Path(baseName & ".tar.xz")
 
+  ensureDir(pkgDirRel)
   if fileExists($tarPath):
     info pkg.url.projectName, "Archive already exists:", $tarPath
     return
