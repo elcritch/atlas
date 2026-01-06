@@ -157,62 +157,60 @@ proc archiveExcludePathspecs(): seq[string] =
 proc archiveRelease(pkg: Package; pv: PackageVersion; rel: NimbleRelease; outputRoot: Path) =
   if rel.isNil or rel.status != Normal:
     return
-  let commit = pv.vtag.commit
-  if commit.isEmpty():
-    warn pkg.url.projectName, "Skipping release without commit:", repr(pv.vtag)
-    return
   let pkgDirRel = outputRoot / Path pkg.url.shortName()
   ensureDir(pkgDirRel)
-  let pkgDir = pkgDirRel.absolutePath
-  let baseName = sanitizeName(pkg.url.shortName() & "-" & versionSlug(pv.vtag))
-  let xzPath = findExe("xz")
-  let useXz = xzPath.len > 0
-  let tarXzPath = pkgDir / Path(baseName & ".tar.xz")
-  let tarGzPath = pkgDir / Path(baseName & ".tar.gz")
-  let existingPath =
-    if fileExists($tarXzPath): $tarXzPath
-    elif fileExists($tarGzPath): $tarGzPath
-    else: ""
-  if existingPath.len > 0:
-    trace pkg.url.projectName, "Archive already exists:", existingPath
+
+  let
+    pkgDir = pkgDirRel.absolutePath
+    baseName = sanitizeName(pkg.url.shortName() & "-" & versionSlug(pv.vtag))
+    xzPath = findExe("xz")
+    tarPath = pkgDir / Path(baseName & ".tar.xz")
+
+  if fileExists($tarPath):
+    info pkg.url.projectName, "Archive already exists:", $tarPath
     return
-  let finalPath = if useXz: tarXzPath else: tarGzPath
 
   let tempTar = pkgDir / Path(baseName & ".tar")
-  var args: seq[string]
-  let treeSpec = gitops.buildArchiveTreeSpec(commit, $rel.srcDir)
-  if useXz:
-    args = @["--format=tar", "--output=" & $tempTar, treeSpec]
-  else:
-    args = @["--format=tar.gz", "--output=" & $finalPath, treeSpec]
-  args.add("--")
-  args.add(".")
-  args.add(archiveExcludePathspecs())
+  let treeSpec = gitops.buildArchiveTreeSpec(pv.vtag.commit, $rel.srcDir)
+  var args = @["--format=tar",
+               "--output=" & $tempTar, treeSpec,
+               "--", "."] & archiveExcludePathspecs()
 
   let (_, status) = gitops.exec(GitArchive, pkg.ondisk, args, Warning)
   if status != RES_OK:
-    warn pkg.url.projectName, "Failed to create archive:", $finalPath
-    if useXz and fileExists($tempTar):
+    warn pkg.url.projectName, "Failed to create archive:", $tarPath
+    if fileExists($tempTar):
       discard tryRemoveFile($tempTar)
     return
 
-  if useXz:
-    let compressCmd = quoteShell(xzPath) & " -T0 -z -f " & quoteShell($tempTar)
-    let res = execShellCmd(compressCmd)
-    if res != 0:
-      warn pkg.url.projectName, "Failed to compress archive with xz:", $tempTar
-      if fileExists($tempTar & ".xz"):
-        discard tryRemoveFile($tempTar & ".xz")
-      return
-    let compressed = $tempTar & ".xz"
-    moveFile(compressed, $finalPath)
-  info pkg.url.projectName, "Created archive:", $finalPath
+  let compressCmd = quoteShell(xzPath) & " -T0 -z -f " & quoteShell($tempTar)
+  let res = execShellCmd(compressCmd)
+  if res != 0:
+    warn pkg.url.projectName, "Failed to compress archive with xz:", $tempTar
+    if fileExists($tempTar & ".xz"):
+      discard tryRemoveFile($tempTar & ".xz")
+    return
+  let compressed = $tempTar & ".xz"
+  moveFile(compressed, $tarPath)
+
+  info pkg.url.projectName, "Created archive:", $tarPath
 
 proc processPackage(nc: var NimbleContext; pkgInfo: PackageInfo; outputRoot: Path) =
   let pkgUrl = resolvePackageUrl(nc, pkgInfo)
   if pkgUrl.isEmpty():
     warn "packageCacheGen", "Skipping package with unresolved URL:", pkgInfo.name
     return
+  let wasCloned = block:
+    let isFork = isForkUrl(nc, pkgUrl)
+    if isFork:
+      let officialUrl = nc.lookup(pkgUrl.shortName())
+      let canonicalDir =
+        if officialUrl.isEmpty(): pkgUrl.toDirectoryPath()
+        else: officialUrl.toDirectoryPath()
+      let forkDir = pkgUrl.toDirectoryPath()
+      isGitDir(canonicalDir) or isGitDir(forkDir)
+    else:
+      isGitDir(pkgUrl.toDirectoryPath())
   var pkg = Package(
     url: pkgUrl,
     state: NotInitialized,
@@ -226,7 +224,7 @@ proc processPackage(nc: var NimbleContext; pkgInfo: PackageInfo; outputRoot: Pat
   if pkg.state != Found:
     warn pkg.url.projectName, "Unable to load package:", pkg.errors.join("; ")
     return
-  if not pkg.isLocalOnly and isGitDir(pkg.ondisk):
+  if not pkg.isLocalOnly and isGitDir(pkg.ondisk) and not wasCloned:
     gitops.gitPull(pkg.ondisk)
   nc.traverseDependency(pkg, AllReleases, @[])
   for ver, rel in pkg.versions:
