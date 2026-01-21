@@ -94,8 +94,7 @@ suite "test link integration":
         # check graph.toJson(ToJsonOptions(enumMode: joptEnumString)) == graph2.toJson(ToJsonOptions(enumMode: joptEnumString))
 
   test "expand using http urls with link files":
-      #setAtlasVerbosity(Warning)
-      setAtlasVerbosity(Trace)
+      setAtlasVerbosity(Warning)
       withDir "tests/ws_link_integration":
         removeDir("deps")
         project(paths.getCurrentDir())
@@ -153,7 +152,6 @@ suite "test link integration":
 
   test "expand using link files part 2":
       setAtlasVerbosity(Warning)
-      setAtlasVerbosity(Trace)
       withDir "tests/ws_link_integration":
         project(paths.getCurrentDir())
         context().flags = {ListVersions}

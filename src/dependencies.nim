@@ -438,7 +438,8 @@ proc expandGraph*(path: Path, nc: var NimbleContext; mode: TraversalMode, onClon
         if pkgUrl notin result.pkgs:
           result.pkgs[pkgUrl] = pkg
       of Processed:
-        discard
+        if pkgUrl notin result.pkgs:
+          result.pkgs[pkgUrl] = pkg
       else:
         discard
         info pkg.projectName, "Skipping package:", $pkg.url, "state:", $pkg.state
