@@ -116,11 +116,6 @@ proc writeDepGraph*(g: DepGraph, debug: bool = false) =
   debug "atlas", "writing dep graph to: ", $configFile
   dumpJson(g, $configFile, pretty = true)
 
-proc readDepGraph*(nc: var NimbleContext, ctx: AtlasContext, path: Path): DepGraph =
-  let configFile = depGraphCacheFile(ctx)
-  debug "atlas", "reading dep graph from: ", $configFile
-  result = loadJson(nc, $configFile)
-
 proc loadDepGraph*(nc: var NimbleContext, nimbleFile: Path): DepGraph =
   doAssert nimbleFile.isAbsolute() and endsWith($nimbleFile, ".nimble") and fileExists($nimbleFile)
   let projectDir = nimbleFile.parentDir()
