@@ -173,10 +173,6 @@ proc traverseDependency*(
   pkg.originHead = gitops.findOriginTip(pkg.ondisk, errorReportLevel = Warning, isLocalOnly = pkg.isLocalOnly).commit()
 
   if mode == CurrentCommit and currentCommit.isEmpty():
-    # let vtag = VersionTag(v: Version"#head", c: initCommitHash("", FromHead))
-    # versions.add((vtag, NimbleRelease(version: vtag.version, status: Normal)))
-    # pkg.state = Processed
-    # info pkg.url.projectName, "traversing dependency using current commit:", $vtag
     discard
   elif currentCommit.isEmpty():
     warn pkg.url.projectName, "traversing dependency unable to find git current version at ", $pkg.ondisk
@@ -312,6 +308,7 @@ proc loadDependency*(
   let isFork = pkg.isFork
 
   if isFork:
+    info pkg.url.projectName, "package is unofficial or forked"
     let canonicalDir = officialUrl.toDirectoryPath()
     let forkDir = pkg.url.toDirectoryPath()
     if dirExists(forkDir) and not dirExists(canonicalDir) and
@@ -324,9 +321,11 @@ proc loadDependency*(
   else:
     pkg.ondisk = pkg.url.toDirectoryPath()
 
-  pkg.isAtlasProject = pkg.url.isAtlasProject()
   var todo = if dirExists(pkg.ondisk): DoNothing else: DoClone
-
+  pkg.isAtlasProject = pkg.url.isAtlasProject()
+  pkg.isLocalOnly = pkg.url.isNimbleLink()
+  if pkg.isLocalOnly:
+    todo = DoNothing
   if pkg.state == LazyDeferred:
     todo = DoNothing
 
@@ -429,14 +428,15 @@ proc expandGraph*(path: Path, nc: var NimbleContext; mode: TraversalMode, onClon
       of Found:
         info pkg.projectName, "Processing package at:", pkg.ondisk.relativeToWorkspace()
         # processing = true
-        let mode = if pkg.isRoot or pkg.isAtlasProject: CurrentCommit else: mode
+        let mode = if pkg.isRoot or pkg.isAtlasProject or pkg.url.isNimbleLink(): CurrentCommit else: mode
         nc.traverseDependency(pkg, mode, @[])
         trace pkg.projectName, "processed pkg:", $pkg
         processing = true
         if pkgUrl notin result.pkgs:
           result.pkgs[pkgUrl] = pkg
       of Processed:
-        discard
+        if pkgUrl notin result.pkgs:
+          result.pkgs[pkgUrl] = pkg
       else:
         discard
         info pkg.projectName, "Skipping package:", $pkg.url, "state:", $pkg.state

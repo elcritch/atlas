@@ -487,6 +487,8 @@ proc activateGraph*(graph: DepGraph): seq[CfgPath] =
       if pkg.ondisk.string.len == 0:
         error pkg.url.projectName, "Missing ondisk location for:", $(pkg.url)
       else:
+        if pkg.url.isNimbleLink():
+          continue
         let pkgUri = pkg.url.toUri
         if pkgUri.scheme notin ["file", "link", "atlas"]:
           discard gitops.ensureCanonicalOrigin(pkg.ondisk, pkgUri)
