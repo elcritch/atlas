@@ -173,10 +173,6 @@ proc traverseDependency*(
   pkg.originHead = gitops.findOriginTip(pkg.ondisk, errorReportLevel = Warning, isLocalOnly = pkg.isLocalOnly).commit()
 
   if mode == CurrentCommit and currentCommit.isEmpty():
-    # let vtag = VersionTag(v: Version"#head", c: initCommitHash("", FromHead))
-    # versions.add((vtag, NimbleRelease(version: vtag.version, status: Normal)))
-    # pkg.state = Processed
-    # info pkg.url.projectName, "traversing dependency using current commit:", $vtag
     discard
   elif currentCommit.isEmpty():
     warn pkg.url.projectName, "traversing dependency unable to find git current version at ", $pkg.ondisk
