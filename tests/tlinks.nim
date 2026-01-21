@@ -135,6 +135,17 @@ suite "test link integration":
         for linkFile in linkFiles:
           check fileExists($linkFile)
 
+        let depsRepos = @[
+          depsDir / Path"proj_a",
+          depsDir / Path"proj_b",
+          depsDir / Path"proj_c",
+          depsDir / Path"proj_d",
+          depsDir / Path"ws_link_semver"
+        ]
+        for depsRepo in depsRepos:
+          check not dirExists($depsRepo)
+          check not fileExists($depsRepo)
+
         let linkLines = readFile($(depsDir / Path"ws_link_semver.nimble-link")).splitLines()
         check linkLines.len == 2
         check linkLines[0] == $linkedNimble
