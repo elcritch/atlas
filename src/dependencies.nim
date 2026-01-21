@@ -324,9 +324,11 @@ proc loadDependency*(
   else:
     pkg.ondisk = pkg.url.toDirectoryPath()
 
-  pkg.isAtlasProject = pkg.url.isAtlasProject()
   var todo = if dirExists(pkg.ondisk): DoNothing else: DoClone
-
+  pkg.isAtlasProject = pkg.url.isAtlasProject()
+  pkg.isLocalOnly = pkg.url.isNimbleLink()
+  if pkg.isLocalOnly:
+    todo = DoNothing
   if pkg.state == LazyDeferred:
     todo = DoNothing
 
@@ -429,7 +431,7 @@ proc expandGraph*(path: Path, nc: var NimbleContext; mode: TraversalMode, onClon
       of Found:
         info pkg.projectName, "Processing package at:", pkg.ondisk.relativeToWorkspace()
         # processing = true
-        let mode = if pkg.isRoot or pkg.isAtlasProject: CurrentCommit else: mode
+        let mode = if pkg.isRoot or pkg.isAtlasProject or pkg.url.isNimbleLink(): CurrentCommit else: mode
         nc.traverseDependency(pkg, mode, @[])
         trace pkg.projectName, "processed pkg:", $pkg
         processing = true

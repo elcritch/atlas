@@ -133,6 +133,9 @@ proc isLinkPath*(pkgUrl: PkgUrl): bool =
 proc isAtlasProject*(pkgUrl: PkgUrl): bool =
   result = pkgUrl.url.scheme == "link"
 
+proc isNimbleLink*(pkgUrl: PkgUrl): bool =
+  pkgUrl.url.scheme == "link" or pkgUrl.isLinkPath()
+
 proc createNimbleLink*(pkgUrl: PkgUrl, nimblePath: Path, cfgPath: CfgPath) =
   let nimbleLink = toLinkPath(pkgUrl)
   trace "nimble:link", "creating link at:", $nimbleLink, "from:", $nimblePath

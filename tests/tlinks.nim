@@ -163,7 +163,7 @@ suite "test link integration":
         readConfig()
 
         var nc = createNimbleContext()
-        var graph = project().loadWorkspace(nc, AllReleases, onClone=DoClone, doSolve=true)
+        var graph = project().loadWorkspace(nc, AllReleases, onClone=DoClone, doSolve=false)
 
         checkpoint "\tgraph:\n" & $graph.toJson(ToJsonOptions(enumMode: joptEnumString))
 
@@ -178,14 +178,14 @@ suite "test link integration":
         # var sol: Solution
         # solve(graph, form)
 
-        check graph.root.active
-        check graph.pkgs[nc.createUrl("proj_a")].active
-        check graph.pkgs[nc.createUrl("proj_b")].active
-        check graph.pkgs[nc.createUrl("proj_c")].active
-        check graph.pkgs[nc.createUrl("proj_d")].active
+        proc checkHead(pkg: Package) =
+          check pkg.isLocalOnly
+          let keys = pkg.versions.keys().toSeq()
+          check keys.len == 1
+          check keys[0].vtag.v.isHead
 
-        check $graph.root.activeVersion == "#head@-"
-        check $graph.pkgs[nc.createUrl("proj_a")].activeVersion == $findCommit("proj_a", "1.1.0")
-        check $graph.pkgs[nc.createUrl("proj_b")].activeVersion == $findCommit("proj_b", "1.1.0")
-        check $graph.pkgs[nc.createUrl("proj_c")].activeVersion == $findCommit("proj_c", "1.2.0")
-        check $graph.pkgs[nc.createUrl("proj_d")].activeVersion == $findCommit("proj_d", "1.0.0")
+        checkHead graph.pkgs[nc.createUrl("ws_link_semver")]
+        checkHead graph.pkgs[nc.createUrl("proj_a")]
+        checkHead graph.pkgs[nc.createUrl("proj_b")]
+        checkHead graph.pkgs[nc.createUrl("proj_c")]
+        checkHead graph.pkgs[nc.createUrl("proj_d")]
