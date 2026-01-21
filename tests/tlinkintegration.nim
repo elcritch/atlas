@@ -7,7 +7,7 @@ import basic/[sattypes, context, reporters, pkgurls, compiledpatterns, versions]
 import basic/[deptypes, nimblecontext, deptypesjson]
 import dependencies
 import depgraphs
-import testerutils
+import integration_test_utils
 import atlas, confighandler
 
 ensureGitHttpServer()

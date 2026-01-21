@@ -3,7 +3,7 @@ import basic/[context, pkgurls, deptypes, nimblecontext, compiledpatterns, osuti
 import basic/nimbleparser
 import basic/parse_requires
 
-import testerutils
+import integration_test_utils
 
 proc doesContain(res: NimbleFileInfo, name: string): bool =
   for req in res.requires:

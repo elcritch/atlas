@@ -5,7 +5,7 @@ import std/terminal
 import basic/[sattypes, context, reporters, pkgurls, compiledpatterns, versions]
 import basic/[deptypes, nimblecontext]
 import dependencies, depgraphs
-import testerutils
+import integration_test_utils
 
 # if not dirExists("tests/ws_testtraverse/buildGraph"):
 ensureGitHttpServer()

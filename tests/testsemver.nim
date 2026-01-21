@@ -2,7 +2,7 @@
 
 import std / [strutils, os, osproc, sequtils, strformat, unittest]
 import basic/context
-import testerutils
+import integration_test_utils
 
 if execShellCmd("nim c -o:$# -d:release src/atlas.nim" % [atlasExe]) != 0:
   quit("FAILURE: compilation of atlas failed")

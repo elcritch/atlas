@@ -3,7 +3,7 @@ import std/[os, files, dirs, paths, osproc, strutils, uri, options]
 import basic/[reporters, osutils, versions, context]
 
 import basic/gitops
-import testerutils
+import integration_test_utils
 
 ensureGitHttpServer()
 

@@ -2,8 +2,8 @@
 
 import std / [strutils, os, osproc, sequtils, strformat, unittest]
 import basic/context
-import testerutils
+import helpers
 
-import testintegration
+import integration_tests
 
 infoNow "tester", "All tests run successfully"

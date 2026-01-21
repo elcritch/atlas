@@ -2,7 +2,7 @@
 
 import std / [strutils, os, osproc, sequtils, strformat, unittest]
 import basic/context
-import integration_test_utils
+import utils_tester
 
 ensureGitHttpServer()
 
