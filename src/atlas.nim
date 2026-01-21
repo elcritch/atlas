@@ -242,9 +242,10 @@ proc linkPackage(linkDir, linkedNimble: Path) =
   writeConfig()
   info "atlas:link", "current project dir:", $project()
 
-  # Load linked project's config to get its deps dir
+  # Load linked project's workspace directly from its nimble file.
   info "atlas:link", "linked project dir:", $linkDir
-  let lgraph = loadDepGraph(nc, linkedNimble)
+  info "atlas:link", "linked project nimble:", $linkedNimble
+  let lgraph = linkedNimble.parentDir.loadWorkspace(nc, CurrentCommit, onClone=DoNothing, doSolve=false)
 
   # Create links for all nimble files and links in the linked project
   for pkg in allNodes(lgraph):
