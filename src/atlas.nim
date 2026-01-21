@@ -217,9 +217,9 @@ proc installDependencies(nc: var NimbleContext; nimbleFile: Path) =
     dir = Path(".").absolutePath
   info pkgname, "installing dependencies"
   let graph = dir.loadWorkspace(nc, AllReleases, onClone=DoClone, doSolve=true)
-  let paths = graph.activateGraph()
+  let (paths, features) = graph.activateGraph()
   let cfgPath = CfgPath project()
-  patchNimCfg(paths, cfgPath)
+  patchNimCfg(paths, cfgPath, features)
   afterGraphActions graph
 
 proc linkPackage(linkDir, linkedNimble: Path) =

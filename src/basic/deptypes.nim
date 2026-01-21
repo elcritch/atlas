@@ -21,6 +21,7 @@ type
     state*: PackageState
     versions*: OrderedTable[PackageVersion, NimbleRelease]
     activeVersion*: PackageVersion
+    activeFeatures*: seq[string]
     module*: string
     ondisk*: Path
     nimbleFile*: Path

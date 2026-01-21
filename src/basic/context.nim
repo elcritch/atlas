@@ -83,13 +83,16 @@ proc project*(): Path =
 proc project*(ws: Path) =
   atlasContext.projectDir = ws
 
-proc depsDir*(relative = false): Path =
-  if atlasContext.depsDir == Path"":
+proc depsDir*(ctx: AtlasContext, relative = false): Path =
+  if ctx.depsDir == Path"":
     result = Path""
-  elif relative or atlasContext.depsDir.isAbsolute:
-    result = atlasContext.depsDir
+  elif relative or ctx.depsDir.isAbsolute:
+    result = ctx.depsDir
   else:
-    result = atlasContext.projectDir / atlasContext.depsDir
+    result = ctx.projectDir / ctx.depsDir
+
+proc depsDir*(relative = false): Path =
+  depsDir(atlasContext, relative)
 
 proc packagesDirectory*(): Path =
   depsDir() / DefaultPackagesSubDir
@@ -101,7 +104,7 @@ proc nimbleCachesDirectory*(): Path =
   depsDir() / DefaultNimbleCachesSubDir
 
 proc depGraphCacheFile*(ctx: AtlasContext): Path =
-  depsDir() / Path"atlas.cache.json"
+  ctx.depsDir() / Path"atlas.cache.json"
 
 proc relativeToWorkspace*(path: Path): string =
   result = "$project/" & $path.relativePath(project())

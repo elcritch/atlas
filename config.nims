@@ -1,4 +1,4 @@
-import std/[strformat, strutils]
+import std/[os, strformat, strutils]
 
 when defined(nimPreviewSlimSystem):
   import std/syncio
@@ -12,18 +12,15 @@ task build, "Build local atlas":
   exec "nim c -d:debug -o:bin/atlas src/atlas.nim"
 
 task unitTests, "Runs unit tests":
-  exec "nim c -d:debug -r tests/tbasics.nim"
-  exec "nim c -d:debug -r tests/tserde.nim"
-  exec "nim c -d:debug -r tests/tgitops.nim"
-  exec "nim c -d:debug -r tests/tpackageinfos.nim"
-  exec "nim c -d:debug -r tests/tnimbleparser.nim"
-  exec "nim c -d:debug -r tests/testtraverse.nim"
-  exec "nim c -d:debug -r tests/testsemverUnit.nim"
-  exec "nim c -d:debug -r tests/testautoinit.nim"
-  exec "nim c -d:debug -r tests/testsearch.nim"
+  for kind, path in walkDir("tests/"):
+    if kind == pcFile and path.endsWith(".nim"):
+      let name = splitFile(path).name
+      if not name.startsWith("t"): continue # run only t*.nim files
+      echo fmt"[sigils] Running {path}"
+      exec fmt"nim c -r {path}"
 
 task tester, "Runs integration tests":
-  exec "nim c -d:debug -r tests/tester.nim"
+  exec "nim c -d:debug -r tests/run_tester.nim"
 
 task buildRelease, "Build release":
   exec "nimble install -y sat"
