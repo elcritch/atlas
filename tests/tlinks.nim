@@ -43,7 +43,6 @@ suite "test link integration":
     setAtlasErrorsColor(fgMagenta)
 
   test "setup and test target project":
-      # setAtlasVerbosity(Info)
       setAtlasVerbosity(Error)
       withDir "tests/ws_link_semver":
         removeDir("deps")
@@ -95,7 +94,8 @@ suite "test link integration":
         # check graph.toJson(ToJsonOptions(enumMode: joptEnumString)) == graph2.toJson(ToJsonOptions(enumMode: joptEnumString))
 
   test "expand using http urls with link files":
-      setAtlasVerbosity(Warning)
+      #setAtlasVerbosity(Warning)
+      setAtlasVerbosity(Trace)
       withDir "tests/ws_link_integration":
         removeDir("deps")
         project(paths.getCurrentDir())
@@ -119,10 +119,30 @@ suite "test link integration":
         let dir = paths.getCurrentDir().absolutePath
 
         check project() == paths.getCurrentDir()
+
+        ## Link the deps!
         atlasRun(@["link", "../ws_link_semver"])
+
+        let depsDir = project() / Path"deps"
+        let linkedNimble = (project() / Path"../ws_link_semver" / Path"ws_link_semver.nimble").absolutePath
+        let linkFiles = @[
+          depsDir / Path"proj_a.nimble-link",
+          depsDir / Path"proj_b.nimble-link",
+          depsDir / Path"proj_c.nimble-link",
+          depsDir / Path"proj_d.nimble-link",
+          depsDir / Path"ws_link_semver.nimble-link"
+        ]
+        for linkFile in linkFiles:
+          check fileExists($linkFile)
+
+        let linkLines = readFile($(depsDir / Path"ws_link_semver.nimble-link")).splitLines()
+        check linkLines.len == 2
+        check linkLines[0] == $linkedNimble
+        check Path(linkLines[1]).absolutePath == project().absolutePath
 
   test "expand using link files part 2":
       setAtlasVerbosity(Warning)
+      setAtlasVerbosity(Trace)
       withDir "tests/ws_link_integration":
         project(paths.getCurrentDir())
         context().flags = {ListVersions}
@@ -158,5 +178,3 @@ suite "test link integration":
         check $graph.pkgs[nc.createUrl("proj_b")].activeVersion == $findCommit("proj_b", "1.1.0")
         check $graph.pkgs[nc.createUrl("proj_c")].activeVersion == $findCommit("proj_c", "1.2.0")
         check $graph.pkgs[nc.createUrl("proj_d")].activeVersion == $findCommit("proj_d", "1.0.0")
-
-

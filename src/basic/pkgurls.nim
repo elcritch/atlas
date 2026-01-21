@@ -136,6 +136,9 @@ proc isAtlasProject*(pkgUrl: PkgUrl): bool =
 proc createNimbleLink*(pkgUrl: PkgUrl, nimblePath: Path, cfgPath: CfgPath) =
   let nimbleLink = toLinkPath(pkgUrl)
   trace "nimble:link", "creating link at:", $nimbleLink, "from:", $nimblePath
+  if nimbleLink.len() == 0:
+    raise newException(ValueError, "Invalid link path: " & $nimbleLink)
+
   if nimbleLink.fileExists():
     return
 
