@@ -308,6 +308,7 @@ proc loadDependency*(
   let isFork = pkg.isFork
 
   if isFork:
+    info pkg.url.projectName, "package is unofficial or forked"
     let canonicalDir = officialUrl.toDirectoryPath()
     let forkDir = pkg.url.toDirectoryPath()
     if dirExists(forkDir) and not dirExists(canonicalDir) and

@@ -2,7 +2,7 @@
 
 import std / [strutils, os, osproc, sequtils, strformat, unittest]
 import basic/context
-import helpers
+import integration_test_utils
 
 import integration_tests
 
