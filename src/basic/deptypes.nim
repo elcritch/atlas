@@ -1,4 +1,4 @@
-import std/[paths, tables, json, jsonutils, hashes, sets]
+import std/[paths, tables, hashes, sets]
 import sattypes, pkgurls, versions, context
 
 export tables

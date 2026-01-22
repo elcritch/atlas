@@ -525,10 +525,6 @@ proc atlasRun*(params: seq[string]) =
     elif args.len != 1:
       fatal action & " command takes a single package name"
 
-  template noArgs() =
-    if args.len != 0:
-      fatal action & " command takes no arguments"
-
   parseAtlasOptions(params, action, args)
 
   if action notin ["init", "tag", "search", "list"]:
