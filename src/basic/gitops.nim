@@ -304,7 +304,7 @@ proc maybeUrlProxy*(url: Uri): Uri =
     result.query = url.query
     result.anchor = url.anchor
 
-  if url.scheme == "git":
+  if url.scheme in ["git", "ssh"]:
     if ForceGitToHttps in context().flags:
       result.scheme = "https"
     else:
