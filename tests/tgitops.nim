@@ -18,6 +18,7 @@ suite "Git Operations Tests":
     removeDir(testDir)
     createDir(testDir)
     c = AtlasContext(flags: {DumbProxy})
+    setContext(c)
     reporter = Reporter()
     setAtlasVerbosity(Trace)
     
@@ -217,6 +218,45 @@ suite "Git Operations Tests":
       let (renamedUrl, renamedStatus) = exec(GitRemoteUrl, Path ".", ["remote.renamed.url"])
       check(renamedStatus == RES_OK)
       check(renamedUrl.strip() == updatedUrl)
+
+  test "maybeUrlProxy rewrites ssh scheme with ForceGitToHttps":
+    let sourceSsh = parseUri("ssh://git@github.com/org/repo.git")
+
+    setContext(AtlasContext(proxy: parseUri("http://localhost:4242/")))
+    let proxiedSsh = maybeUrlProxy(sourceSsh)
+    check(proxiedSsh.scheme == "")
+    check(proxiedSsh.hostname == "localhost")
+    check(proxiedSsh.path == "/org/repo.git")
+
+    setContext(AtlasContext(flags: {ForceGitToHttps}))
+    let forcedNoProxy = maybeUrlProxy(sourceSsh)
+    check(forcedNoProxy.scheme == "https")
+    check(forcedNoProxy.hostname == "github.com")
+    check(forcedNoProxy.path == "/org/repo.git")
+    check(forcedNoProxy.username == "")
+
+    setContext(AtlasContext(proxy: parseUri("http://localhost:4242/"), flags: {ForceGitToHttps}))
+    let forcedWithProxy = maybeUrlProxy(sourceSsh)
+    check(forcedWithProxy.scheme == "https")
+    check(forcedWithProxy.hostname == "localhost")
+    check(forcedWithProxy.path == "/org/repo.git")
+    check(forcedWithProxy.username == "")
+
+  test "maybeUrlProxy handles ssh user urls with proxy":
+    let sourceSshUser = parseUri("ssh://git@github.com/org/repo.git")
+
+    setContext(AtlasContext(proxy: parseUri("http://localhost:4242/")))
+    let proxied = maybeUrlProxy(sourceSshUser)
+    check(proxied.scheme == "")
+    check(proxied.hostname == "localhost")
+    check(proxied.port == "4242")
+    check(proxied.path == "/org/repo.git")
+
+    setContext(AtlasContext(proxy: parseUri("http://localhost:4242/"), flags: {ForceGitToHttps}))
+    let forced = maybeUrlProxy(sourceSshUser)
+    check(forced.scheme == "https")
+    check(forced.hostname == "localhost")
+    check(forced.path == "/org/repo.git")
 
   test "GitRemoteUrl handles remotes with shell metacharacters":
     withDir testDir:

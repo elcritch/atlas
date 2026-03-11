@@ -307,6 +307,10 @@ proc maybeUrlProxy*(url: Uri): Uri =
   if url.scheme in ["git", "ssh"]:
     if ForceGitToHttps in context().flags:
       result.scheme = "https"
+      # SSH remotes may include user info (for example git@github.com).
+      # HTTPS remotes should not carry SSH auth fields.
+      result.username = ""
+      result.password = ""
     else:
       result.scheme = ""
 
