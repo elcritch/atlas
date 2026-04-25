@@ -81,7 +81,8 @@ proc writeMessage(c: var Reporter; k: MsgKind; p: string, args: seq[string]) =
     stdout.styledWriteLine(resetStyle, "")
 
 proc message(c: var Reporter; k: MsgKind; p: string, args: openArray[string]) =
-  ## collects messages or prints them out immediately
+  ## prints messages immediately and does not store them
+  ## uncomment the line below to collect messages instead
   # c.messages.add (k, p, arg)
   if c.assertOnError:
     raise newException(AssertionDefect, p & ": " & $args)
