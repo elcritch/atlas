@@ -75,6 +75,7 @@ Options:
   --noautoinit          do not auto initialize an atlas project
   --no-lazy-deps        disable lazy dependency loading and use eager loading
                         for all transitive dependencies during SAT solving
+  --sparse              clone dependencies with blob filtering and sparse src checkout
   --proxy=url           use the given proxy URL for all git operations
   --dumbProxy           use a dumb proxy without smart git protocol
   --packagesRepo        use the nim-lang/packages git repo (legacy behavior)
@@ -371,6 +372,7 @@ proc update(filter: string) =
 
 proc parseAtlasOptions(params: seq[string], action: var string, args: var seq[string]) =
   var autoinit = true
+  var sparseCheckoutOpt = false
   if existsEnv("NO_COLOR") or not isatty(stdout) or (getEnv("TERM") == "dumb"):
     setAtlasNoColors(true)
   for kind, key, val in getopt(params):
@@ -456,6 +458,9 @@ proc parseAtlasOptions(params: seq[string], action: var string, args: var seq[st
         else: writeHelp()
       of "nolazydeps", "no-lazy-deps":
         context().flags.incl NoLazyDeps
+      of "sparse":
+        sparseCheckoutOpt = true
+        context().sparseCheckout = true
       of "verbosity":
         case val.normalize
         of "normal": setAtlasVerbosity(Info)
@@ -481,6 +486,9 @@ proc parseAtlasOptions(params: seq[string], action: var string, args: var seq[st
         fatal "No project found and unable to auto init project. Run `atlas init` if you want this current directory to be your project."
     elif action notin ["search", "list"]:
       fatal "No project found. Run `atlas init` if you want this current directory to be your project."
+
+  if sparseCheckoutOpt:
+    context().sparseCheckout = true
 
   if action notin ["tag", "search", "list"]:
     createDir(depsDir())

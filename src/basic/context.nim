@@ -71,6 +71,7 @@ type
     pluginsFile*: Path
     proxy*: Uri
     features*: HashSet[string]
+    sparseCheckout*: bool
 
 var atlasContext = AtlasContext()
 

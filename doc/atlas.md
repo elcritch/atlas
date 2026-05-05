@@ -259,6 +259,21 @@ Sometimes two URLs can conflict for the same dependency shortname. For example, 
 
 When a fork is involved, Atlas treats the URL in the dependency graph as canonical and ensures a corresponding git remote exists. It uses `origin` to store the canonical URL and also adds a named remote derived from the repo/author/host (e.g. `repo.user.host`) so it can resolve branch tips and special versions (like `#branch`) against the correct fork while still allowing an “official” remote to coexist for the upstream project.
 
+## Sparse Dependency Clones
+
+Large dependencies can be cloned with blob filtering and a sparse checkout by
+setting `sparseCheckout` in `atlas.config` or passing `--sparse`.
+For example:
+
+```json
+{
+  "sparseCheckout": true
+}
+```
+
+With this enabled, Atlas clones dependencies with `git clone --filter=blob:none
+--sparse` and then runs `git sparse-checkout set src`.
+
 ## Overrides
 
 You can override how Atlas resolves a package name or a URL. The overrides use

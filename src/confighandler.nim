@@ -24,6 +24,7 @@ type
     pkgOverrides*: Table[string, string]
     plugins*: string
     resolver*: string
+    sparseCheckout*: bool
     graph*: JsonNode
 
   ActivatedPackage* = object
@@ -53,6 +54,7 @@ proc writeDefaultConfigFile*() =
     urlOverrides: initTable[string, string](),
     pkgOverrides: initTable[string, string](),
     resolver: $SemVer,
+    sparseCheckout: false,
     graph: newJNull()
   )
   let configFile = getProjectConfig()
@@ -104,6 +106,7 @@ proc readAtlasContext*(ctx: var AtlasContext, projectDir: Path) =
   if m.plugins.len > 0:
     ctx.pluginsFile = m.plugins.Path
     readPluginsDir(m.plugins.Path)
+  ctx.sparseCheckout = m.sparseCheckout
   
 
 proc readConfig*() =
@@ -120,6 +123,7 @@ proc writeConfig*() =
     pkgOverrides: context().pkgOverrides.pairs().toSeq().mapIt((it[0], $it[1])).toTable(),
     plugins: $context().pluginsFile,
     resolver: $context().defaultAlgo,
+    sparseCheckout: context().sparseCheckout,
     graph: newJNull()
   )
 

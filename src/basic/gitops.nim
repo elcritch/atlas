@@ -27,6 +27,7 @@ type
     GitDescribe = "git -C $DIR describe",
     GitRevParse = "git -C $DIR rev-parse",
     GitCheckout = "git -C $DIR checkout",
+    GitSparseCheckout = "git -C $DIR sparse-checkout",
     GitSubModUpdate = "git -C $DIR submodule update --init",
     GitPush = "git -C $DIR push",
     GitPull = "git -C $DIR pull",
@@ -461,6 +462,7 @@ proc clone*(url: Uri, dest: Path; retries = 5): (CloneStatus, string) =
     if $context().proxy != "" and DumbProxy in context().flags: ""
     elif ShallowClones in context().flags: "--depth=1"
     else: ""
+  let sparseCheckout = context().sparseCheckout
 
   let canonicalUrl = url
   var url = maybeUrlProxy(url)
@@ -472,6 +474,9 @@ proc clone*(url: Uri, dest: Path; retries = 5): (CloneStatus, string) =
   var args: seq[string] = @[]
   if extraArgs.len > 0:
     args.add extraArgs
+  if sparseCheckout:
+    args.add "--filter=blob:none"
+    args.add "--sparse"
   if remote.len > 0:
     args.add "--origin"
     args.add remote
@@ -481,6 +486,10 @@ proc clone*(url: Uri, dest: Path; retries = 5): (CloneStatus, string) =
   let (_, status) = exec(GitClone, dest, args, Debug, requireRepo = false, streamOutput = true)
   if status == RES_OK:
     discard ensureCanonicalOrigin(dest, canonicalUrl)
+    if sparseCheckout:
+      let (_, sparseStatus) = exec(GitSparseCheckout, dest, ["set", "src"], Warning)
+      if sparseStatus != RES_OK:
+        return (OtherError, "could not set sparse checkout paths")
     return (Ok, "")
 
   const Pauses = [0, 1000, 2000, 3000, 4000, 6000]
@@ -489,6 +498,10 @@ proc clone*(url: Uri, dest: Path; retries = 5): (CloneStatus, string) =
     let (outp, status) = exec(GitClone, dest, args, Debug, requireRepo = false)
     if status == RES_OK:
       discard ensureCanonicalOrigin(dest, canonicalUrl)
+      if sparseCheckout:
+        let (_, sparseStatus) = exec(GitSparseCheckout, dest, ["set", "src"], Warning)
+        if sparseStatus != RES_OK:
+          return (OtherError, "could not set sparse checkout paths")
       return (Ok, "")
     elif "not found" in outp or "Not a git repo" in outp:
       return (NotFound, "not found")

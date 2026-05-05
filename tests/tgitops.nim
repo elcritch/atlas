@@ -18,6 +18,7 @@ suite "Git Operations Tests":
     removeDir(testDir)
     createDir(testDir)
     c = AtlasContext(flags: {DumbProxy})
+    setContext(c)
     reporter = Reporter()
     setAtlasVerbosity(Trace)
     
@@ -85,6 +86,29 @@ suite "Git Operations Tests":
     let res = clone(testUrl, testDir)
     # Note: This will fail if gitHttpServer isn't running
     check(res[0] == Ok)  # Expected to fail since URL is fake
+
+  test "Git clone supports src sparse checkout":
+    let sourceDir = testDir / Path"source"
+    let destDir = testDir / Path"dest"
+    createDir(sourceDir)
+    createDir(sourceDir / Path"src")
+    createDir(sourceDir / Path"docs")
+    withDir sourceDir:
+      discard execCmd("git init")
+      discard execCmd("git config user.name test-user")
+      discard execCmd("git config user.email test@example.com")
+      writeFile("src/included.nim", "echo \"included\"")
+      writeFile("docs/excluded.txt", "excluded")
+      writeFile("source.nimble", "version = \"0.1.0\"")
+      discard execCmd("git add .")
+      discard execCmd("git commit -m \"initial commit\"")
+
+    context().sparseCheckout = true
+    let res = clone(parseUri($sourceDir), destDir)
+    check(res[0] == Ok)
+    check(fileExists(destDir / Path"src" / Path"included.nim"))
+    check(not fileExists(destDir / Path"docs" / Path"excluded.txt"))
+    check(fileExists(destDir / Path"source.nimble"))
 
   test "incrementTag behavior":
     check(incrementTag("test", "v1.0.0", 2) == "v1.0.1")
